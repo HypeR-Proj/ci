@@ -1,0 +1,199 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  quality:
+    name: Source and host-test quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Install source analysis tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ripgrep shellcheck
+      - name: Check shell test infrastructure
+        run: sh tests/ci/run.sh scripts
+      - name: Check formatting and host-side behavior
+        run: sh tests/ci/run.sh quality
+
+  aarch64-build:
+    name: AArch64 build and image contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Build production and self-test images
+        run: sh tests/ci/run.sh aarch64-build
+      - name: Upload AArch64 images
+        uses: actions/upload-artifact@v4
+        with:
+          name: aarch64-kernels
+          path: target/ci/aarch64
+          if-no-files-found: error
+          retention-days: 7
+
+  aarch64-qemu:
+    name: AArch64 ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: aarch64-build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: nVHE-UP
+            cpu: cortex-a72
+            cpus: 1
+            memory: 512M
+            host_mode: nVHE
+            atomic_backend: LL/SC
+            image: hyper.self-test.img
+            va_bits: 48
+            pa_bits: '[0-9][0-9]'
+          - name: nVHE-SMP
+            cpu: cortex-a72
+            cpus: 4
+            memory: 512M
+            host_mode: nVHE
+            atomic_backend: LL/SC
+            image: hyper.self-test.img
+            va_bits: 48
+            pa_bits: '[0-9][0-9]'
+          - name: VHE-UP
+            cpu: max
+            cpus: 1
+            memory: 512M
+            host_mode: VHE
+            atomic_backend: LSE
+            image: hyper.self-test.img
+            va_bits: 48
+            pa_bits: '[0-9][0-9]'
+          - name: VHE-SMP
+            cpu: max
+            cpus: 4
+            memory: 512M
+            host_mode: VHE
+            atomic_backend: LSE
+            image: hyper.self-test.img
+            va_bits: 48
+            pa_bits: '[0-9][0-9]'
+          - name: VHE-constrained-memory
+            cpu: max
+            cpus: 2
+            memory: 256M
+            host_mode: VHE
+            atomic_backend: LSE
+            image: hyper.self-test.img
+            va_bits: 48
+            pa_bits: '[0-9][0-9]'
+          - name: nVHE-compact-address-space
+            cpu: cortex-a72
+            cpus: 4
+            memory: 512M
+            host_mode: nVHE
+            atomic_backend: LL/SC
+            image: hyper.compact.img
+            va_bits: 42
+            pa_bits: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore pinned AArch64 guest input
+        uses: actions/cache@v4
+        with:
+          path: target/guest/aarch64
+          key: guest-aarch64-${{ hashFiles('tools/guest/alpine-aarch64.manifest', 'tools/guest/fetch-alpine-aarch64.sh', 'tools/guest/init', 'tools/guest/boot.conf') }}
+      - name: Download AArch64 self-test image
+        uses: actions/download-artifact@v4
+        with:
+          name: aarch64-kernels
+          path: target/ci/aarch64
+      - name: Install AArch64 QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends cpio qemu-system-arm
+      - name: Verify AArch64 runtime feature contract
+        env:
+          QEMU_CPU: ${{ matrix.cpu }}
+          QEMU_CPUS: ${{ matrix.cpus }}
+          QEMU_MEMORY: ${{ matrix.memory }}
+          QEMU_EXPECT_HOST_MODE: ${{ matrix.host_mode }}
+          QEMU_EXPECT_ATOMIC_BACKEND: ${{ matrix.atomic_backend }}
+          QEMU_EXPECT_VA_BITS: ${{ matrix.va_bits }}
+          QEMU_EXPECT_PA_BITS: ${{ matrix.pa_bits }}
+          AARCH64_TEST_IMAGE: target/ci/aarch64/${{ matrix.image }}
+          QEMU_TEST_LOG: target/ci/logs/aarch64-${{ matrix.name }}.log
+        run: sh tests/ci/run.sh aarch64-qemu
+      - name: Clean up AArch64 QEMU
+        if: always()
+        run: sh tests/ci/cleanup-qemu.sh aarch64
+      - name: Upload AArch64 serial log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aarch64-${{ matrix.name }}-log
+          path: target/ci/logs/aarch64-${{ matrix.name }}.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  riscv64-qemu:
+    name: RISC-V Linux guest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Restore pinned RISC-V guest input
+        uses: actions/cache@v4
+        with:
+          path: target/guest/riscv64
+          key: guest-riscv64-${{ hashFiles('tools/guest/alpine-riscv64.manifest', 'tools/guest/fetch-alpine-riscv64.sh', 'tools/guest/init', 'tools/guest/boot.conf') }}
+      - name: Install RISC-V QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends cpio qemu-system-misc
+      - name: Require the RISC-V Linux guest to launch init
+        run: sh tests/ci/run.sh riscv64-qemu
+      - name: Clean up RISC-V QEMU
+        if: always()
+        run: sh tests/ci/cleanup-qemu.sh riscv64
+      - name: Upload RISC-V serial log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: riscv64-linux-log
+          path: target/ci/logs/riscv64.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  x86_64-build:
+    name: x86-64 compile contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Compile and link x86-64
+        run: sh tests/ci/run.sh x86_64-build

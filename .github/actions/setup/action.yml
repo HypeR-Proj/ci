@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: Set up HypeR toolchain
+description: Install the pinned Rust toolchain and bare-metal targets
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Cargo downloads
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry/cache
+          ~/.cargo/registry/index
+          ~/.cargo/git/db
+        key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+        restore-keys: |
+          cargo-${{ runner.os }}-
+    - name: Install Rust toolchain
+      shell: bash
+      run: |
+        toolchain=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
+        if [ -z "$toolchain" ]; then
+          echo "rust-toolchain.toml does not declare a channel" >&2
+          exit 1
+        fi
+        rustup set profile minimal
+        rustup toolchain install "$toolchain" \
+          --component clippy \
+          --component llvm-tools \
+          --component rust-src \
+          --component rustfmt \
+          --target aarch64-unknown-none \
+          --target riscv64imac-unknown-none-elf \
+          --target x86_64-unknown-none
+        rustup default "$toolchain"
