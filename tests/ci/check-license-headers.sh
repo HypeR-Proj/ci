@@ -11,7 +11,10 @@ cd "$root"
 missing=$(mktemp "${TMPDIR:-/tmp}/hyper-license-headers.XXXXXX")
 trap 'rm -f "$missing"' EXIT HUP INT TERM
 
-git ls-files | while IFS= read -r path; do
+git ls-files --cached --others --exclude-standard | sort -u | while IFS= read -r path; do
+    # A worktree move appears as a tracked deletion plus an untracked addition
+    # before staging. Inspect the files that actually form the candidate tree.
+    [ -f "$path" ] || continue
     case "$path" in
         LICENSE | Cargo.lock | */Cargo.lock)
             # LICENSE is the license text; Cargo owns generated lockfiles.
