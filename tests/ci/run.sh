@@ -52,8 +52,14 @@ case "${1:-}" in
         sh tests/ci/check-irq-registration-contract.sh
         sh tests/ci/test-arch-boundaries.sh
         sh tests/ci/check-arch-boundaries.sh
+        sh tests/ci/test-reschedule-publication-contract.sh
+        sh tests/ci/check-reschedule-publication-contract.sh
+        sh tests/ci/test-x86-stage1-shootdown-contract.sh
         sh tests/ci/check-x86-stage1-shootdown-contract.sh
+        sh tests/ci/test-secondary-handoff-contract.sh
         sh tests/ci/check-secondary-handoff-contract.sh
+        sh tests/ci/test-vcpu-transition-contract.sh
+        sh tests/ci/check-vcpu-transition-contract.sh
         cargo fmt --all -- --check
         cargo fmt --manifest-path tests/host/Cargo.toml -- --check
         cargo fmt --manifest-path tools/kconfig/Cargo.toml -- --check
