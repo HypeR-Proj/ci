@@ -50,6 +50,10 @@ case "${1:-}" in
         sh tests/ci/check-arch-facades.sh
         sh tests/ci/test-irq-registration-contract.sh
         sh tests/ci/check-irq-registration-contract.sh
+        sh tests/ci/test-boot-lifecycle-contract.sh
+        sh tests/ci/check-boot-lifecycle-contract.sh
+        sh tests/ci/test-local-irq-lifecycle-contract.sh
+        sh tests/ci/check-local-irq-lifecycle-contract.sh
         sh tests/ci/test-arch-boundaries.sh
         sh tests/ci/check-arch-boundaries.sh
         sh tests/ci/test-reschedule-publication-contract.sh
