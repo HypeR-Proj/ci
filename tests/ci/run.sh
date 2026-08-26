@@ -58,6 +58,8 @@ case "${1:-}" in
         sh tests/ci/check-arch-boundaries.sh
         sh tests/ci/test-reschedule-publication-contract.sh
         sh tests/ci/check-reschedule-publication-contract.sh
+        sh tests/ci/test-thread-migration-context-contract.sh
+        sh tests/ci/check-thread-migration-context-contract.sh
         sh tests/ci/test-x86-stage1-shootdown-contract.sh
         sh tests/ci/check-x86-stage1-shootdown-contract.sh
         sh tests/ci/test-secondary-handoff-contract.sh
