@@ -53,10 +53,8 @@ hardware-virtualization mechanisms from returning to the legacy flat `arch`
 namespace. Extend this topical contract list as each architecture domain
 completes its migration.
 
-`check-arch-boundaries.sh` also ratchets the temporary direct dependencies from
-`src/arch` into kernel policy. Each baseline entry identifies the source file,
-explicit kernel contract path, and reference count. Removing a reference
-therefore requires lowering the corresponding entry in the same change; adding
-or substituting a contract, adding a file, or increasing a count fails the
-quality suite. The lexical check is a migration ratchet, not proof of the Rust
-module graph; privacy and review must also reject indirect re-exports.
+`check-arch-boundaries.sh` permits only the selected architecture bootstrap
+adapters to call the kernel directly. Its allowlist is exact by architecture,
+boot contract, and reference count; exception, interrupt, failure, and VM-exit
+mechanisms cannot be added as migration debt. The lexical check is not proof of
+the Rust module graph; privacy and review must also reject indirect re-exports.
