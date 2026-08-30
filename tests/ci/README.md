@@ -26,7 +26,10 @@ host modes, LL/SC/LSE atomics, and default and reduced host VA geometries.
 Every case verifies kernel self-tests, guarded thread/IRQ/emergency stacks,
 scheduler and sleeping synchronization, SMP admission, GICv3/vGIC, host and
 guest timers, virtual system registers, PL011 RX, KASLR geometry, allocator
-ownership statistics, lazy guest demand paging, and Linux userspace.
+ownership statistics, lazy guest demand paging, and Linux userspace. It also
+requires the initial Native dispatcher validation and the AArch64 VHE/nVHE
+raw-code EL0 proof: direct `abi_query`, contained breakpoint fault,
+Process/Thread join, and acknowledged retirement.
 
 Failed QEMU jobs retain their complete serial logs as CI artifacts. Guest
 Linux inputs are checksum-pinned by `tools/guest` and cached only as CI inputs;
