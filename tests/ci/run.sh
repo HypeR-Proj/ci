@@ -56,18 +56,46 @@ case "${1:-}" in
         sh tests/ci/check-boot-lifecycle-contract.sh
         sh tests/ci/test-local-irq-lifecycle-contract.sh
         sh tests/ci/check-local-irq-lifecycle-contract.sh
+        sh tests/ci/test-cross-call-publisher-pinning-contract.sh
+        sh tests/ci/check-cross-call-publisher-pinning-contract.sh
         sh tests/ci/test-arch-boundaries.sh
         sh tests/ci/check-arch-boundaries.sh
         sh tests/ci/test-reschedule-publication-contract.sh
         sh tests/ci/check-reschedule-publication-contract.sh
         sh tests/ci/test-thread-migration-context-contract.sh
         sh tests/ci/check-thread-migration-context-contract.sh
+        sh tests/ci/test-thread-retirement-contract.sh
+        sh tests/ci/check-thread-retirement-contract.sh
+        sh tests/ci/test-thread-resource-alias-contract.sh
+        sh tests/ci/check-thread-resource-alias-contract.sh
+        sh tests/ci/test-scheduler-cpu-ownership-contract.sh
+        sh tests/ci/check-scheduler-cpu-ownership-contract.sh
+        sh tests/ci/test-scheduler-thread-table-contract.sh
+        sh tests/ci/check-scheduler-thread-table-contract.sh
         sh tests/ci/test-x86-stage1-shootdown-contract.sh
         sh tests/ci/check-x86-stage1-shootdown-contract.sh
         sh tests/ci/test-secondary-handoff-contract.sh
         sh tests/ci/check-secondary-handoff-contract.sh
+        sh tests/ci/test-riscv-guest-frame-contract.sh
+        sh tests/ci/check-riscv-guest-frame-contract.sh
+        sh tests/ci/test-native-user-boundary.sh
+        sh tests/ci/check-native-user-boundary.sh
         sh tests/ci/test-vcpu-transition-contract.sh
         sh tests/ci/check-vcpu-transition-contract.sh
+        sh tests/ci/test-aarch64-guest-unwind-contract.sh
+        sh tests/ci/check-aarch64-guest-unwind-contract.sh
+        sh tests/ci/test-vcpu-interrupt-publication-contract.sh
+        sh tests/ci/check-vcpu-interrupt-publication-contract.sh
+        sh tests/ci/test-vm-retirement-contract.sh
+        sh tests/ci/check-vm-retirement-contract.sh
+        sh tests/ci/test-guest-residency-contract.sh
+        sh tests/ci/check-guest-residency-contract.sh
+        sh tests/ci/test-allocator-invariant-contract.sh
+        sh tests/ci/check-allocator-invariant-contract.sh
+        sh tests/ci/test-allocator-cache-contract.sh
+        sh tests/ci/check-allocator-cache-contract.sh
+        sh tests/ci/test-deferred-log-contract.sh
+        sh tests/ci/check-deferred-log-contract.sh
         cargo fmt --all -- --check
         cargo fmt --manifest-path tests/host/Cargo.toml -- --check
         cargo fmt --manifest-path tools/kconfig/Cargo.toml -- --check
