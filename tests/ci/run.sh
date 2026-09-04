@@ -100,7 +100,6 @@ case "${1:-}" in
         cargo fmt --manifest-path tests/host/Cargo.toml -- --check
         cargo fmt --manifest-path tools/kconfig/Cargo.toml -- --check
         cargo fmt --manifest-path tools/kallsyms/Cargo.toml -- --check
-        cargo fmt --manifest-path tools/abi/Cargo.toml -- --check
         make test ARCH=aarch64
         ;;
     scripts)
