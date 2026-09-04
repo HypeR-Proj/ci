@@ -15,7 +15,7 @@ ShellCheck; GitHub Actions installs both tools explicitly.
 | `quality` | Architecture, bootstrap-stack, and IRQ-ownership boundary checks, formatting, host, Kconfig, and kallsyms tests |
 | `scripts` | ShellCheck for test and guest-acquisition scripts |
 | `aarch64-build` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity, image ABI/instruction checks, and a separate kernel-self-test image |
-| `aarch64-qemu` | Linux userspace and console RX plus the complete AArch64 feature markers described below |
+| `aarch64-qemu` | Linux userspace, repeated guest-timer wakeups, and console RX plus the complete AArch64 feature markers described below |
 | `riscv64-qemu` | The RISC-V Linux guest boots and hands control to `/init` |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
 
@@ -26,9 +26,13 @@ host modes, LL/SC/LSE atomics, and default and reduced host VA geometries.
 Every case verifies kernel self-tests, guarded thread/IRQ/emergency stacks,
 scheduler and sleeping synchronization, SMP admission, GICv3/vGIC, host and
 guest timers, virtual system registers, PL011 RX, KASLR geometry, allocator
-ownership statistics, lazy guest demand paging, and Linux userspace. It also
-requires the initial Native dispatcher validation and the AArch64 VHE/nVHE
-raw-code EL0 proof: direct `abi_query`, contained breakpoint fault,
+ownership statistics, lazy guest demand paging, and Linux userspace. Repeated
+BusyBox sleeps must complete before console RX is attempted, proving that guest
+timer delivery remains live across successive interrupt retirements after
+`/init`. The matrix also requires Native dispatcher validation, bounded Channel
+transaction tests, and the AArch64 VHE/nVHE raw-code EL0 proof: repeated direct
+`abi_query`, scheduling and lifecycle calls, Event creation/signal/wait,
+contained breakpoint fault,
 Process/Thread join, and acknowledged retirement.
 
 Failed QEMU jobs retain their complete serial logs as CI artifacts. Guest
