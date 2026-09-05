@@ -7,13 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 
 Describe the contract or behavior changed by this pull request.
 
-## Cross-repository integration
+## Contract impact
 
-HypeR-Topic: None
-Integration-PR: None
-
-Replace `None` with the shared topic identifier and the corresponding
-`HypeR-Build` pull request when this change affects another repository.
+Describe any coordinated Kernel, ABI, SDK, or Native system change and how the
+single-tree build keeps every consumer valid at this commit.
 
 ## Validation
 

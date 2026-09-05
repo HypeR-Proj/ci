@@ -55,6 +55,32 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  native:
+    name: Native SDK and init integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Install Native SDK and QEMU tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            clang cmake lld llvm make qemu-system-arm shellcheck
+      - name: Build and consume the Native SDK
+        run: sh tests/ci/run.sh native
+      - name: Clean up AArch64 QEMU
+        if: always()
+        run: sh tests/ci/cleanup-qemu.sh aarch64
+      - name: Upload the Native SDK
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyper-sdk-aarch64-linux-x86_64
+          path: target/sdk/aarch64
+          if-no-files-found: error
+          retention-days: 7
+
   aarch64-qemu:
     name: AArch64 ${{ matrix.name }}
     runs-on: ubuntu-24.04

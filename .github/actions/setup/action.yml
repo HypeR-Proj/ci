@@ -14,7 +14,7 @@ runs:
           ~/.cargo/registry/cache
           ~/.cargo/registry/index
           ~/.cargo/git/db
-        key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+        key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           cargo-${{ runner.os }}-
     - name: Install Rust toolchain

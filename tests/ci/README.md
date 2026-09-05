@@ -14,16 +14,17 @@ ShellCheck; GitHub Actions installs both tools explicitly.
 | --- | --- |
 | `quality` | Architecture, bootstrap-stack, and IRQ-ownership boundary checks, formatting, host, Kconfig, and kallsyms tests |
 | `scripts` | ShellCheck for test and guest-acquisition scripts |
+| `native` | Generated ABI coherence, SDK publication and consumer checks, portable runtime tests, and Native init QEMU startup |
 | `aarch64-build` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity, image ABI/instruction checks, and a separate kernel-self-test image |
 | `aarch64-qemu` | Linux userspace, repeated guest-timer wakeups, and console RX plus the complete AArch64 feature markers described below |
 | `riscv64-qemu` | The RISC-V Linux guest boots and hands control to `/init` |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
 
-The QEMU runtime suites deliberately build with `kernel-self-test`, which
-selects the repository-owned Linux guest workload. Production images instead
-mount the firmware initramfs and start Native `/init`; its end-to-end contract
-belongs to the integrated HypeR build, while this repository tests the ramfs
-and ELF loader mechanisms on the host.
+The architecture QEMU runtime suites deliberately build with
+`kernel-self-test`, which selects the repository-owned Linux guest workload.
+Production images instead mount the firmware initramfs and start Native
+`/init`; the separate `native` suite assembles that initramfs from the in-tree
+SDK and system sources and verifies the complete boot contract.
 
 The AArch64 QEMU matrix covers one and four CPUs on both the Armv8.0
 `cortex-a72` model and the feature-rich `max` model, plus constrained-memory

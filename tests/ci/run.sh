@@ -9,7 +9,7 @@ root=$(CDPATH='' cd -- "$(dirname "$0")/../.." && pwd)
 cd "$root"
 
 usage() {
-    echo "usage: tests/ci/run.sh {quality|scripts|aarch64-build|aarch64-qemu|riscv64-qemu|x86_64-build}" >&2
+    echo "usage: tests/ci/run.sh {quality|scripts|native|aarch64-build|aarch64-qemu|riscv64-qemu|x86_64-build}" >&2
     exit 2
 }
 
@@ -43,6 +43,7 @@ case "${1:-}" in
             echo "ripgrep is required for the source-quality suite" >&2
             exit 2
         }
+        sh tests/ci/check-monorepo-contract.sh
         sh tests/ci/check-license-headers.sh
         sh tests/ci/test-boot-stack-contract.sh
         sh tests/ci/check-boot-stack-contract.sh
@@ -108,8 +109,14 @@ case "${1:-}" in
             echo "shellcheck is required for the script-quality suite" >&2
             exit 2
         }
-        find tests tools/guest -type f -name '*.sh' -print0 |
+        find tests tools/guest scripts sdk/toolchain -type f \
+            \( -name '*.sh' -o -name hyper-clang \) -print0 |
             xargs -0 shellcheck --severity=warning
+        ;;
+    native)
+        make sdk-check
+        make sdk-test
+        make test-native ARCH=aarch64 QEMU_CPU=cortex-a72 QEMU_CPUS=4
         ;;
     aarch64-build)
         sh tests/ci/check-aarch64-address-configs.sh
