@@ -19,6 +19,12 @@ ShellCheck; GitHub Actions installs both tools explicitly.
 | `riscv64-qemu` | The RISC-V Linux guest boots and hands control to `/init` |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
 
+The QEMU runtime suites deliberately build with `kernel-self-test`, which
+selects the repository-owned Linux guest workload. Production images instead
+mount the firmware initramfs and start Native `/init`; its end-to-end contract
+belongs to the integrated HypeR build, while this repository tests the ramfs
+and ELF loader mechanisms on the host.
+
 The AArch64 QEMU matrix covers one and four CPUs on both the Armv8.0
 `cortex-a72` model and the feature-rich `max` model, plus constrained-memory
 and 42-bit compact-address-space cases. Together these require both nVHE/VHE
