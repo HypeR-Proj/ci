@@ -34,7 +34,7 @@ case "${1:-}" in
             exit 2
         }
         find tests kernel/tests kernel/tools scripts sdk/toolchain -type f \
-            \( -name '*.sh' -o -name hyper-clang \) -print0 |
+            \( -name '*.sh' -o -name hyper-clang -o -name hyper-cargo \) -print0 |
             xargs -0 shellcheck --severity=warning
         ;;
     native)
