@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aarch64-kernels
-          path: target/ci/aarch64
+          path: kernel/target/ci/aarch64
           if-no-files-found: error
           retention-days: 7
 
@@ -158,13 +158,13 @@ jobs:
       - name: Restore pinned AArch64 guest input
         uses: actions/cache@v4
         with:
-          path: target/guest/aarch64
-          key: guest-aarch64-${{ hashFiles('tools/guest/alpine-aarch64.manifest', 'tools/guest/fetch-alpine-aarch64.sh', 'tools/guest/init', 'tools/guest/boot.conf') }}
+          path: kernel/target/guest/aarch64
+          key: guest-aarch64-${{ hashFiles('kernel/tools/guest/alpine-aarch64.manifest', 'kernel/tools/guest/fetch-alpine-aarch64.sh', 'kernel/tools/guest/init', 'kernel/tools/guest/boot.conf') }}
       - name: Download AArch64 self-test image
         uses: actions/download-artifact@v4
         with:
           name: aarch64-kernels
-          path: target/ci/aarch64
+          path: kernel/target/ci/aarch64
       - name: Install AArch64 QEMU
         run: |
           sudo apt-get update
@@ -189,7 +189,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aarch64-${{ matrix.name }}-log
-          path: target/ci/logs/aarch64-${{ matrix.name }}.log
+          path: kernel/target/ci/logs/aarch64-${{ matrix.name }}.log
           if-no-files-found: warn
           retention-days: 7
 
@@ -204,8 +204,8 @@ jobs:
       - name: Restore pinned RISC-V guest input
         uses: actions/cache@v4
         with:
-          path: target/guest/riscv64
-          key: guest-riscv64-${{ hashFiles('tools/guest/alpine-riscv64.manifest', 'tools/guest/fetch-alpine-riscv64.sh', 'tools/guest/init', 'tools/guest/boot.conf') }}
+          path: kernel/target/guest/riscv64
+          key: guest-riscv64-${{ hashFiles('kernel/tools/guest/alpine-riscv64.manifest', 'kernel/tools/guest/fetch-alpine-riscv64.sh', 'kernel/tools/guest/init', 'kernel/tools/guest/boot.conf') }}
       - name: Install RISC-V QEMU
         run: |
           sudo apt-get update
@@ -220,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: riscv64-linux-log
-          path: target/ci/logs/riscv64.log
+          path: kernel/target/ci/logs/riscv64.log
           if-no-files-found: warn
           retention-days: 7
 

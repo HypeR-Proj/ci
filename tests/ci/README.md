@@ -5,8 +5,11 @@ SPDX-License-Identifier: Apache-2.0
 
 # CI test policy
 
-The scripts in this directory are the stable boundary between GitHub Actions
-and the project build/test system. They are also directly runnable locally.
+The scripts in this directory are the stable repository-level boundary between
+GitHub Actions and the project build/test system. Kernel-only source contracts
+and architecture suites live under `kernel/tests/ci`; this dispatcher enters
+the kernel component before running them. All suites are directly runnable
+locally.
 The `quality` suite requires ripgrep, while the `scripts` suite requires
 ShellCheck; GitHub Actions installs both tools explicitly.
 
@@ -24,7 +27,7 @@ The architecture QEMU runtime suites deliberately build with
 `kernel-self-test`, which selects the repository-owned Linux guest workload.
 Production images instead mount the firmware initramfs and start Native
 `/init`; the separate `native` suite assembles that initramfs from the in-tree
-SDK and system sources and verifies the complete boot contract.
+SDK and application sources and verifies the complete boot contract.
 
 The AArch64 QEMU matrix covers one and four CPUs on both the Armv8.0
 `cortex-a72` model and the feature-rich `max` model, plus constrained-memory
@@ -46,8 +49,8 @@ contained breakpoint fault,
 Process/Thread join, and acknowledged retirement.
 
 Failed QEMU jobs retain their complete serial logs as CI artifacts. Guest
-Linux inputs are checksum-pinned by `tools/guest` and cached only as CI inputs;
-they are not included in the distributable kernel artifact.
+Linux inputs are checksum-pinned by `kernel/tools/guest` and cached only as CI
+inputs; they are not included in the distributable kernel artifact.
 
 `check-boot-stack-contract.sh` protects the bounded scratch headroom required
 by allocation-free firmware discovery on every architecture. Image validation
