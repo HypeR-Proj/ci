@@ -118,6 +118,15 @@ jobs:
             image: hyper.compact.img
             va_bits: 42
             pa_bits: 40
+          - name: VHE-compact-address-space
+            cpu: max
+            cpus: 4
+            memory: 512M
+            host_mode: VHE
+            atomic_backend: LSE
+            image: hyper.compact.img
+            va_bits: 42
+            pa_bits: 40
     steps:
       - uses: actions/checkout@v4
       - name: Restore pinned AArch64 guest input

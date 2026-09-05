@@ -96,6 +96,7 @@ case "${1:-}" in
         sh tests/ci/check-allocator-cache-contract.sh
         sh tests/ci/test-deferred-log-contract.sh
         sh tests/ci/check-deferred-log-contract.sh
+        sh tests/ci/test-aarch64-kaslr-geometry.sh
         cargo fmt --all -- --check
         cargo fmt --manifest-path tests/host/Cargo.toml -- --check
         cargo fmt --manifest-path tools/kconfig/Cargo.toml -- --check

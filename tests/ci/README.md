@@ -29,10 +29,13 @@ The AArch64 QEMU matrix covers one and four CPUs on both the Armv8.0
 `cortex-a72` model and the feature-rich `max` model, plus constrained-memory
 and 42-bit compact-address-space cases. Together these require both nVHE/VHE
 host modes, LL/SC/LSE atomics, and default and reduced host VA geometries.
-Every case verifies kernel self-tests, guarded thread/IRQ/emergency stacks,
-scheduler and sleeping synchronization, SMP admission, GICv3/vGIC, host and
-guest timers, virtual system registers, PL011 RX, KASLR geometry, allocator
-ownership statistics, lazy guest demand paging, and Linux userspace. Repeated
+The VHE cases additionally require a canonical upper kernel/KASLR geometry
+with private lower Process roots; nVHE retains the equivalent lower host
+geometry. Every case verifies kernel self-tests, guarded thread, IRQ and
+emergency stacks, scheduler and sleeping synchronization, SMP admission,
+GICv3/vGIC, host and guest timers, virtual system registers, PL011 RX, KASLR
+geometry, allocator ownership statistics, lazy guest demand paging, and Linux
+userspace. Repeated
 BusyBox sleeps must complete before console RX is attempted, proving that guest
 timer delivery remains live across successive interrupt retirements after
 `/init`. The matrix also requires Native dispatcher validation, bounded Channel
