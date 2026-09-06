@@ -40,6 +40,8 @@ case "${1:-}" in
     native)
         make sdk-check
         make sdk-test
+        make app-check
+        make app-test
         make test-native ARCH=aarch64 QEMU_CPU=cortex-a72 QEMU_CPUS=4
         ;;
     aarch64-build | aarch64-qemu | riscv64-qemu | x86_64-build)

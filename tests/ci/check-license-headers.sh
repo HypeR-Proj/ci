@@ -23,10 +23,18 @@ git ls-files --cached --others --exclude-standard | sort -u | while IFS= read -r
     esac
 
     header=$(sed -n '1,8p' "$path")
-    if ! printf '%s\n' "$header" |
-        grep -Fq 'SPDX-FileCopyrightText: 2026 roolrz' ||
-        ! printf '%s\n' "$header" |
-            grep -Fq 'SPDX-License-Identifier: Apache-2.0'; then
+    case "$path" in
+        *.json)
+            copyright='"SPDX-FileCopyrightText": "2026 roolrz"'
+            license='"SPDX-License-Identifier": "Apache-2.0"'
+            ;;
+        *)
+            copyright='SPDX-FileCopyrightText: 2026 roolrz'
+            license='SPDX-License-Identifier: Apache-2.0'
+            ;;
+    esac
+    if ! printf '%s\n' "$header" | grep -Fq "$copyright" ||
+        ! printf '%s\n' "$header" | grep -Fq "$license"; then
         printf '%s\n' "$path" >>"$missing"
     fi
 done
