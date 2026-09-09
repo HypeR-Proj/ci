@@ -43,6 +43,7 @@ case "${1:-}" in
         make app-check
         make app-test
         make test-native ARCH=aarch64 QEMU_CPU=cortex-a72 QEMU_CPUS=4
+        make -o image -o native-initramfs test-runtime-crash ARCH=aarch64
         ;;
     aarch64-build | aarch64-qemu | riscv64-qemu | x86_64-build)
         run_kernel_suite "$1"
