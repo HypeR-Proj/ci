@@ -13,11 +13,13 @@ import time
 
 def main():
     qemu, image, initramfs, logfile = sys.argv[1:]
-    command = [qemu, '-machine', 'virt,virtualization=on,gic-version=3,dtb-randomness=on',
-               '-cpu', 'cortex-a72', '-smp', '4', '-m', '512M',
+    command = [qemu, '-machine', os.environ.get('QEMU_MACHINE', 'virt,virtualization=on,gic-version=3,dtb-randomness=on'),
+               '-cpu', os.environ.get('QEMU_CPU', 'cortex-a72'),
+               '-smp', os.environ.get('QEMU_CPUS', '4'),
+               '-m', os.environ.get('QEMU_MEMORY', '512M'),
                '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
                '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
-               '-append', 'earlycon=pl011,mmio32,0x09000000']
+               '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
     with open(logfile, 'wb') as log:
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)

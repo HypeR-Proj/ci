@@ -67,7 +67,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
-            clang cmake lld llvm make qemu-system-arm shellcheck
+            clang cmake cpio lld llvm make qemu-system-arm shellcheck
       - name: Build and consume the Native SDK
         run: sh tests/ci/run.sh native
       - name: Clean up AArch64 QEMU
@@ -105,8 +105,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
-            clang cmake lld llvm make qemu-system-misc shellcheck
-      - name: Verify RISC-V Native applications on one and four harts
+            clang cmake cpio lld llvm make qemu-system-misc shellcheck
+      - name: Verify RISC-V Native applications and userspace Linux VMs
         run: sh tests/ci/run.sh riscv64-native
       - name: Clean up RISC-V QEMU
         if: always()
