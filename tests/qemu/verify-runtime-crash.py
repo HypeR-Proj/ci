@@ -55,10 +55,12 @@ def main():
             process.stdin.flush()
 
         def memory_owners():
-            send(b'free')
-            line = await_text(rb'Owners:[^\n]*user=\d+ MiB guest=\d+ MiB[^\n]*\n')
+            # Exact bytes keep reclamation checks independent of display units
+            # and prevent sub-MiB guest leaks from rounding down to zero.
+            send(b'free --bytes')
+            line = await_text(rb'Owners:[^\n]*user=\d+ B guest=\d+ B[^\n]*\n')
             await_text(rb'hyper-sh\$ ')
-            return tuple(map(int, re.search(rb'user=(\d+) MiB guest=(\d+) MiB', line).groups()))
+            return tuple(map(int, re.search(rb'user=(\d+) B guest=(\d+) B', line).groups()))
 
         try:
             await_text(rb'HypeR session: console ready')
@@ -95,7 +97,7 @@ def main():
                     raise RuntimeError('runtime failure did not retire instance')
                 for _ in range(30):
                     user, guest = memory_owners()
-                    if guest == 0 and user <= baseline_user + 2:
+                    if guest == 0 and user <= baseline_user + 2 * 1024 * 1024:
                         break
                     time.sleep(0.1)
                 else:
