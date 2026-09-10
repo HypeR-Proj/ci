@@ -60,6 +60,8 @@ case "${1:-}" in
             make -o image -o native-initramfs test-native ARCH=riscv64 QEMU_CPUS=1
         make -o image -o native-initramfs test-console ARCH=riscv64
         make -o image -o native-initramfs test-apps ARCH=riscv64
+        make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=4
+        make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=1
         ;;
     aarch64-build | aarch64-qemu | riscv64-qemu | x86_64-build)
         run_kernel_suite "$1"
