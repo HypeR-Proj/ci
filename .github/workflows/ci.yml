@@ -93,6 +93,40 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  riscv64-native:
+    name: RISC-V Native SDK and app integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Install Native SDK and RISC-V QEMU tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            clang cmake lld llvm make qemu-system-misc shellcheck
+      - name: Verify RISC-V Native applications on one and four harts
+        run: sh tests/ci/run.sh riscv64-native
+      - name: Clean up RISC-V QEMU
+        if: always()
+        run: sh tests/ci/cleanup-qemu.sh riscv64
+      - name: Upload RISC-V Native diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: riscv64-native-logs
+          path: target/app/riscv64/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload the RISC-V Native SDK
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyper-sdk-riscv64-linux-x86_64
+          path: target/sdk/riscv64
+          if-no-files-found: error
+          retention-days: 7
+
   aarch64-qemu:
     name: AArch64 ${{ matrix.name }}
     runs-on: ubuntu-24.04

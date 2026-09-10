@@ -13,11 +13,17 @@ import time
 
 def main():
     qemu, image, initramfs, logfile = sys.argv[1:]
-    command = [qemu, '-machine', 'virt,virtualization=on,gic-version=3',
-               '-cpu', 'cortex-a72', '-smp', '4', '-m', '512M',
+    verify_vm = os.environ.get("HYPER_TEST_VM", "1")
+    if verify_vm not in ("0", "1"):
+        raise ValueError("HYPER_TEST_VM must be 0 or 1")
+    verify_vm = verify_vm == "1"
+    command = [qemu, '-machine', os.environ.get('QEMU_MACHINE', 'virt,virtualization=on,gic-version=3'),
+               '-cpu', os.environ.get('QEMU_CPU', 'cortex-a72'),
+               '-smp', os.environ.get('QEMU_CPUS', '4'),
+               '-m', os.environ.get('QEMU_MEMORY', '512M'),
                '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
                '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
-               '-append', 'earlycon=pl011,mmio32,0x09000000']
+               '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
     with open(logfile, 'wb') as log:
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
@@ -71,7 +77,8 @@ def main():
 
         try:
             await_text(rb'HypeR session: console ready\nhyper-sh\$ ')
-            state('alpine', 'running')
+            if verify_vm:
+                state('alpine', 'running')
             run('cat /etc/hyper/vms.json', rb'"format": "hyper.vm-config"')
             run('cat -n /etc/hyper/vms.json', rb'\n\s+1\t\{')
             run('cat /missing /etc/hyper/vms.json', rb'"virtual-machines"', failed=True)
@@ -134,45 +141,47 @@ def main():
             run('free --bytes', rb'Mem:\s+\d+ B')
             run('ps --name shell', rb'process\s+\d+.*shell')
             run('handle --objects --kind process', rb'\sprocess\s')
-            run('vmm status missing', rb"does not exist", failed=True)
-            run('vmm create scratch --image /missing', rb'cannot open image', failed=True)
-            output = run('vmm list')
-            assert b'scratch' not in output
-            run('vmm create scratch --image /vm/alpine.itb', rb'accepted')
-            run('vmm create scratch --image /vm/alpine.itb', rb'already exists', failed=True)
-            run('vmm start scratch', rb'accepted')
-            state('scratch', 'running')
-            state('alpine', 'running')
-            run('vmm delete scratch', rb'stop the VM', failed=True)
-            send(b'vmm console scratch\n')
-            await_text(rb'Connected to scratch\.')
-            # Validate the guest launched through the CLI, not a kernel boot
-            # shortcut or another VM's retained output.
-            await_text(rb'HypeR guest: repeated timer wakeups passed')
-            await_text(rb'~ # ')
-            send(b'\x1b[1;1Recho HYPER_CLI_GUEST_OK\n')
-            await_text(rb'\nHYPER_CLI_GUEST_OK\n')
-            send(b'\x1dq')
-            await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
-            run('vmm stop scratch', rb'accepted')
-            state('scratch', 'stopped')
-            state('alpine', 'running')
-            run('vmm save /etc/hyper/saved.json', rb'Saved /etc/hyper/saved.json')
-            run('vmm save /etc/hyper/saved.json', rb'already exists', failed=True)
-            run('cat /etc/hyper/saved.json', rb'"name":\s*"scratch"')
-            run('vmm delete scratch', rb'accepted')
-            run('vmm load /etc/hyper/saved.json', rb'already exists', failed=True)
-            assert b'scratch' not in run('vmm list')
-            run('vmm stop alpine', rb'accepted')
-            state('alpine', 'stopped')
-            run('vmm delete alpine', rb'accepted')
-            run('vmm load /etc/hyper/saved.json', rb'accepted')
-            state('alpine', 'running')
-            state('scratch', 'stopped')
-            run('vmm restart alpine', rb'accepted')
-            state('alpine', 'running')
+            if verify_vm:
+                run('vmm status missing', rb"does not exist", failed=True)
+                run('vmm create scratch --image /missing', rb'cannot open image', failed=True)
+                output = run('vmm list')
+                assert b'scratch' not in output
+                run('vmm create scratch --image /vm/alpine.itb', rb'accepted')
+                run('vmm create scratch --image /vm/alpine.itb', rb'already exists', failed=True)
+                run('vmm start scratch', rb'accepted')
+                state('scratch', 'running')
+                state('alpine', 'running')
+                run('vmm delete scratch', rb'stop the VM', failed=True)
+                send(b'vmm console scratch\n')
+                await_text(rb'Connected to scratch\.')
+                # Validate the guest launched through the CLI, not a kernel boot
+                # shortcut or another VM's retained output.
+                await_text(rb'HypeR guest: repeated timer wakeups passed')
+                await_text(rb'~ # ')
+                send(b'\x1b[1;1Recho HYPER_CLI_GUEST_OK\n')
+                await_text(rb'\nHYPER_CLI_GUEST_OK\n')
+                send(b'\x1dq')
+                await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
+                run('vmm stop scratch', rb'accepted')
+                state('scratch', 'stopped')
+                state('alpine', 'running')
+                run('vmm save /etc/hyper/saved.json', rb'Saved /etc/hyper/saved.json')
+                run('vmm save /etc/hyper/saved.json', rb'already exists', failed=True)
+                run('cat /etc/hyper/saved.json', rb'"name":\s*"scratch"')
+                run('vmm delete scratch', rb'accepted')
+                run('vmm load /etc/hyper/saved.json', rb'already exists', failed=True)
+                assert b'scratch' not in run('vmm list')
+                run('vmm stop alpine', rb'accepted')
+                state('alpine', 'stopped')
+                run('vmm delete alpine', rb'accepted')
+                run('vmm load /etc/hyper/saved.json', rb'accepted')
+                state('alpine', 'running')
+                state('scratch', 'stopped')
+                run('vmm restart alpine', rb'accepted')
+                state('alpine', 'running')
             run('echo HYPER_APPS_OK', rb'\nHYPER_APPS_OK\nhyper-sh\$ ')
-            print('verified Native file tools, named VM isolation, and config save/load')
+            print('verified Native file tools' +
+                  (', named VM isolation, and config save/load' if verify_vm else ''))
         finally:
             selector.close()
             process.terminate()

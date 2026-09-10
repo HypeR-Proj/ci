@@ -14,12 +14,17 @@ import time
 
 def main():
     qemu, image, initramfs, logfile = sys.argv[1:]
-    command = [qemu, '-machine', 'virt,virtualization=on,gic-version=3',
+    verify_vm = os.environ.get("HYPER_TEST_VM", "1")
+    if verify_vm not in ("0", "1"):
+        raise ValueError("HYPER_TEST_VM must be 0 or 1")
+    verify_vm = verify_vm == "1"
+    command = [qemu, '-machine', os.environ.get('QEMU_MACHINE', 'virt,virtualization=on,gic-version=3'),
                '-cpu', os.environ.get('QEMU_CPU', 'cortex-a72'),
-               '-smp', os.environ.get('QEMU_CPUS', '4'), '-m', '512M',
+               '-smp', os.environ.get('QEMU_CPUS', '4'),
+               '-m', os.environ.get('QEMU_MEMORY', '512M'),
                '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
                '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
-               '-append', 'earlycon=pl011,mmio32,0x09000000']
+               '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
     with open(logfile, 'wb') as log:
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
@@ -103,27 +108,29 @@ def main():
             # A surviving descendant may retain stdout; command termination
             # must drain available output without waiting for that child's EOF.
             run('/bin/std-test --child detached-output', rb'OUTPUT_OWNER_EXITED', timeout=5)
-            send(b'vmm console alpine\n')
-            await_text(rb'Connected to alpine\.', timeout=30)
-            await_text(rb'~ # ', timeout=60)
-            # Each character must wake the sleeping runtime and echo without
-            # a following key or periodic collection timeout to rescue it.
-            for index in range(12):
-                token = f'GUEST_WAKE_{index:02d}'
-                typed(f'echo {token}')
-                await_text(rb'\n' + token.encode() + rb'\n~ # ')
+            if verify_vm:
+                send(b'vmm console alpine\n')
+                await_text(rb'Connected to alpine\.', timeout=30)
+                await_text(rb'~ # ', timeout=60)
+                # Each character must wake the sleeping runtime and echo without
+                # a following key or periodic collection timeout to rescue it.
+                for index in range(12):
+                    token = f'GUEST_WAKE_{index:02d}'
+                    typed(f'echo {token}')
+                    await_text(rb'\n' + token.encode() + rb'\n~ # ')
+                    pump(0.2)
+                pump(3)
+                typed('echo GUEST_AFTER_IDLE')
+                await_text(rb'\nGUEST_AFTER_IDLE\n~ # ')
+                send(b'\x1d')
+                await_text(rb'd/q: detach, any other key: resume')
                 pump(0.2)
-            pump(3)
-            typed('echo GUEST_AFTER_IDLE')
-            await_text(rb'\nGUEST_AFTER_IDLE\n~ # ')
-            send(b'\x1d')
-            await_text(rb'd/q: detach, any other key: resume')
-            pump(0.2)
-            send(b'q')
-            await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
+                send(b'q')
+                await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
             typed('echo CONSOLE_OK')
             await_text(rb'\nCONSOLE_OK\nhyper-sh\$ ')
-            print(f'verified {rounds} paced commands, idle input, burst recovery, and top/vmm return')
+            print(f'verified {rounds} paced commands, idle input, burst recovery, and top return' +
+                  (' with guest console wakeups' if verify_vm else ''))
         finally:
             selector.close()
             process.terminate()

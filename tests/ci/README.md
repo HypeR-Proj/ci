@@ -17,17 +17,20 @@ ShellCheck; GitHub Actions installs both tools explicitly.
 | --- | --- |
 | `quality` | Architecture, bootstrap-stack, and IRQ-ownership boundary checks, formatting, host, Kconfig, and kallsyms tests |
 | `scripts` | ShellCheck for test and guest-acquisition scripts |
-| `native` | Generated ABI coherence, SDK publication and consumer checks, portable runtime tests, and Native init QEMU startup |
+| `native` | AArch64 SDK publication/consumer checks, portable runtime tests, Native apps, and userspace-managed Linux guests in nVHE/VHE |
+| `riscv64-native` | RISC-V SDK publication/consumer checks, Native static/dynamic std and application acceptance on one and four harts, file tools, and paced shell input |
 | `aarch64-build` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity, image ABI/instruction checks, and a separate kernel-self-test image |
-| `aarch64-qemu` | Linux userspace, repeated guest-timer wakeups, and console RX plus the complete AArch64 feature markers described below |
-| `riscv64-qemu` | The RISC-V Linux guest boots and hands control to `/init` |
+| `aarch64-qemu` | Standalone kernel mechanism self-tests and the AArch64 feature markers described below |
+| `riscv64-qemu` | RISC-V kernel startup, SMP admission, and standalone mechanism self-tests |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
 
 The architecture QEMU runtime suites deliberately build with
-`kernel-self-test`, which selects the repository-owned Linux guest workload.
+`kernel-self-test` and use an empty initramfs. They do not select a guest.
 Production images instead mount the firmware initramfs and start Native
 `/init`; the separate `native` suite assembles that initramfs from the in-tree
 SDK and application sources and verifies the complete boot contract.
+The RISC-V Native image currently selects a console/session/shell service graph
+without VM provisioning; missing VM lifecycle capabilities remain unavailable.
 
 Native acceptance reports each phase transition with elapsed times. Each phase
 has a 90-second progress deadline (`QEMU_BOOT_TIMEOUT_SECONDS`), and the complete
@@ -48,11 +51,10 @@ with private lower Process roots; nVHE retains the equivalent lower host
 geometry. Every case verifies kernel self-tests, guarded thread, IRQ and
 emergency stacks, scheduler and sleeping synchronization, SMP admission,
 GICv3/vGIC, host and guest timers, virtual system registers, PL011 RX, KASLR
-geometry, allocator ownership statistics, lazy guest demand paging, and Linux
-userspace. Repeated
-BusyBox sleeps must complete before console RX is attempted, proving that guest
-timer delivery remains live across successive interrupt retirements after
-`/init`. The matrix also requires Native dispatcher validation, bounded Channel
+geometry, allocator ownership statistics, and lazy guest demand paging.
+The separate Native suite requires repeated BusyBox sleeps before guest console
+RX, proving timer delivery across successive interrupt retirements after guest
+`/init`. The kernel matrix also requires Native dispatcher validation, bounded Channel
 transaction tests, and the AArch64 VHE/nVHE raw-code EL0 proof: repeated direct
 `abi_query`, scheduling and lifecycle calls, Event creation/signal/wait,
 contained breakpoint fault,

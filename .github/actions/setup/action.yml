@@ -33,5 +33,6 @@ runs:
           --component rustfmt \
           --target aarch64-unknown-none \
           --target riscv64imac-unknown-none-elf \
+          --target riscv64gc-unknown-none-elf \
           --target x86_64-unknown-none
         rustup default "$toolchain"
