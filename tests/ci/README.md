@@ -29,6 +29,16 @@ Production images instead mount the firmware initramfs and start Native
 `/init`; the separate `native` suite assembles that initramfs from the in-tree
 SDK and application sources and verifies the complete boot contract.
 
+Native acceptance reports each phase transition with elapsed times. Each phase
+has a 90-second progress deadline (`QEMU_BOOT_TIMEOUT_SECONDS`), and the complete
+multi-command run has a 300-second deadline (`QEMU_NATIVE_TIMEOUT_SECONDS`).
+The workflow retains the raw Native console log alongside runtime-crash logs,
+including on failure, so a stalled phase can be distinguished from exhaustion
+of the overall test budget.
+Ordinary command submissions wait for the expected shell prompt count, so a
+child's final output cannot trigger input intended for its successor. Interactive
+guest console and std input probes instead use their own readiness markers.
+
 The AArch64 QEMU matrix covers one and four CPUs on both the Armv8.0
 `cortex-a72` model and the feature-rich `max` model, plus constrained-memory
 and 42-bit compact-address-space cases. Together these require both nVHE/VHE

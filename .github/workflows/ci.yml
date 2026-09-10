@@ -73,12 +73,14 @@ jobs:
       - name: Clean up AArch64 QEMU
         if: always()
         run: sh tests/ci/cleanup-qemu.sh aarch64
-      - name: Upload Native runtime crash diagnostics
+      - name: Upload Native runtime diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: native-runtime-crash-log
-          path: target/app/aarch64/runtime-crash.log
+          path: |
+            target/app/aarch64/native-init.log
+            target/app/aarch64/runtime-crash.log
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the Native SDK
