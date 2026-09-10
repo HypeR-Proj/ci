@@ -29,6 +29,7 @@ case "${1:-}" in
         run_kernel_suite quality
         ;;
     scripts)
+        python3 tests/build/incremental.py
         command -v shellcheck >/dev/null 2>&1 || {
             echo "shellcheck is required for the script-quality suite" >&2
             exit 2
@@ -44,6 +45,8 @@ case "${1:-}" in
         make app-test
         QEMU_TEST_LOG=target/app/aarch64/native-init.log \
             make test-native ARCH=aarch64 QEMU_CPU=cortex-a72 QEMU_CPUS=4
+        make -o image -o native-initramfs test-console ARCH=aarch64
+        make -o image -o native-initramfs test-apps ARCH=aarch64
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64
         ;;
     aarch64-build | aarch64-qemu | riscv64-qemu | x86_64-build)
