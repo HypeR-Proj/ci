@@ -44,9 +44,7 @@ case "${1:-}" in
         make app-check
         make app-test
         QEMU_TEST_LOG=target/app/aarch64/native-init.log \
-            make test-native ARCH=aarch64 QEMU_CPU=cortex-a72 QEMU_CPUS=4
-        QEMU_TEST_LOG=target/app/aarch64/native-init-vhe.log \
-            make -o image -o native-initramfs test-native ARCH=aarch64 QEMU_CPU=max QEMU_CPUS=4
+            make test-native ARCH=aarch64 QEMU_CPU=max QEMU_CPUS=4
         make -o image -o native-initramfs test-console ARCH=aarch64
         make -o image -o native-initramfs test-apps ARCH=aarch64
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64

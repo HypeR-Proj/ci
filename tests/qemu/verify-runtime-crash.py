@@ -14,7 +14,7 @@ import time
 def main():
     qemu, image, initramfs, logfile = sys.argv[1:]
     command = [qemu, '-machine', os.environ.get('QEMU_MACHINE', 'virt,virtualization=on,gic-version=3,dtb-randomness=on'),
-               '-cpu', os.environ.get('QEMU_CPU', 'cortex-a72'),
+               '-cpu', os.environ.get('QEMU_CPU', 'max'),
                '-smp', os.environ.get('QEMU_CPUS', '4'),
                '-m', os.environ.get('QEMU_MEMORY', '512M'),
                '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',

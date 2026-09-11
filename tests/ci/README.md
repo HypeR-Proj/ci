@@ -17,7 +17,7 @@ ShellCheck; GitHub Actions installs both tools explicitly.
 | --- | --- |
 | `quality` | Architecture, bootstrap-stack, and IRQ-ownership boundary checks, formatting, host, Kconfig, and kallsyms tests |
 | `scripts` | ShellCheck for test and guest-acquisition scripts |
-| `native` | AArch64 SDK publication/consumer checks, portable runtime tests, Native apps, and userspace-managed Linux guests in nVHE/VHE |
+| `native` | AArch64 SDK publication/consumer checks, portable runtime tests, Native apps, and userspace-managed Linux guests on FEAT_VHE hosts |
 | `riscv64-native` | RISC-V SDK publication/consumer checks, Native static/dynamic std and application acceptance on one and four harts, file tools, and paced shell input |
 | `aarch64-build` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity, image ABI/instruction checks, and a separate kernel-self-test image |
 | `aarch64-qemu` | Standalone kernel mechanism self-tests and the AArch64 feature markers described below |
@@ -42,20 +42,20 @@ Ordinary command submissions wait for the expected shell prompt count, so a
 child's final output cannot trigger input intended for its successor. Interactive
 guest console and std input probes instead use their own readiness markers.
 
-The AArch64 QEMU matrix covers one and four CPUs on both the Armv8.0
-`cortex-a72` model and the feature-rich `max` model, plus constrained-memory
-and 42-bit compact-address-space cases. Together these require both nVHE/VHE
-host modes, LL/SC/LSE atomics, and default and reduced host VA geometries.
-The VHE cases additionally require a canonical upper kernel/KASLR geometry
-with private lower Process roots; nVHE retains the equivalent lower host
-geometry. Every case verifies kernel self-tests, guarded thread, IRQ and
+The AArch64 QEMU matrix covers one and four CPUs with the VHE-capable `max`
+model, plus constrained-memory and 42-bit compact-address-space cases. FEAT_VHE
+is required; the CPU's Arm version is not sufficient. Successful boots require
+canonical upper kernel/KASLR geometry and private lower Process roots. The UP
+case also boots an unsupported `cortex-a72` and uses QMP register inspection to
+prove it reaches the dedicated FEAT_VHE rejection loop before MMU setup.
+Every case verifies kernel self-tests, guarded thread, IRQ and
 emergency stacks, scheduler and sleeping synchronization, SMP admission,
 GICv3/vGIC, host and guest timers, virtual system registers, PL011 RX, KASLR
 geometry, allocator ownership statistics, and lazy guest demand paging.
 The separate Native suite requires repeated BusyBox sleeps before guest console
 RX, proving timer delivery across successive interrupt retirements after guest
 `/init`. The kernel matrix also requires Native dispatcher validation, bounded Channel
-transaction tests, and the AArch64 VHE/nVHE raw-code EL0 proof: repeated direct
+transaction tests, and the AArch64 VHE raw-code EL0 proof: repeated direct
 `abi_query`, scheduling and lifecycle calls, Event creation/signal/wait,
 contained breakpoint fault,
 Process/Thread join, and acknowledged retirement.
