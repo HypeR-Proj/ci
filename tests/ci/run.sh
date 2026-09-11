@@ -48,6 +48,10 @@ case "${1:-}" in
         make -o image -o native-initramfs test-console ARCH=aarch64
         make -o image -o native-initramfs test-apps ARCH=aarch64
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64
+        QEMU_TEST_LOG=target/app/aarch64/native-gicv2-smp.log \
+            make test-native-gicv2 QEMU_CPUS=4
+        QEMU_TEST_LOG=target/app/aarch64/native-gicv2-up.log \
+            make -o image -o native-initramfs test-native-gicv2 QEMU_CPUS=1
         ;;
     riscv64-native)
         make sdk-check ARCH=riscv64
