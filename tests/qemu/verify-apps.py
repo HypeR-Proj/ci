@@ -76,7 +76,9 @@ def main():
             raise AssertionError(f'{name} did not reach {wanted}: {output!r}')
 
         try:
-            await_text(rb'HypeR session: console ready\nhyper-sh\$ ')
+            # Other services may log before the shell prints its first prompt.
+            await_text(rb'HypeR session: console ready\n')
+            await_text(rb'hyper-sh\$ ')
             if verify_vm:
                 state('alpine', 'running')
             run('cat /etc/hyper/vms.json', rb'"format": "hyper.vm-config"')

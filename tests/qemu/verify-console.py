@@ -77,7 +77,10 @@ def main():
                 raise AssertionError(f'{text}: {output!r}')
 
         try:
-            await_text(rb'HypeR session: console ready\nhyper-sh\$ ', timeout=60)
+            # Independently scheduled services can log between session readiness
+            # and the first prompt. Require both in order, not adjacent bytes.
+            await_text(rb'HypeR session: console ready\n', timeout=60)
+            await_text(rb'hyper-sh\$ ', timeout=60)
             pump(5)
             pending.clear()
             rounds = int(os.environ.get('CONSOLE_TYPED_ROUNDS', '40'))
