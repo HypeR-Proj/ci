@@ -30,6 +30,7 @@ case "${1:-}" in
         ;;
     scripts)
         python3 tests/build/incremental.py
+        python3 -B tests/qemu/test-guest-smp.py
         command -v shellcheck >/dev/null 2>&1 || {
             echo "shellcheck is required for the script-quality suite" >&2
             exit 2
@@ -59,6 +60,21 @@ case "${1:-}" in
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-runtime-crash.log
         QEMU_TEST_LOG=target/app/aarch64/native-gicv2-up.log \
             make -o image -o native-initramfs test-native-gicv2 QEMU_CPUS=1
+        make -o image test-guest-smp ARCH=aarch64 QEMU_CPUS=4
+        cp target/app/aarch64/guest-smp.log target/app/aarch64/native-gicv3-guest-smp.log
+        make -o image -o guest-smp-initramfs test-guest-smp ARCH=aarch64 \
+            QEMU_MACHINE=virt,virtualization=on,gic-version=2 QEMU_CPUS=4
+        cp target/app/aarch64/guest-smp.log target/app/aarch64/native-gicv2-guest-smp.log
+        make -o image -o guest-smp-initramfs test-guest-smp ARCH=aarch64 QEMU_CPUS=1
+        cp target/app/aarch64/guest-smp.log target/app/aarch64/native-gicv3-guest-smp-overcommit.log
+        # Reuse the abrupt runtime-exit fixture with the SMP topology. It may
+        # exit before every secondary has booted; retirement must include all
+        # configured dormant and running CPU Threads in either case.
+        make -o image -o native-initramfs test-runtime-crash ARCH=aarch64 \
+            QEMU_MACHINE=virt,virtualization=on,gic-version=2 QEMU_CPUS=4 \
+            NATIVE_GUEST_VCPUS=4 \
+            NATIVE_GUEST_ITB="$root/kernel/target/guest/aarch64/alpine-smp.itb"
+        cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-guest-smp-runtime-crash.log
         ;;
     riscv64-native)
         make sdk-check ARCH=riscv64

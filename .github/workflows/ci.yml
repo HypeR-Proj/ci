@@ -22,7 +22,7 @@ env:
 
 jobs:
   quality:
-    name: Source and host-test quality
+    name: Quality / source and host tests
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -38,7 +38,7 @@ jobs:
         run: sh tests/ci/run.sh quality
 
   aarch64-build:
-    name: AArch64 build and image contract
+    name: AArch64 / build and image checks
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     needs: quality
@@ -56,9 +56,9 @@ jobs:
           retention-days: 7
 
   native:
-    name: Native SDK and init integration
+    name: AArch64 / SDK, apps and guest VMs
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     needs: quality
     steps:
       - uses: actions/checkout@v4
@@ -77,13 +77,14 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: native-runtime-crash-log
+          name: aarch64-native-logs
           path: |
             target/app/aarch64/native-init.log
             target/app/aarch64/native-gicv*-*.log
             target/app/aarch64/runtime-crash.log
             target/app/aarch64/apps.log
             target/app/aarch64/console.log
+            target/app/aarch64/guest-smp.log
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the Native SDK
@@ -95,7 +96,7 @@ jobs:
           retention-days: 7
 
   riscv64-native:
-    name: RISC-V Native SDK and app integration
+    name: RISC-V / SDK, apps and guest VM
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: quality
@@ -129,7 +130,7 @@ jobs:
           retention-days: 7
 
   aarch64-qemu:
-    name: AArch64 ${{ matrix.name }}
+    name: AArch64 / kernel self-tests / ${{ matrix.name }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     needs: aarch64-build
@@ -137,7 +138,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: VHE-UP
+          - id: gicv3-up
+            name: GICv3, 1 CPU
             cpu: max
             cpus: 1
             memory: 512M
@@ -145,7 +147,8 @@ jobs:
             image: hyper.self-test.img
             va_bits: 48
             pa_bits: '[0-9][0-9]'
-          - name: VHE-SMP
+          - id: gicv3-smp
+            name: GICv3, 4 CPUs
             cpu: max
             cpus: 4
             memory: 512M
@@ -153,7 +156,8 @@ jobs:
             image: hyper.self-test.img
             va_bits: 48
             pa_bits: '[0-9][0-9]'
-          - name: VHE-constrained-memory
+          - id: gicv3-low-memory
+            name: GICv3, 256 MiB RAM
             cpu: max
             cpus: 2
             memory: 256M
@@ -161,7 +165,8 @@ jobs:
             image: hyper.self-test.img
             va_bits: 48
             pa_bits: '[0-9][0-9]'
-          - name: VHE-GICv2-SMP
+          - id: gicv2-smp
+            name: GICv2, 4 CPUs
             cpu: max
             cpus: 4
             memory: 512M
@@ -170,7 +175,8 @@ jobs:
             va_bits: 48
             pa_bits: '[0-9][0-9]'
             gic_version: 2
-          - name: VHE-compact-address-space
+          - id: gicv3-compact-address-space
+            name: GICv3, compact address space
             cpu: max
             cpus: 4
             memory: 512M
@@ -190,7 +196,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends binutils-aarch64-linux-gnu cpio qemu-system-arm
       - name: Reject AArch64 CPUs without FEAT_VHE
-        if: matrix.name == 'VHE-UP'
+        if: matrix.id == 'gicv3-up'
         working-directory: kernel
         run: |
           python3 tests/qemu/verify-vhe-required.py qemu-system-aarch64 \
@@ -206,7 +212,7 @@ jobs:
           QEMU_EXPECT_VA_BITS: ${{ matrix.va_bits }}
           QEMU_EXPECT_PA_BITS: ${{ matrix.pa_bits }}
           AARCH64_TEST_IMAGE: target/ci/aarch64/${{ matrix.image }}
-          QEMU_TEST_LOG: target/ci/logs/aarch64-${{ matrix.name }}.log
+          QEMU_TEST_LOG: target/ci/logs/aarch64-${{ matrix.id }}.log
         run: sh tests/ci/run.sh aarch64-qemu
       - name: Clean up AArch64 QEMU
         if: always()
@@ -215,15 +221,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: aarch64-${{ matrix.name }}-log
-          path: kernel/target/ci/logs/aarch64-${{ matrix.name }}.log
+          name: aarch64-${{ matrix.id }}-log
+          path: kernel/target/ci/logs/aarch64-${{ matrix.id }}.log
           if-no-files-found: warn
           retention-days: 7
 
   riscv64-qemu:
-    # Keep the required-check context stable until the repository ruleset is renamed.
-    # This gate now validates only kernel startup and mechanism self-tests.
-    name: RISC-V Linux guest
+    name: RISC-V / kernel self-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     needs: quality
@@ -243,13 +247,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: riscv64-linux-log
+          name: riscv64-kernel-log
           path: kernel/target/ci/logs/riscv64.log
           if-no-files-found: warn
           retention-days: 7
 
   x86_64-build:
-    name: x86-64 compile contract
+    name: x86-64 / build checks
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     needs: quality
