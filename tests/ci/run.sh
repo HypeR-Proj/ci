@@ -48,8 +48,15 @@ case "${1:-}" in
         make -o image -o native-initramfs test-console ARCH=aarch64
         make -o image -o native-initramfs test-apps ARCH=aarch64
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64
+        cp target/app/aarch64/console.log target/app/aarch64/native-gicv3-console.log
+        cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv3-runtime-crash.log
         QEMU_TEST_LOG=target/app/aarch64/native-gicv2-smp.log \
             make test-native-gicv2 QEMU_CPUS=4
+        make -o image -o native-initramfs test-console test-runtime-crash ARCH=aarch64 \
+            QEMU_MACHINE=virt,virtualization=on,gic-version=2 QEMU_CPUS=4 \
+            NATIVE_INITRAMFS="$root/target/app/aarch64/initramfs-gicv2.cpio"
+        cp target/app/aarch64/console.log target/app/aarch64/native-gicv2-console.log
+        cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-runtime-crash.log
         QEMU_TEST_LOG=target/app/aarch64/native-gicv2-up.log \
             make -o image -o native-initramfs test-native-gicv2 QEMU_CPUS=1
         ;;

@@ -58,7 +58,7 @@ jobs:
   native:
     name: Native SDK and init integration
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     needs: quality
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +80,7 @@ jobs:
           name: native-runtime-crash-log
           path: |
             target/app/aarch64/native-init.log
-            target/app/aarch64/native-gicv2-*.log
+            target/app/aarch64/native-gicv*-*.log
             target/app/aarch64/runtime-crash.log
             target/app/aarch64/apps.log
             target/app/aarch64/console.log
@@ -161,6 +161,15 @@ jobs:
             image: hyper.self-test.img
             va_bits: 48
             pa_bits: '[0-9][0-9]'
+          - name: VHE-GICv2-SMP
+            cpu: max
+            cpus: 4
+            memory: 512M
+            atomic_backend: LSE
+            image: hyper.self-test.img
+            va_bits: 48
+            pa_bits: '[0-9][0-9]'
+            gic_version: 2
           - name: VHE-compact-address-space
             cpu: max
             cpus: 4
@@ -191,6 +200,7 @@ jobs:
         env:
           QEMU_CPU: ${{ matrix.cpu }}
           QEMU_CPUS: ${{ matrix.cpus }}
+          QEMU_GIC_VERSION: ${{ matrix.gic_version || 3 }}
           QEMU_MEMORY: ${{ matrix.memory }}
           QEMU_EXPECT_ATOMIC_BACKEND: ${{ matrix.atomic_backend }}
           QEMU_EXPECT_VA_BITS: ${{ matrix.va_bits }}
