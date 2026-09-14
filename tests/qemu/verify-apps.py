@@ -183,6 +183,7 @@ def main():
             run('top -b -n 1 -d 0.1', rb'CPU: user-thread')
             run('free --bytes', rb'Mem:\s+\d+ B')
             run('ps --name shell', rb'process\s+\d+.*shell')
+            run('ps -T --name shell', rb'thread\s+\d+\s+\d+\s+shell\s+user/resident')
             run('handle --objects --kind process', rb'\sprocess\s')
             if verify_vm:
                 run('vmm status missing', rb"does not exist", failed=True)

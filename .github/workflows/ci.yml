@@ -85,6 +85,8 @@ jobs:
             target/app/aarch64/apps.log
             target/app/aarch64/console.log
             target/app/aarch64/guest-smp.log
+            target/stack-audit/aarch64/*.json
+            target/stack-audit/aarch64/*.log
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the Native SDK
@@ -118,7 +120,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: riscv64-native-logs
-          path: target/app/riscv64/*.log
+          path: |
+            target/app/riscv64/*.log
+            target/stack-audit/riscv64/*.log
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the RISC-V Native SDK

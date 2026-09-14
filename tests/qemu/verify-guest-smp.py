@@ -20,6 +20,12 @@ FAILURE_MARKERS = (
 )
 
 
+# Shared CI TCG hosts can exceed 90 seconds while a fresh Alpine SMP guest
+# is still progressing (observed IPv6 initialization at guest t=76s). This
+# remains a fixed total boot deadline; ordinary commands keep 90 seconds.
+GUEST_BOOT_TIMEOUT_SECONDS = 180
+
+
 def append_console_output(pending, data):
     """Reassemble console text across complete interleaved host log records.
 
@@ -92,7 +98,7 @@ def main():
                     send(b'vmm console alpine')
                     result = await_text(rb'Connected to alpine\.|hyper-sh\$ ')
                     if result.startswith(b'Connected'):
-                        await_text(rb'~ # ')
+                        await_text(rb'~ # ', timeout=GUEST_BOOT_TIMEOUT_SECONDS)
                         return
                     # The old runtime may exit between status and attach.
                     # A failed attach returns to the host shell; retry until

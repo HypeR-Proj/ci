@@ -34,6 +34,8 @@ case "${1:-}" in
         python3 -B tests/build/io-vm-package.py
         python3 -B tests/qemu/test-guest-smp.py
         python3 -B tests/qemu/test-io-vm.py
+        python3 -B tests/qemu/test-stack.py
+        python3 -B tests/build/test-stack-budget.py
         command -v shellcheck >/dev/null 2>&1 || {
             echo "shellcheck is required for the script-quality suite" >&2
             exit 2
@@ -81,6 +83,7 @@ case "${1:-}" in
             NATIVE_GUEST_VCPUS=4 \
             NATIVE_GUEST_ITB="$root/kernel/target/guest/aarch64/alpine-smp.itb"
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-guest-smp-runtime-crash.log
+        make test-stack ARCH=aarch64
         ;;
     io-vm)
         package=$(python3 -B scripts/fetch-io-vm.py \
@@ -108,6 +111,7 @@ case "${1:-}" in
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=4
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=1
         make -o image -o native-initramfs test-runtime-crash ARCH=riscv64
+        make test-stack ARCH=riscv64
         ;;
     aarch64-build | aarch64-qemu | riscv64-qemu | x86_64-build)
         run_kernel_suite "$1"
