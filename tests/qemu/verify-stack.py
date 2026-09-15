@@ -22,7 +22,8 @@ console = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(console)
 
 
-def audit_summary(data, minimum_remaining):
+def audit_summary(data, minimum_remaining, required_kinds=frozenset({'kernel', 'user', 'irq', 'vcpu'}),
+                  maximum_used=None):
     records = re.findall(rb'HypeR STACK-AUDIT ([^\r\n]+)\r?\n', data)
     summary = {}
     for record in records:
@@ -41,8 +42,10 @@ def audit_summary(data, minimum_remaining):
             raise ValueError('inconsistent stack accounting')
         if remaining < minimum_remaining:
             raise ValueError(f'{kind} stack reserve {remaining} < {minimum_remaining}')
+        if maximum_used is not None and used > maximum_used:
+            raise ValueError(f'{kind} stack usage {used} > {maximum_used}')
         summary[kind] = max(summary.get(kind, 0), used)
-    if not {'kernel', 'user', 'irq', 'vcpu'} <= summary.keys():
+    if not required_kinds <= summary.keys():
         raise ValueError('missing retired kernel/user/vCPU or local IRQ stack observation')
     return summary
 
@@ -53,10 +56,13 @@ def main():
         parser.add_argument(name)
     parser.add_argument('--no-audit', action='store_true')
     parser.add_argument('--minimum-remaining', type=int, default=0)
+    parser.add_argument('--maximum-used', type=int)
     parser.add_argument('--repetitions', type=int, default=3)
+    parser.add_argument('--stage', choices=('all', 'inspect', 'memory', 'process'), default='all')
     args = parser.parse_args()
-    if args.minimum_remaining < 0 or args.repetitions < 1:
-        parser.error('reserve must be nonnegative and repetitions must be positive')
+    if (args.minimum_remaining < 0 or args.repetitions < 1
+            or (args.maximum_used is not None and args.maximum_used < 1)):
+        parser.error('reserve must be nonnegative; repetitions and maximum usage must be positive')
     command = [args.qemu, '-machine', os.environ.get('QEMU_MACHINE',
                'virt,virtualization=on,gic-version=3,dtb-randomness=on'),
                '-cpu', os.environ.get('QEMU_CPU', 'max'),
@@ -115,8 +121,10 @@ def main():
             await_text(rb'\[vmm\] detached')
             await_text(rb'hyper-sh\$ ')
             for iteration in range(args.repetitions):
-                send(b'/bin/ps --stack-workload')
+                send(b'/bin/ps --stack-workload ' + args.stage.encode('ascii'))
                 for stage in (b'inspect', b'memory', b'process'):
+                    if args.stage != 'all' and stage.decode('ascii') != args.stage:
+                        continue
                     result = await_text(rb'HYPER_STACK_WORKLOAD stage=' + stage
                                         + rb' [^\n]*elapsed_ns=\d+ success=1\n')
                     print(f'iteration={iteration + 1} ' + result.decode().strip())
@@ -132,7 +140,8 @@ def main():
             await_text(rb'hyper-sh\$ ')
             if not args.no_audit:
                 await_text(rb'HypeR STACK-AUDIT kind=vcpu [^\n]*\n', raw_since=stop_start)
-                print('stack watermark maxima:', audit_summary(raw, args.minimum_remaining))
+                print('stack watermark maxima:', audit_summary(
+                    raw, args.minimum_remaining, maximum_used=args.maximum_used))
             print('HYPER_STACK_TEST_OK')
         finally:
             selector.close()

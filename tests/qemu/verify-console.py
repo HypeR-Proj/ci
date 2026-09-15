@@ -83,6 +83,22 @@ def main():
             await_text(rb'hyper-sh\$ ', timeout=60)
             pump(5)
             pending.clear()
+            # Deliberately send typeahead in one burst: a non-reading child
+            # must never steal the following command into a disposable pipe.
+            send(b'echo TYPEAHEAD_FIRST\necho TYPEAHEAD_SECOND\n')
+            await_text(rb'(?m)^TYPEAHEAD_FIRST\n')
+            await_text(rb'(?m)^TYPEAHEAD_SECOND\nhyper-sh\$ ')
+            # CRLF may be split by the hardware; EOF belongs only to cat.
+            send(b'cat\r')
+            pump(0.03)
+            send(b'\nterminal-cat\r\n\x04echo AFTER_TERMINAL_EOF\r\n')
+            await_text(rb'(?m)^terminal-cat\n')
+            await_text(rb'(?m)^AFTER_TERMINAL_EOF\nhyper-sh\$ ')
+            send(b'/bin/std-test --child terminal-line\r\nterminal-line\r\n')
+            await_text(rb'(?m)^TERMINAL_LINE_OK\nhyper-sh\$ ')
+            send(b'/bin/std-test --child terminal-inherit\ninherit-data\r\n\x04')
+            await_text(rb'(?m)^inherit-data\nTERMINAL_INHERIT_OK\nhyper-sh\$ ')
+            run('/bin/std-test --child binary-eof-byte', rb'BINARY_EOF_BYTE_OK')
             rounds = int(os.environ.get('CONSOLE_TYPED_ROUNDS', '40'))
             for index in range(rounds):
                 token = f'CONSOLE_{index:03d}'

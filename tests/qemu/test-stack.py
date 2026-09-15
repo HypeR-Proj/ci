@@ -37,6 +37,14 @@ class AuditTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'reserve'):
             stack.audit_summary(record('user', 32000), 1024)
 
+    def test_usage_limit_is_independent_of_allocated_stack_size(self):
+        with self.assertRaisesRegex(ValueError, 'usage'):
+            stack.audit_summary(record('user', 9000), 1024, maximum_used=8192)
+
+    def test_usage_limit_accepts_the_boundary(self):
+        data = b''.join(record(kind, 8192) for kind in ('user', 'kernel', 'irq', 'vcpu'))
+        self.assertEqual(stack.audit_summary(data, 1024, maximum_used=8192)['user'], 8192)
+
     def test_malformed_record_is_not_ignored(self):
         with self.assertRaisesRegex(ValueError, 'malformed'):
             stack.audit_summary(b'HypeR STACK-AUDIT kind=user used=oops\n', 0)

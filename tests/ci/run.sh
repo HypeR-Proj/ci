@@ -9,7 +9,7 @@ root=$(CDPATH='' cd -- "$(dirname "$0")/../.." && pwd)
 cd "$root"
 
 usage() {
-    echo "usage: tests/ci/run.sh {quality|scripts|native|io-vm|riscv64-native|aarch64-build|aarch64-qemu|riscv64-qemu|x86_64-build}" >&2
+    echo "usage: tests/ci/run.sh {quality|scripts|native|io-vm|board-storage|riscv64-native|aarch64-build|aarch64-qemu|riscv64-qemu|x86_64-build}" >&2
     exit 2
 }
 
@@ -32,6 +32,7 @@ case "${1:-}" in
         python3 tests/build/incremental.py
         python3 -B tests/build/io-vm-run.py
         python3 -B tests/build/io-vm-package.py
+        python3 -B tests/build/board-image.py
         python3 -B tests/qemu/test-guest-smp.py
         python3 -B tests/qemu/test-io-vm.py
         python3 -B tests/qemu/test-stack.py
@@ -98,6 +99,18 @@ case "${1:-}" in
             QEMU_CPUS=4 QEMU_MACHINE=virt,virtualization=on,gic-version=3
         make -o image -o app test-io-standby ARCH=aarch64 IO_VM_PACKAGE="$package" \
             QEMU_CPUS=1 QEMU_MACHINE=virt,virtualization=on,gic-version=2
+        ;;
+    board-storage)
+        package=$(python3 -B scripts/fetch-io-vm.py \
+            --reference "${IO_VM_REFERENCE:-}" --platform qemu)
+        make test-board-storage ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            STACK_METADATA=1 CARGO_FEATURES='--features kernel-stack-audit'
+        make -o image -o app test-board-business ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            STACK_METADATA=1 CARGO_FEATURES='--features kernel-stack-audit'
+        make -o image -o app test-board-broker ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            STACK_METADATA=1 CARGO_FEATURES='--features kernel-stack-audit'
+        make -o image -o app test-userspace-device ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            STACK_METADATA=1 CARGO_FEATURES='--features kernel-stack-audit'
         ;;
     riscv64-native)
         make sdk-check ARCH=riscv64
