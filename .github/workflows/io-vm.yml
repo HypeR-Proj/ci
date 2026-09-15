@@ -38,7 +38,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
-            clang cmake cpio lld llvm make qemu-system-arm
+            clang cmake cpio lld llvm make qemu-system-arm squashfs-tools
       - name: Test HypeR against the published I/O VM package
         env:
           IO_VM_REFERENCE: ${{ inputs.reference }}

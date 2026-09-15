@@ -34,6 +34,7 @@ case "${1:-}" in
         python3 -B tests/build/io-vm-run.py
         python3 -B tests/build/io-vm-package.py
         python3 -B tests/build/board-image.py
+        python3 -B tests/build/guest-rootfs.py
         python3 -B tests/qemu/test-guest-smp.py
         python3 -B tests/qemu/test-io-vm.py
         python3 -B tests/qemu/test-stack.py
@@ -106,6 +107,8 @@ case "${1:-}" in
         package=$(python3 -B scripts/fetch-io-vm.py \
             --reference "${IO_VM_REFERENCE:-}" --platform qemu)
         make test-board-storage ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            STACK_METADATA=1 CARGO_FEATURES='--features kernel-stack-audit'
+        make -o image -o app test-alpine-rootfs ARCH=aarch64 IO_VM_PACKAGE="$package" \
             STACK_METADATA=1 CARGO_FEATURES='--features kernel-stack-audit'
         make -o image -o app test-board-business ARCH=aarch64 IO_VM_PACKAGE="$package" \
             STACK_METADATA=1 CARGO_FEATURES='--features kernel-stack-audit'

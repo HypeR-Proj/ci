@@ -200,7 +200,7 @@ def main():
                 await_text(rb'Connected to scratch\.')
                 # Validate the guest launched through the CLI, not a kernel boot
                 # shortcut or another VM's retained output.
-                await_text(rb'HypeR guest: repeated timer wakeups passed')
+                await_text(rb'HypeR guest: Linux userspace is running')
                 await_text(rb'~ # ')
                 send(b'\x1b[1;1Recho HYPER_CLI_GUEST_OK\n')
                 await_text(rb'\nHYPER_CLI_GUEST_OK\n')

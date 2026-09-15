@@ -31,7 +31,7 @@ jobs:
       - name: Install source analysis tools
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ripgrep shellcheck dosfstools mtools
+          sudo apt-get install --yes --no-install-recommends ripgrep shellcheck dosfstools mtools e2fsprogs squashfs-tools
       - name: Check shell test infrastructure
         run: sh tests/ci/run.sh scripts
       - name: Check formatting and host-side behavior
@@ -67,7 +67,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
-            clang cmake cpio lld llvm make qemu-system-arm shellcheck
+            clang cmake cpio lld llvm make qemu-system-arm shellcheck squashfs-tools
       - name: Build and consume the Native SDK
         run: sh tests/ci/run.sh native
       - name: Clean up AArch64 QEMU
@@ -115,7 +115,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
-            clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools device-tree-compiler
+            clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools e2fsprogs squashfs-tools device-tree-compiler
       - name: Verify persistent Native storage and managed guests
         run: sh tests/ci/run.sh board-storage
       - name: Clean up AArch64 QEMU

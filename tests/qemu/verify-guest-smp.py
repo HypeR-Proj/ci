@@ -133,7 +133,7 @@ def main():
             raise RuntimeError('missing complete per-vCPU host placement records')
 
         def online(token, expected):
-            send(f'printf "{token}="; /usr/bin/busybox cat /sys/devices/system/cpu/online'.encode())
+            send(f'printf "{token}="; /bin/busybox cat /sys/devices/system/cpu/online'.encode())
             await_text(rb'\n' + token.encode() + b'=' + re.escape(expected.encode()) + rb'\n')
             await_text(rb'~ # ')
 
@@ -177,7 +177,7 @@ def main():
                 # IPIs and timer preemption while the console remains responsive.
                 # The minimal Alpine initramfs has no taskset applet.
                 send(('for c in ' + ' '.join(map(str, range(guest_cpus)))
-                      + '; do /usr/bin/busybox sh -c '
+                      + '; do /bin/busybox sh -c '
                       + "'i=0; while [ $i -lt 10000 ]; do i=$((i+1)); done; echo CPU_WORK_OK' & "
                       + '; done; wait; echo SMP_WORK_DONE').replace('& ;', '&').encode())
                 for _ in range(guest_cpus):
@@ -185,12 +185,12 @@ def main():
                 await_text(rb'(?:^|\n)SMP_WORK_DONE\n')
                 await_text(rb'~ # ')
             for _ in range(2):
-                send(b'/usr/bin/busybox reboot -f')
+                send(b'/bin/busybox reboot -f')
                 await_text(rb'\[vmm\] virtual machine disconnected')
                 await_text(rb'hyper-sh\$ ')
                 attach()
                 online('SMP_AFTER_REBOOT', f'0-{guest_cpus - 1}')
-            send(b'/usr/bin/busybox poweroff -f')
+            send(b'/bin/busybox poweroff -f')
             await_text(rb'\[vmm\] virtual machine disconnected')
             await_text(rb'hyper-sh\$ ')
             wait_state(b'stopped')
