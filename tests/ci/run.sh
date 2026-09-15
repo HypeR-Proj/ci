@@ -30,6 +30,7 @@ case "${1:-}" in
         ;;
     scripts)
         python3 tests/build/incremental.py
+        python3 -B tests/build/app-deployment.py
         python3 -B tests/build/io-vm-run.py
         python3 -B tests/build/io-vm-package.py
         python3 -B tests/build/board-image.py
@@ -50,6 +51,7 @@ case "${1:-}" in
         make sdk-test
         make app-check
         make app-test
+        make app-sdk-test
         QEMU_TEST_LOG=target/app/aarch64/native-init.log \
             make test-native ARCH=aarch64 QEMU_CPU=max QEMU_CPUS=4
         make -o image -o native-initramfs test-console ARCH=aarch64
@@ -115,6 +117,8 @@ case "${1:-}" in
     riscv64-native)
         make sdk-check ARCH=riscv64
         make app-check ARCH=riscv64
+        make app-test ARCH=riscv64
+        make app-sdk-test ARCH=riscv64
         QEMU_TEST_LOG=target/app/riscv64/native-init-smp.log \
             make test-native ARCH=riscv64 QEMU_CPUS=4
         QEMU_TEST_LOG=target/app/riscv64/native-init-up.log \
