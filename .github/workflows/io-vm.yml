@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: 2026 roolrz
 # SPDX-License-Identifier: Apache-2.0
 
-name: I/O VM package qualification
+# Linux and appliance builds/publication belong to HypeR-io-vm. This workflow
+# consumes its published package to test the current HypeR kernel and apps.
+name: HypeR / I/O VM integration
 
 on:
   push:
@@ -10,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       reference:
-        description: Public ghcr.io/OWNER/PACKAGE@sha256:DIGEST to qualify
+        description: Published package digest to test (defaults to scripts/io-vm.lock.json)
         required: false
         type: string
 
@@ -37,7 +39,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
             clang cmake cpio lld llvm make qemu-system-arm
-      - name: Qualify the immutable I/O VM package
+      - name: Test HypeR against the published I/O VM package
         env:
           IO_VM_REFERENCE: ${{ inputs.reference }}
         run: sh tests/ci/run.sh io-vm
