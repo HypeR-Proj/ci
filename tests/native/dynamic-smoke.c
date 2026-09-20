@@ -33,10 +33,24 @@ static int write_result(hyper_native_handle_t output, const char *message, size_
     return hyper_byte_channel_write(output, message, length) == HYPER_NATIVE_STATUS_OK ? 0 : 1;
 }
 
+/* The fixture declares a 512 KiB PT_GNU_STACK. Touch more than the old
+ * 256 KiB default, proving that the main executable controls the initial
+ * stack even when it starts through an interpreter. */
+static int check_initial_stack(void) __attribute__((noinline));
+static int check_initial_stack(void)
+{
+    volatile unsigned char bytes[320 * 1024];
+    for (size_t i = 0; i < sizeof(bytes); ++i) bytes[i] = (unsigned char)i;
+    for (size_t i = 0; i < sizeof(bytes); ++i) {
+        if (bytes[i] != (unsigned char)i) return 0;
+    }
+    return 1;
+}
+
 int hyper_main(const hyper_startup_t *startup)
 {
     static const char success[] = "HYPER_DYNAMIC_LINK_OK\n";
-    if (!startup_heap_ok) return 1;
+    if (!startup_heap_ok || !check_initial_stack()) return 1;
     hyper_native_handle_t directory = 0;
     hyper_native_handle_t output = 0;
     if (hyper_startup_find_handle(

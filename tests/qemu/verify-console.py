@@ -99,6 +99,12 @@ def main():
             send(b'/bin/std-test --child terminal-inherit\ninherit-data\r\n\x04')
             await_text(rb'(?m)^inherit-data\nTERMINAL_INHERIT_OK\nhyper-sh\$ ')
             run('/bin/std-test --child binary-eof-byte', rb'BINARY_EOF_BYTE_OK')
+            # The console service survives both a requested shell exit and EOF.
+            for exit_input in (b'exit\n', b'\x04'):
+                send(exit_input)
+                await_text(rb'HypeR virtual console: shell exited; restarting\n')
+                await_text(rb'HypeR session: console ready\nhyper-sh\$ ')
+                run('echo AFTER_SHELL_RESTART', rb'\nAFTER_SHELL_RESTART\n')
             rounds = int(os.environ.get('CONSOLE_TYPED_ROUNDS', '40'))
             for index in range(rounds):
                 token = f'CONSOLE_{index:03d}'

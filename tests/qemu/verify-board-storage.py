@@ -73,6 +73,18 @@ def boot(args, mode):
             copied = await_text(rb'hyper-sh\$ ')
             if b'sh: command failed' in copied or b'cp:' in copied:
                 raise RuntimeError(f'copy across ramfs/FAT failed: {copied!r}')
+            child.stdin.write(b'vmm status io\n')
+            child.stdin.flush()
+            observed = await_text(rb'hyper-sh\$ ')
+            if not re.search(rb'\bio\s+running\s+yes\s+read-only', observed):
+                raise RuntimeError(f'I/O VM observation unavailable: {observed!r}')
+            if b'vCPUs:' not in observed or b'memory: 64 MiB' not in observed:
+                raise RuntimeError(f'I/O VM metrics missing: {observed!r}')
+            child.stdin.write(b'vmm stop io\n')
+            child.stdin.flush()
+            refused = await_text(rb'hyper-sh\$ ')
+            if b'I/O VM is read-only' not in refused:
+                raise RuntimeError(f'I/O VM control was not rejected: {refused!r}')
             # Keep the real human-paced console path in coverage too.
             for character in b'echo BOARD-SHELL-RESPONSIVE\n':
                 child.stdin.write(bytes([character]))
