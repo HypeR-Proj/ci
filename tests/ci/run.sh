@@ -34,6 +34,7 @@ case "${1:-}" in
         python3 -B tests/build/io-vm-run.py
         python3 -B tests/build/io-vm-package.py
         python3 -B tests/build/board-image.py
+        python3 -B tests/build/fetch-rpi5-boot.py
         python3 -B tests/build/rpi5-bringup.py
         python3 -B tests/build/guest-rootfs.py
         python3 -B tests/qemu/test-guest-smp.py
