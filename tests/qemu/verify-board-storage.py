@@ -63,7 +63,9 @@ def boot(args, mode):
         try:
             if args.require_userspace_device:
                 await_text(rb'DEVICE-TEST: worker prepared\n')
-            await_text(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n')
+            boot = await_text(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n')
+            if b'HypeR IO VM: ' not in boot:
+                raise RuntimeError('forwarded I/O VM log prefix missing')
             child.stdin.write(f'/bin/storage-probe {mode}\n'.encode())
             child.stdin.flush()
             await_text(b'BOARD-STORAGE: ' + mode.encode() + b' PASS\n', timeout=600)
@@ -78,8 +80,12 @@ def boot(args, mode):
             observed = await_text(rb'hyper-sh\$ ')
             if not re.search(rb'\bio\s+running\s+yes\s+read-only', observed):
                 raise RuntimeError(f'I/O VM observation unavailable: {observed!r}')
-            if b'vCPUs:' not in observed or b'memory: 64 MiB' not in observed:
+            if b'vCPUs:' not in observed or b'RAM capacity: 64 MiB' not in observed:
                 raise RuntimeError(f'I/O VM metrics missing: {observed!r}')
+            # The fixture admits 64 MiB RAM plus a 1 MiB initiator pool.
+            resident = re.search(rb'allocated VM backing: ([0-9]+) bytes', observed)
+            if resident is None or not 0 < int(resident[1]) <= 65 * 1024 * 1024:
+                raise RuntimeError(f'I/O VM allocated backing missing or invalid: {observed!r}')
             child.stdin.write(b'vmm stop io\n')
             child.stdin.flush()
             refused = await_text(rb'hyper-sh\$ ')

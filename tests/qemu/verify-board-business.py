@@ -115,7 +115,12 @@ def run(args):
             while True:
                 status = shell('vmm status scatter-smoke')
                 if re.search(rb'scatter-smoke\s+running\b', status):
-                    break
+                    resident = re.search(rb'allocated VM backing: ([0-9]+) bytes', status)
+                    capacity = re.search(rb'RAM capacity: ([0-9]+) MiB', status)
+                    if resident and capacity:
+                        if not 0 < int(resident[1]) <= int(capacity[1]) * 1024 * 1024:
+                            raise RuntimeError(f'Invalid allocated VM backing: {status!r}')
+                        break
                 if re.search(rb'scatter-smoke\s+(failed|stopped)\b', status):
                     drain_diagnostics()
                     raise RuntimeError(f'VM failed before console attach: {status!r}')
