@@ -48,7 +48,7 @@ jobs:
       - name: Build production and self-test images
         run: sh tests/ci/run.sh aarch64-build
       - name: Upload AArch64 images
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: aarch64-kernels
           path: kernel/target/ci/aarch64
@@ -75,7 +75,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh aarch64
       - name: Upload Native runtime diagnostics
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: aarch64-native-logs
           path: |
@@ -90,7 +90,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the Native SDK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: hyper-sdk-aarch64-linux-x86_64
           path: target/sdk/aarch64
@@ -123,7 +123,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh aarch64
       - name: Upload board acceptance diagnostics
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: aarch64-board-storage-logs
           path: target/board-tests/**/*.log
@@ -150,7 +150,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh riscv64
       - name: Upload RISC-V Native diagnostics
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: riscv64-native-logs
           path: |
@@ -159,7 +159,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the RISC-V Native SDK
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: hyper-sdk-riscv64-linux-x86_64
           path: target/sdk/riscv64
@@ -256,7 +256,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh aarch64
       - name: Upload AArch64 serial log
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: aarch64-${{ matrix.id }}-log
           path: kernel/target/ci/logs/aarch64-${{ matrix.id }}.log
@@ -282,7 +282,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh riscv64
       - name: Upload RISC-V serial log
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: riscv64-kernel-log
           path: kernel/target/ci/logs/riscv64.log
