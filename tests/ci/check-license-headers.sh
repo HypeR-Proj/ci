@@ -5,7 +5,7 @@
 # Require project-authored text files to carry machine-readable license data.
 set -eu
 
-root=$(CDPATH='' cd -- "$(dirname "$0")/../.." && pwd)
+root=${HYPER_LICENSE_ROOT:-$(CDPATH='' cd -- "$(dirname "$0")/../.." && pwd)}
 cd "$root"
 
 missing=$(mktemp "${TMPDIR:-/tmp}/hyper-license-headers.XXXXXX")
@@ -43,15 +43,15 @@ git ls-files --cached --others --exclude-standard | sort -u | while IFS= read -r
     header=$(sed -n '1,8p' "$path")
     case "$path" in
         *.json)
-            copyright='"SPDX-FileCopyrightText": "2026 roolrz"'
+            copyright='"SPDX-FileCopyrightText"[[:space:]]*:[[:space:]]*"[0-9]{4}(-[0-9]{4})?[[:space:]]+[^"[:space:]][^"]*"'
             license='"SPDX-License-Identifier": "Apache-2.0"'
             ;;
         *)
-            copyright='SPDX-FileCopyrightText: 2026 roolrz'
+            copyright='SPDX-FileCopyrightText:[[:space:]]+[0-9]{4}(-[0-9]{4})?[[:space:]]+[^[:space:]*/#]'
             license='SPDX-License-Identifier: Apache-2.0'
             ;;
     esac
-    if ! printf '%s\n' "$header" | grep -Fq "$copyright" ||
+    if ! printf '%s\n' "$header" | grep -Eq "$copyright" ||
         ! printf '%s\n' "$header" | grep -Fq "$license"; then
         printf '%s\n' "$path" >>"$missing"
     fi

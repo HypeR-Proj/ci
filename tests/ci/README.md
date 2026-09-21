@@ -16,9 +16,11 @@ ShellCheck; GitHub Actions installs both tools explicitly.
 | Suite | Required contract |
 | --- | --- |
 | `quality` | Architecture, bootstrap-stack, and IRQ-ownership boundary checks, formatting, host, Kconfig, and kallsyms tests |
-| `scripts` | ShellCheck for test and guest-acquisition scripts |
+| `scripts` | Incremental build, deployment, board/package/rootfs, developer-entrypoint and QEMU transport Python tests; ShellCheck for test, acquisition and SDK scripts |
 | `native` | AArch64 SDK publication/consumer checks, portable runtime tests, Native apps, and userspace-managed Linux guests on FEAT_VHE hosts |
-| `riscv64-native` | RISC-V SDK publication/consumer checks, Native static/dynamic std and application acceptance on one and four harts, file tools, and paced shell input |
+| `riscv64-native` | RISC-V SDK publication/consumer checks, Native static/dynamic std and application acceptance on one and four harts, file tools, paced shell input, userspace-managed guest boot and runtime-crash recovery |
+| `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
+| `board-storage` | Configuration storage, Alpine rootfs, business guest, broker and userspace-device acceptance with stack watermarks |
 | `aarch64-build` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity, image ABI/instruction checks, and a separate kernel-self-test image |
 | `aarch64-qemu` | Standalone kernel mechanism self-tests and the AArch64 feature markers described below |
 | `riscv64-qemu` | RISC-V kernel startup, SMP admission, and standalone mechanism self-tests |
@@ -29,8 +31,9 @@ The architecture QEMU runtime suites deliberately build with
 Production images instead mount the firmware initramfs and start Native
 `/init`; the separate `native` suite assembles that initramfs from the in-tree
 SDK and application sources and verifies the complete boot contract.
-The RISC-V Native image currently selects a console/session/shell service graph
-without VM provisioning; missing VM lifecycle capabilities remain unavailable.
+The RISC-V Native image includes userspace VM provisioning. Its Native suite
+checks Linux guest startup on one and four host harts and runtime-crash recovery;
+this does not imply multi-vCPU RISC-V guest support.
 
 Native acceptance reports each phase transition with elapsed times. Each phase
 has a 90-second progress deadline (`QEMU_BOOT_TIMEOUT_SECONDS`), and the complete
@@ -52,9 +55,8 @@ Every case verifies kernel self-tests, guarded thread, IRQ and
 emergency stacks, scheduler and sleeping synchronization, SMP admission,
 GICv3/vGIC, host and guest timers, virtual system registers, PL011 RX, KASLR
 geometry, allocator ownership statistics, and lazy guest demand paging.
-The separate Native suite requires repeated BusyBox sleeps before guest console
-RX, proving timer delivery across successive interrupt retirements after guest
-`/init`. The kernel matrix also requires Native dispatcher validation, bounded Channel
+The separate Native suite validates guest userspace and interactive console
+input. The kernel matrix also requires Native dispatcher validation, bounded Channel
 transaction tests, and the AArch64 VHE raw-code EL0 proof: repeated direct
 `abi_query`, scheduling and lifecycle calls, Event creation/signal/wait,
 contained breakpoint fault,

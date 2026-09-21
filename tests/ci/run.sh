@@ -26,9 +26,11 @@ case "${1:-}" in
         }
         sh tests/ci/check-monorepo-contract.sh
         sh tests/ci/check-license-headers.sh
+        sh tests/ci/test-license-headers.sh
         run_kernel_suite quality
         ;;
     scripts)
+        python3 -B tests/build/developer-entrypoints.py
         python3 tests/build/incremental.py
         python3 -B tests/build/app-deployment.py
         python3 -B tests/build/io-vm-run.py
@@ -40,6 +42,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-guest-smp.py
         python3 -B tests/qemu/test-io-vm.py
         python3 -B tests/qemu/test-stack.py
+        python3 -B tests/qemu/test-session.py
         command -v shellcheck >/dev/null 2>&1 || {
             echo "shellcheck is required for the script-quality suite" >&2
             exit 2

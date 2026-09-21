@@ -5,10 +5,10 @@
 """Exercise Native file tools and independent named VM lifecycles."""
 import os
 import re
-import selectors
-import subprocess
 import sys
 import time
+
+from session import Session
 
 
 def main():
@@ -24,35 +24,9 @@ def main():
                '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
                '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
                '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
-    with open(logfile, 'wb') as log:
-        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT)
-        selector = selectors.DefaultSelector()
-        selector.register(process.stdout, selectors.EVENT_READ)
-        pending = bytearray()
-
-        def await_text(pattern, timeout=60):
-            deadline = time.monotonic() + timeout
-            while time.monotonic() < deadline:
-                match = re.search(pattern, pending)
-                if match:
-                    result = bytes(pending[:match.end()])
-                    del pending[:match.end()]
-                    return result
-                if process.poll() is not None:
-                    raise RuntimeError(f'QEMU exited with {process.returncode}')
-                for key, _ in selector.select(0.2):
-                    data = os.read(key.fd, 65536)
-                    log.write(data)
-                    log.flush()
-                    pending.extend(data.replace(b'\r', b''))
-                    if b'HypeR: fatal' in pending or b'kernel panic' in pending:
-                        raise RuntimeError('kernel failure')
-            raise TimeoutError(f'waiting for {pattern!r}: {bytes(pending[-4096:])!r}')
-
-        def send(data):
-            process.stdin.write(data)
-            process.stdin.flush()
+    with Session(command, logfile) as session:
+        await_text = session.await_text
+        send = session.send
 
         def run(text, expected=None, failed=False, timeout=60):
             send(text.encode() + b'\n')
@@ -75,165 +49,156 @@ def main():
                 time.sleep(min(0.2, max(0, deadline - time.monotonic())))
             raise AssertionError(f'{name} did not reach {wanted}: {output!r}')
 
-        try:
-            # Other services may log before the shell prints its first prompt.
-            await_text(rb'HypeR session: console ready\n')
-            await_text(rb'hyper-sh\$ ')
-            if verify_vm:
-                state('alpine', 'running')
-            # Pipelines run concurrently, close unused endpoints, and preserve
-            # file-open/truncation semantics without buffering whole commands.
-            run('grep --help', rb'Usage:')
-            run('echo Alpha> /pipe-data')
-            run('echo beta>> /pipe-data')
-            run('cat</pipe-data|grep -in alpha', rb'\n1:Alpha\n')
-            run('cat /pipe-data|grep -v Alpha|grep -c beta', rb'\n1\n')
-            run('grep -n "^beta$" /pipe-data', rb'\n2:beta\n')
-            run('grep missing /pipe-data', failed=True)
-            run('grep "[" /pipe-data', rb'grep:', failed=True)
-            run('cat /missing 2>/pipe-errors', failed=True)
-            run('grep cat: /pipe-errors', rb'cat:')
-            run('cat /missing 2>>/pipe-errors', failed=True)
-            run('grep -c cat: /pipe-errors', rb'\n2\n')
-            run('pwd|grep /', rb'\n/\n')
-            run('pwd>/pipe-pwd')
-            run('cat /pipe-pwd', rb'\n/\n')
-            run('echo "a|b>c"|grep -F "a|b>c"', rb'\na\|b>c\n')
-            run('echo ignored>/pipe-data|cat')
-            run('cat /pipe-data', rb'\nignored\n')
-            run('echo upstream|cat</pipe-pwd', rb'\n/\n')
-            # Input exceeds channel capacity; -q closes early and the producer
-            # must observe peer closure instead of blocking the shell forever.
-            run('cat /bin/grep|grep -q .', timeout=15)
-            run('cat /bin/grep|cat|cat>/pipe-copy', timeout=30)
-            sizes = run('ls --bytes /bin/grep /pipe-copy')
-            original = re.search(rb'(-[rwx-]{9})\s+(\d+)\s+/bin/grep', sizes)
-            copied = re.search(rb'(-[rwx-]{9})\s+(\d+)\s+/pipe-copy', sizes)
-            if not original or not copied or original[2] != copied[2]:
-                raise AssertionError(f'pipeline copy truncated: {sizes!r}')
-            # Malformed commands and failed preparation must leave a usable shell.
-            run('echo SHOULD_NOT_RUN|/missing', rb'command not found')
-            run('echo ignored |', rb'invalid command syntax')
-            run('cat </missing', rb'I/O failed')
-            run('mkdir /pipe-dir')
-            run('cd /pipe-dir')
-            run('echo relative>data')
-            run('pwd|grep "^/pipe-dir$"', rb'\n/pipe-dir\n')
-            run('cat<data|grep relative', rb'\nrelative\n')
-            run('cd /')
-            run('echo PIPE_RECOVERED', rb'\nPIPE_RECOVERED\n')
-            run('cat /etc/hyper/vms.json', rb'"format": "hyper.vm-config"')
-            run('cat -n /etc/hyper/vms.json', rb'\n\s+1\t\{')
-            run('cat /missing /etc/hyper/vms.json', rb'"virtual-machines"', failed=True)
-            run('ls --bytes /bin/cat /etc/hyper/vms.json', rb'-rwxr-xr-x\s+\d+\s+/bin/cat')
-            run('ls -1 /bin', rb'\ncat\n')
-            run('ls /missing /etc/hyper', rb'vms.json', failed=True)
-            for tool in ('mv', 'ln', 'rm', 'chmod', 'cp', 'mkdir', 'rmdir', 'touch'):
-                run(f'{tool} --help', rb'Usage:')
-            run('mkdir -p -m 750 /file-tools/source/sub /file-tools/outside')
-            run('ls /file-tools/source', rb'drwxr-x---\s+-\s+sub/')
-            run('cp /etc/hyper/vms.json /file-tools/source/data')
-            run('cp /file-tools/source/data /file-tools/source/data', rb'same file', failed=True)
-            run('ln /file-tools/source/data /file-tools/hard')
-            run('cp /file-tools/source/data /file-tools/hard', rb'same file', failed=True)
-            run('cat /file-tools/hard', rb'"format": "hyper.vm-config"')
-            run('ln -s data /file-tools/source/relative')
-            run('ln -s absent /file-tools/source/dangling')
-            run('ln -s /file-tools/outside /file-tools/source/external')
-            run('touch /file-tools/outside/keep')
-            run('cp -R /file-tools/source /file-tools/copy')
-            run('ls -1 /file-tools/copy', rb'\nrelative@\n')
-            run('cat /file-tools/copy/relative', rb'"format": "hyper.vm-config"')
-            run('cp -R /file-tools/source /file-tools/source/child', rb'into itself', failed=True)
-            run('ln -s /file-tools/source/sub /file-tools/alias')
-            run('cp -R /file-tools/source /file-tools/alias/child', rb'into itself', failed=True)
-            run('mv /file-tools/copy/data /file-tools/copy/renamed')
-            run('cat /file-tools/copy/data', failed=True)
-            run('cat /file-tools/copy/renamed', rb'"format": "hyper.vm-config"')
-            run('chmod 600 /file-tools/copy/renamed')
-            run('ls /file-tools/copy/renamed', rb'-rw-------\s+.*renamed')
-            run('chmod u+x,go+r /file-tools/copy/renamed')
-            run('ls /file-tools/copy/renamed', rb'-rwxr--r--\s+.*renamed')
-            run('chmod -R u+rwX,go-rwx /file-tools/copy')
-            run('ls /file-tools/copy', rb'drwx------\s+-\s+sub/')
-            run('touch -r /etc/hyper/vms.json /file-tools/copy/renamed /file-tools/copy')
-            run('cat /file-tools/copy/renamed', rb'"format": "hyper.vm-config"')
-            run('touch -c /file-tools/absent')
-            run('cat /file-tools/absent', failed=True)
-            run('mkdir /file-tools/empty')
-            run('rmdir /file-tools/empty')
-            run('rmdir /file-tools/source', failed=True)
-            run('rm /file-tools/source', failed=True)
-            run('rm -rf /', rb'refusing', failed=True)
-            run('rm -rf /file-tools/source/.', rb'refusing', failed=True)
-            run('ln -s /file-tools/outside /file-tools/unlink-only')
-            run('rm -r /file-tools/unlink-only/')
-            run('mkdir /file-tools/batch')
-            run('cp -R /file-tools/source/sub/. /file-tools/batch')
-            run('touch /file-tools/one /file-tools/two')
-            run('mv /file-tools/one /file-tools/two /file-tools/batch')
-            run('cp /file-tools/batch/one /file-tools/batch/two /file-tools/outside')
-            run('ls -1 /file-tools/outside', rb'\none\ntwo\n')
-            run('rm -r /file-tools/copy /file-tools/source')
-            run('ls /file-tools/outside/keep', rb'keep')
-            run('cat /file-tools/hard', rb'"format": "hyper.vm-config"')
-            run('rm -f /file-tools/absent')
-            run('rm -r /file-tools')
-            run('ls /file-tools', failed=True)
-            run('top -b -n 1 -d 0.1', rb'CPU: user-thread')
-            run('free --bytes', rb'Mem:\s+\d+ B')
-            run('ps --name shell', rb'process\s+\d+.*shell')
-            run('ps -T --name shell', rb'thread\s+\d+\s+\d+\s+shell\s+user/resident')
-            run('handle --objects --kind process', rb'\sprocess\s')
-            if verify_vm:
-                run('vmm status missing', rb"does not exist", failed=True)
-                run('vmm create scratch --image /missing', rb'cannot open image', failed=True)
-                output = run('vmm list')
-                assert b'scratch' not in output
-                run('vmm create scratch --image /vm/alpine.itb', rb'accepted')
-                run('vmm create scratch --image /vm/alpine.itb', rb'already exists', failed=True)
-                run('vmm start scratch', rb'accepted')
-                state('scratch', 'running')
-                state('alpine', 'running')
-                run('vmm delete scratch', rb'stop the VM', failed=True)
-                send(b'vmm console scratch\n')
-                await_text(rb'Connected to scratch\.')
-                # Validate the guest launched through the CLI, not a kernel boot
-                # shortcut or another VM's retained output.
-                await_text(rb'HypeR guest: Linux userspace is running')
-                await_text(rb'~ # ')
-                send(b'\x1b[1;1Recho HYPER_CLI_GUEST_OK\n')
-                await_text(rb'\nHYPER_CLI_GUEST_OK\n')
-                send(b'\x1dq')
-                await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
-                run('vmm stop scratch', rb'accepted')
-                state('scratch', 'stopped')
-                state('alpine', 'running')
-                run('vmm save /etc/hyper/saved.json', rb'Saved /etc/hyper/saved.json')
-                run('vmm save /etc/hyper/saved.json', rb'already exists', failed=True)
-                run('cat /etc/hyper/saved.json', rb'"name":\s*"scratch"')
-                run('vmm delete scratch', rb'accepted')
-                run('vmm load /etc/hyper/saved.json', rb'already exists', failed=True)
-                assert b'scratch' not in run('vmm list')
-                run('vmm stop alpine', rb'accepted')
-                state('alpine', 'stopped')
-                run('vmm delete alpine', rb'accepted')
-                run('vmm load /etc/hyper/saved.json', rb'accepted')
-                state('alpine', 'running')
-                state('scratch', 'stopped')
-                run('vmm restart alpine', rb'accepted')
-                state('alpine', 'running')
-            run('echo HYPER_APPS_OK', rb'\nHYPER_APPS_OK\nhyper-sh\$ ')
-            print('verified Native file tools' +
-                  (', named VM isolation, and config save/load' if verify_vm else ''))
-        finally:
-            selector.close()
-            process.terminate()
-            try:
-                process.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=3)
+        # Other services may log before the shell prints its first prompt.
+        await_text(rb'HypeR session: console ready\n')
+        await_text(rb'hyper-sh\$ ')
+        if verify_vm:
+            state('alpine', 'running')
+        # Pipelines run concurrently, close unused endpoints, and preserve
+        # file-open/truncation semantics without buffering whole commands.
+        run('grep --help', rb'Usage:')
+        run('echo Alpha> /pipe-data')
+        run('echo beta>> /pipe-data')
+        run('cat</pipe-data|grep -in alpha', rb'\n1:Alpha\n')
+        run('cat /pipe-data|grep -v Alpha|grep -c beta', rb'\n1\n')
+        run('grep -n "^beta$" /pipe-data', rb'\n2:beta\n')
+        run('grep missing /pipe-data', failed=True)
+        run('grep "[" /pipe-data', rb'grep:', failed=True)
+        run('cat /missing 2>/pipe-errors', failed=True)
+        run('grep cat: /pipe-errors', rb'cat:')
+        run('cat /missing 2>>/pipe-errors', failed=True)
+        run('grep -c cat: /pipe-errors', rb'\n2\n')
+        run('pwd|grep /', rb'\n/\n')
+        run('pwd>/pipe-pwd')
+        run('cat /pipe-pwd', rb'\n/\n')
+        run('echo "a|b>c"|grep -F "a|b>c"', rb'\na\|b>c\n')
+        run('echo ignored>/pipe-data|cat')
+        run('cat /pipe-data', rb'\nignored\n')
+        run('echo upstream|cat</pipe-pwd', rb'\n/\n')
+        # Input exceeds channel capacity; -q closes early and the producer
+        # must observe peer closure instead of blocking the shell forever.
+        run('cat /bin/grep|grep -q .', timeout=15)
+        run('cat /bin/grep|cat|cat>/pipe-copy', timeout=30)
+        sizes = run('ls --bytes /bin/grep /pipe-copy')
+        original = re.search(rb'(-[rwx-]{9})\s+(\d+)\s+/bin/grep', sizes)
+        copied = re.search(rb'(-[rwx-]{9})\s+(\d+)\s+/pipe-copy', sizes)
+        if not original or not copied or original[2] != copied[2]:
+            raise AssertionError(f'pipeline copy truncated: {sizes!r}')
+        # Malformed commands and failed preparation must leave a usable shell.
+        run('echo SHOULD_NOT_RUN|/missing', rb'command not found')
+        run('echo ignored |', rb'invalid command syntax')
+        run('cat </missing', rb'I/O failed')
+        run('mkdir /pipe-dir')
+        run('cd /pipe-dir')
+        run('echo relative>data')
+        run('pwd|grep "^/pipe-dir$"', rb'\n/pipe-dir\n')
+        run('cat<data|grep relative', rb'\nrelative\n')
+        run('cd /')
+        run('echo PIPE_RECOVERED', rb'\nPIPE_RECOVERED\n')
+        run('cat /etc/hyper/vms.json', rb'"format": "hyper.vm-config"')
+        run('cat -n /etc/hyper/vms.json', rb'\n\s+1\t\{')
+        run('cat /missing /etc/hyper/vms.json', rb'"virtual-machines"', failed=True)
+        run('ls --bytes /bin/cat /etc/hyper/vms.json', rb'-rwxr-xr-x\s+\d+\s+/bin/cat')
+        run('ls -1 /bin', rb'\ncat\n')
+        run('ls /missing /etc/hyper', rb'vms.json', failed=True)
+        for tool in ('mv', 'ln', 'rm', 'chmod', 'cp', 'mkdir', 'rmdir', 'touch'):
+            run(f'{tool} --help', rb'Usage:')
+        run('mkdir -p -m 750 /file-tools/source/sub /file-tools/outside')
+        run('ls /file-tools/source', rb'drwxr-x---\s+-\s+sub/')
+        run('cp /etc/hyper/vms.json /file-tools/source/data')
+        run('cp /file-tools/source/data /file-tools/source/data', rb'same file', failed=True)
+        run('ln /file-tools/source/data /file-tools/hard')
+        run('cp /file-tools/source/data /file-tools/hard', rb'same file', failed=True)
+        run('cat /file-tools/hard', rb'"format": "hyper.vm-config"')
+        run('ln -s data /file-tools/source/relative')
+        run('ln -s absent /file-tools/source/dangling')
+        run('ln -s /file-tools/outside /file-tools/source/external')
+        run('touch /file-tools/outside/keep')
+        run('cp -R /file-tools/source /file-tools/copy')
+        run('ls -1 /file-tools/copy', rb'\nrelative@\n')
+        run('cat /file-tools/copy/relative', rb'"format": "hyper.vm-config"')
+        run('cp -R /file-tools/source /file-tools/source/child', rb'into itself', failed=True)
+        run('ln -s /file-tools/source/sub /file-tools/alias')
+        run('cp -R /file-tools/source /file-tools/alias/child', rb'into itself', failed=True)
+        run('mv /file-tools/copy/data /file-tools/copy/renamed')
+        run('cat /file-tools/copy/data', failed=True)
+        run('cat /file-tools/copy/renamed', rb'"format": "hyper.vm-config"')
+        run('chmod 600 /file-tools/copy/renamed')
+        run('ls /file-tools/copy/renamed', rb'-rw-------\s+.*renamed')
+        run('chmod u+x,go+r /file-tools/copy/renamed')
+        run('ls /file-tools/copy/renamed', rb'-rwxr--r--\s+.*renamed')
+        run('chmod -R u+rwX,go-rwx /file-tools/copy')
+        run('ls /file-tools/copy', rb'drwx------\s+-\s+sub/')
+        run('touch -r /etc/hyper/vms.json /file-tools/copy/renamed /file-tools/copy')
+        run('cat /file-tools/copy/renamed', rb'"format": "hyper.vm-config"')
+        run('touch -c /file-tools/absent')
+        run('cat /file-tools/absent', failed=True)
+        run('mkdir /file-tools/empty')
+        run('rmdir /file-tools/empty')
+        run('rmdir /file-tools/source', failed=True)
+        run('rm /file-tools/source', failed=True)
+        run('rm -rf /', rb'refusing', failed=True)
+        run('rm -rf /file-tools/source/.', rb'refusing', failed=True)
+        run('ln -s /file-tools/outside /file-tools/unlink-only')
+        run('rm -r /file-tools/unlink-only/')
+        run('mkdir /file-tools/batch')
+        run('cp -R /file-tools/source/sub/. /file-tools/batch')
+        run('touch /file-tools/one /file-tools/two')
+        run('mv /file-tools/one /file-tools/two /file-tools/batch')
+        run('cp /file-tools/batch/one /file-tools/batch/two /file-tools/outside')
+        run('ls -1 /file-tools/outside', rb'\none\ntwo\n')
+        run('rm -r /file-tools/copy /file-tools/source')
+        run('ls /file-tools/outside/keep', rb'keep')
+        run('cat /file-tools/hard', rb'"format": "hyper.vm-config"')
+        run('rm -f /file-tools/absent')
+        run('rm -r /file-tools')
+        run('ls /file-tools', failed=True)
+        run('top -b -n 1 -d 0.1', rb'CPU: user-thread')
+        run('free --bytes', rb'Mem:\s+\d+ B')
+        run('ps --name shell', rb'process\s+\d+.*shell')
+        run('ps -T --name shell', rb'thread\s+\d+\s+\d+\s+shell\s+user/resident')
+        run('handle --objects --kind process', rb'\sprocess\s')
+        if verify_vm:
+            run('vmm status missing', rb"does not exist", failed=True)
+            run('vmm create scratch --image /missing', rb'cannot open image', failed=True)
+            output = run('vmm list')
+            assert b'scratch' not in output
+            run('vmm create scratch --image /vm/alpine.itb', rb'accepted')
+            run('vmm create scratch --image /vm/alpine.itb', rb'already exists', failed=True)
+            run('vmm start scratch', rb'accepted')
+            state('scratch', 'running')
+            state('alpine', 'running')
+            run('vmm delete scratch', rb'stop the VM', failed=True)
+            send(b'vmm console scratch\n')
+            await_text(rb'Connected to scratch\.')
+            # Validate the guest launched through the CLI, not a kernel boot
+            # shortcut or another VM's retained output.
+            await_text(rb'HypeR guest: Linux userspace is running')
+            await_text(rb'~ # ')
+            send(b'\x1b[1;1Recho HYPER_CLI_GUEST_OK\n')
+            await_text(rb'\nHYPER_CLI_GUEST_OK\n')
+            send(b'\x1dq')
+            await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
+            run('vmm stop scratch', rb'accepted')
+            state('scratch', 'stopped')
+            state('alpine', 'running')
+            run('vmm save /etc/hyper/saved.json', rb'Saved /etc/hyper/saved.json')
+            run('vmm save /etc/hyper/saved.json', rb'already exists', failed=True)
+            run('cat /etc/hyper/saved.json', rb'"name":\s*"scratch"')
+            run('vmm delete scratch', rb'accepted')
+            run('vmm load /etc/hyper/saved.json', rb'already exists', failed=True)
+            assert b'scratch' not in run('vmm list')
+            run('vmm stop alpine', rb'accepted')
+            state('alpine', 'stopped')
+            run('vmm delete alpine', rb'accepted')
+            run('vmm load /etc/hyper/saved.json', rb'accepted')
+            state('alpine', 'running')
+            state('scratch', 'stopped')
+            run('vmm restart alpine', rb'accepted')
+            state('alpine', 'running')
+        run('echo HYPER_APPS_OK', rb'\nHYPER_APPS_OK\nhyper-sh\$ ')
+        print('verified Native file tools' +
+              (', named VM isolation, and config save/load' if verify_vm else ''))
 
 
 if __name__ == '__main__':

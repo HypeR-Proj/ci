@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup
       - name: Install source analysis tools
         run: |
@@ -43,12 +43,12 @@ jobs:
     timeout-minutes: 20
     needs: quality
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup
       - name: Build production and self-test images
         run: sh tests/ci/run.sh aarch64-build
       - name: Upload AArch64 images
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: aarch64-kernels
           path: kernel/target/ci/aarch64
@@ -61,7 +61,7 @@ jobs:
     timeout-minutes: 40
     needs: quality
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup
       - name: Install Native SDK and QEMU tools
         run: |
@@ -75,7 +75,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh aarch64
       - name: Upload Native runtime diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: aarch64-native-logs
           path: |
@@ -90,7 +90,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the Native SDK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hyper-sdk-aarch64-linux-x86_64
           path: target/sdk/aarch64
@@ -106,7 +106,7 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup
       - uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d
         with:
@@ -123,7 +123,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh aarch64
       - name: Upload board acceptance diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: aarch64-board-storage-logs
           path: target/board-tests/**/*.log
@@ -136,7 +136,7 @@ jobs:
     timeout-minutes: 30
     needs: quality
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup
       - name: Install Native SDK and RISC-V QEMU tools
         run: |
@@ -150,7 +150,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh riscv64
       - name: Upload RISC-V Native diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: riscv64-native-logs
           path: |
@@ -159,7 +159,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the RISC-V Native SDK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hyper-sdk-riscv64-linux-x86_64
           path: target/sdk/riscv64
@@ -222,9 +222,9 @@ jobs:
             va_bits: 42
             pa_bits: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Download AArch64 self-test image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: aarch64-kernels
           path: kernel/target/ci/aarch64
@@ -256,7 +256,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh aarch64
       - name: Upload AArch64 serial log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: aarch64-${{ matrix.id }}-log
           path: kernel/target/ci/logs/aarch64-${{ matrix.id }}.log
@@ -269,7 +269,7 @@ jobs:
     timeout-minutes: 30
     needs: quality
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup
       - name: Install RISC-V QEMU
         run: |
@@ -282,7 +282,7 @@ jobs:
         run: sh tests/ci/cleanup-qemu.sh riscv64
       - name: Upload RISC-V serial log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: riscv64-kernel-log
           path: kernel/target/ci/logs/riscv64.log
@@ -295,7 +295,7 @@ jobs:
     timeout-minutes: 15
     needs: quality
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup
       - name: Compile and link x86-64
         run: sh tests/ci/run.sh x86_64-build

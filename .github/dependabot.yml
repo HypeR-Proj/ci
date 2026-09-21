@@ -9,3 +9,16 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
 
+
+  # Application and smoke consumers resolve unpublished SDK crates through the
+  # installed SDK; those roots remain a deliberate manual update boundary.
+  - package-ecosystem: cargo
+    directories:
+      - /kernel
+      - /kernel/tests/host
+      - /kernel/tools/kallsyms
+      - /sdk/rust
+      - /tools/fit-pack
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

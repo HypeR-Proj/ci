@@ -6,10 +6,9 @@
 import os
 import random
 import re
-import selectors
-import subprocess
 import sys
-import time
+
+from session import Session
 
 
 def main():
@@ -25,41 +24,14 @@ def main():
                '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
                '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
                '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
-    with open(logfile, 'wb') as log:
-        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT)
-        selector = selectors.DefaultSelector()
-        selector.register(process.stdout, selectors.EVENT_READ)
-        pending = bytearray()
+    with Session(command, logfile) as session:
+        pending = session.pending
+        pump = session.pump
+        send = session.send
         rng = random.Random(761)
 
-        def pump(seconds):
-            deadline = time.monotonic() + seconds
-            while time.monotonic() < deadline:
-                for key, _ in selector.select(min(0.02, max(0, deadline - time.monotonic()))):
-                    data = os.read(key.fd, 65536)
-                    log.write(data)
-                    log.flush()
-                    pending.extend(data.replace(b'\r', b''))
-                if process.poll() is not None:
-                    raise RuntimeError(f'QEMU exited with {process.returncode}')
-                if b'HypeR: fatal' in pending or b'kernel panic' in pending:
-                    raise RuntimeError('kernel failure')
-
         def await_text(pattern, timeout=10):
-            deadline = time.monotonic() + timeout
-            while time.monotonic() < deadline:
-                match = re.search(pattern, pending)
-                if match:
-                    result = bytes(pending[:match.end()])
-                    del pending[:match.end()]
-                    return result
-                pump(0.02)
-            raise TimeoutError(f'waiting for {pattern!r}: {bytes(pending[-2048:])!r}')
-
-        def send(data):
-            process.stdin.write(data)
-            process.stdin.flush()
+            return session.await_text(pattern, timeout)
 
         def typed(text):
             for byte in text.encode():
@@ -76,94 +48,85 @@ def main():
             if not re.search(expected, output) or b'sh: command failed' in output:
                 raise AssertionError(f'{text}: {output!r}')
 
-        try:
-            # Independently scheduled services can log between session readiness
-            # and the first prompt. Require both in order, not adjacent bytes.
-            await_text(rb'HypeR session: console ready\n', timeout=60)
-            await_text(rb'hyper-sh\$ ', timeout=60)
-            pump(5)
-            pending.clear()
-            # Deliberately send typeahead in one burst: a non-reading child
-            # must never steal the following command into a disposable pipe.
-            send(b'echo TYPEAHEAD_FIRST\necho TYPEAHEAD_SECOND\n')
-            await_text(rb'(?m)^TYPEAHEAD_FIRST\n')
-            await_text(rb'(?m)^TYPEAHEAD_SECOND\nhyper-sh\$ ')
-            # CRLF may be split by the hardware; EOF belongs only to cat.
-            send(b'cat\r')
-            pump(0.03)
-            send(b'\nterminal-cat\r\n\x04echo AFTER_TERMINAL_EOF\r\n')
-            await_text(rb'(?m)^terminal-cat\n')
-            await_text(rb'(?m)^AFTER_TERMINAL_EOF\nhyper-sh\$ ')
-            send(b'/bin/std-test --child terminal-line\r\nterminal-line\r\n')
-            await_text(rb'(?m)^TERMINAL_LINE_OK\nhyper-sh\$ ')
-            send(b'/bin/std-test --child terminal-inherit\ninherit-data\r\n\x04')
-            await_text(rb'(?m)^inherit-data\nTERMINAL_INHERIT_OK\nhyper-sh\$ ')
-            run('/bin/std-test --child binary-eof-byte', rb'BINARY_EOF_BYTE_OK')
-            # The console service survives both a requested shell exit and EOF.
-            for exit_input in (b'exit\n', b'\x04'):
-                send(exit_input)
-                await_text(rb'HypeR virtual console: shell exited; restarting\n')
-                await_text(rb'HypeR session: console ready\nhyper-sh\$ ')
-                run('echo AFTER_SHELL_RESTART', rb'\nAFTER_SHELL_RESTART\n')
-            rounds = int(os.environ.get('CONSOLE_TYPED_ROUNDS', '40'))
-            for index in range(rounds):
-                token = f'CONSOLE_{index:03d}'
+        # Independently scheduled services can log between session readiness
+        # and the first prompt. Require both in order, not adjacent bytes.
+        await_text(rb'HypeR session: console ready\n', timeout=60)
+        await_text(rb'hyper-sh\$ ', timeout=60)
+        pump(5)
+        pending.clear()
+        # Deliberately send typeahead in one burst: a non-reading child
+        # must never steal the following command into a disposable pipe.
+        send(b'echo TYPEAHEAD_FIRST\necho TYPEAHEAD_SECOND\n')
+        await_text(rb'(?m)^TYPEAHEAD_FIRST\n')
+        await_text(rb'(?m)^TYPEAHEAD_SECOND\nhyper-sh\$ ')
+        # CRLF may be split by the hardware; EOF belongs only to cat.
+        send(b'cat\r')
+        pump(0.03)
+        send(b'\nterminal-cat\r\n\x04echo AFTER_TERMINAL_EOF\r\n')
+        await_text(rb'(?m)^terminal-cat\n')
+        await_text(rb'(?m)^AFTER_TERMINAL_EOF\nhyper-sh\$ ')
+        send(b'/bin/std-test --child terminal-line\r\nterminal-line\r\n')
+        await_text(rb'(?m)^TERMINAL_LINE_OK\nhyper-sh\$ ')
+        send(b'/bin/std-test --child terminal-inherit\ninherit-data\r\n\x04')
+        await_text(rb'(?m)^inherit-data\nTERMINAL_INHERIT_OK\nhyper-sh\$ ')
+        run('/bin/std-test --child binary-eof-byte', rb'BINARY_EOF_BYTE_OK')
+        # The console service survives both a requested shell exit and EOF.
+        for exit_input in (b'exit\n', b'\x04'):
+            send(exit_input)
+            await_text(rb'HypeR virtual console: shell exited; restarting\n')
+            await_text(rb'HypeR session: console ready\nhyper-sh\$ ')
+            run('echo AFTER_SHELL_RESTART', rb'\nAFTER_SHELL_RESTART\n')
+        rounds = int(os.environ.get('CONSOLE_TYPED_ROUNDS', '40'))
+        for index in range(rounds):
+            token = f'CONSOLE_{index:03d}'
+            typed(f'echo {token}')
+            await_text(rb'\n' + token.encode() + rb'\nhyper-sh\$ ')
+            pump(rng.uniform(0.01, 0.3))
+        # Exercise the idle-to-input transition without a continuously
+        # queued producer masking a missed notification.
+        pump(3)
+        typed('echo AFTER_IDLE')
+        await_text(rb'\nAFTER_IDLE\nhyper-sh\$ ')
+        for _ in range(8):
+            for _ in range(200):
+                send(b'x' * 16)
+                pump(0.002)
+            pump(0.3)
+            send(b'\x03')
+            await_text(rb'\^C\nhyper-sh\$ ')
+            run('echo AFTER_BURST', rb'\nAFTER_BURST\n')
+        send(b'top -d 0.1\n')
+        await_text(rb'CPU: user-thread')
+        pump(1)
+        send(b'q')
+        await_text(rb'hyper-sh\$ ')
+        run('cat /etc/hyper/vms.json', rb'"hyper.vm-config"')
+        # A surviving descendant may retain stdout; command termination
+        # must drain available output without waiting for that child's EOF.
+        run('/bin/std-test --child detached-output', rb'OUTPUT_OWNER_EXITED', timeout=5)
+        if verify_vm:
+            send(b'vmm console alpine\n')
+            await_text(rb'Connected to alpine\.', timeout=30)
+            await_text(rb'~ # ', timeout=60)
+            # Each character must wake the sleeping runtime and echo without
+            # a following key or periodic collection timeout to rescue it.
+            for index in range(12):
+                token = f'GUEST_WAKE_{index:02d}'
                 typed(f'echo {token}')
-                await_text(rb'\n' + token.encode() + rb'\nhyper-sh\$ ')
-                pump(rng.uniform(0.01, 0.3))
-            # Exercise the idle-to-input transition without a continuously
-            # queued producer masking a missed notification.
-            pump(3)
-            typed('echo AFTER_IDLE')
-            await_text(rb'\nAFTER_IDLE\nhyper-sh\$ ')
-            for _ in range(8):
-                for _ in range(200):
-                    send(b'x' * 16)
-                    pump(0.002)
-                pump(0.3)
-                send(b'\x03')
-                await_text(rb'\^C\nhyper-sh\$ ')
-                run('echo AFTER_BURST', rb'\nAFTER_BURST\n')
-            send(b'top -d 0.1\n')
-            await_text(rb'CPU: user-thread')
-            pump(1)
-            send(b'q')
-            await_text(rb'hyper-sh\$ ')
-            run('cat /etc/hyper/vms.json', rb'"hyper.vm-config"')
-            # A surviving descendant may retain stdout; command termination
-            # must drain available output without waiting for that child's EOF.
-            run('/bin/std-test --child detached-output', rb'OUTPUT_OWNER_EXITED', timeout=5)
-            if verify_vm:
-                send(b'vmm console alpine\n')
-                await_text(rb'Connected to alpine\.', timeout=30)
-                await_text(rb'~ # ', timeout=60)
-                # Each character must wake the sleeping runtime and echo without
-                # a following key or periodic collection timeout to rescue it.
-                for index in range(12):
-                    token = f'GUEST_WAKE_{index:02d}'
-                    typed(f'echo {token}')
-                    await_text(rb'\n' + token.encode() + rb'\n~ # ')
-                    pump(0.2)
-                pump(3)
-                typed('echo GUEST_AFTER_IDLE')
-                await_text(rb'\nGUEST_AFTER_IDLE\n~ # ')
-                send(b'\x1d')
-                await_text(rb'd/q: detach, any other key: resume')
+                await_text(rb'\n' + token.encode() + rb'\n~ # ')
                 pump(0.2)
-                send(b'q')
-                await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
-            typed('echo CONSOLE_OK')
-            await_text(rb'\nCONSOLE_OK\nhyper-sh\$ ')
-            print(f'verified {rounds} paced commands, idle input, burst recovery, and top return' +
-                  (' with guest console wakeups' if verify_vm else ''))
-        finally:
-            selector.close()
-            process.terminate()
-            try:
-                process.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait(timeout=3)
+            pump(3)
+            typed('echo GUEST_AFTER_IDLE')
+            await_text(rb'\nGUEST_AFTER_IDLE\n~ # ')
+            send(b'\x1d')
+            await_text(rb'd/q: detach, any other key: resume')
+            pump(0.2)
+            send(b'q')
+            await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
+        typed('echo CONSOLE_OK')
+        await_text(rb'\nCONSOLE_OK\nhyper-sh\$ ')
+        print(f'verified {rounds} paced commands, idle input, burst recovery, and top return' +
+              (' with guest console wakeups' if verify_vm else ''))
 
 
 if __name__ == '__main__':
