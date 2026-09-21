@@ -11,6 +11,13 @@ import sys
 from session import Session
 
 
+def console_lines(*lines):
+    """Match exact terminal lines while allowing interleaved kernel records."""
+    kernel_record = rb'<[0-7]>\[[ ]*[0-9]+\.[0-9]+\] HypeR: [^\n]*\n'
+    boundary = rb'\n(?:' + kernel_record + rb')*'
+    return rb'(?m)^' + boundary.join(re.escape(line) for line in lines)
+
+
 def main():
     qemu, image, initramfs, logfile = sys.argv[1:]
     verify_vm = os.environ.get("HYPER_TEST_VM", "1")
@@ -58,42 +65,43 @@ def main():
         # must never steal the following command into a disposable pipe.
         send(b'echo TYPEAHEAD_FIRST\necho TYPEAHEAD_SECOND\n')
         await_text(rb'(?m)^TYPEAHEAD_FIRST\n')
-        await_text(rb'(?m)^TYPEAHEAD_SECOND\nhyper-sh\$ ')
+        await_text(console_lines(b'TYPEAHEAD_SECOND', b'hyper-sh$ '))
         # CRLF may be split by the hardware; EOF belongs only to cat.
         send(b'cat\r')
         pump(0.03)
         send(b'\nterminal-cat\r\n\x04echo AFTER_TERMINAL_EOF\r\n')
         await_text(rb'(?m)^terminal-cat\n')
-        await_text(rb'(?m)^AFTER_TERMINAL_EOF\nhyper-sh\$ ')
+        await_text(console_lines(b'AFTER_TERMINAL_EOF', b'hyper-sh$ '))
         send(b'/bin/std-test --child terminal-line\r\nterminal-line\r\n')
-        await_text(rb'(?m)^TERMINAL_LINE_OK\nhyper-sh\$ ')
+        await_text(console_lines(b'TERMINAL_LINE_OK', b'hyper-sh$ '))
         send(b'/bin/std-test --child terminal-inherit\ninherit-data\r\n\x04')
-        await_text(rb'(?m)^inherit-data\nTERMINAL_INHERIT_OK\nhyper-sh\$ ')
+        await_text(console_lines(b'inherit-data', b'TERMINAL_INHERIT_OK', b'hyper-sh$ '))
         run('/bin/std-test --child binary-eof-byte', rb'BINARY_EOF_BYTE_OK')
         # The console service survives both a requested shell exit and EOF.
         for exit_input in (b'exit\n', b'\x04'):
             send(exit_input)
             await_text(rb'HypeR virtual console: shell exited; restarting\n')
-            await_text(rb'HypeR session: console ready\nhyper-sh\$ ')
+            await_text(console_lines(b'HypeR session: console ready', b'hyper-sh$ '))
             run('echo AFTER_SHELL_RESTART', rb'\nAFTER_SHELL_RESTART\n')
         rounds = int(os.environ.get('CONSOLE_TYPED_ROUNDS', '40'))
         for index in range(rounds):
             token = f'CONSOLE_{index:03d}'
             typed(f'echo {token}')
-            await_text(rb'\n' + token.encode() + rb'\nhyper-sh\$ ')
+            await_text(console_lines(token.encode(), b'hyper-sh$ '))
             pump(rng.uniform(0.01, 0.3))
         # Exercise the idle-to-input transition without a continuously
         # queued producer masking a missed notification.
         pump(3)
         typed('echo AFTER_IDLE')
-        await_text(rb'\nAFTER_IDLE\nhyper-sh\$ ')
+        await_text(console_lines(b'AFTER_IDLE', b'hyper-sh$ '))
         for _ in range(8):
             for _ in range(200):
                 send(b'x' * 16)
                 pump(0.002)
             pump(0.3)
             send(b'\x03')
-            await_text(rb'\^C\nhyper-sh\$ ')
+            await_text(rb'\^C\n')
+            await_text(rb'hyper-sh\$ ')
             run('echo AFTER_BURST', rb'\nAFTER_BURST\n')
         send(b'top -d 0.1\n')
         await_text(rb'CPU: user-thread')
@@ -122,9 +130,9 @@ def main():
             await_text(rb'd/q: detach, any other key: resume')
             pump(0.2)
             send(b'q')
-            await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
+            await_text(console_lines(b'[vmm] detached', b'hyper-sh$ '))
         typed('echo CONSOLE_OK')
-        await_text(rb'\nCONSOLE_OK\nhyper-sh\$ ')
+        await_text(console_lines(b'CONSOLE_OK', b'hyper-sh$ '))
         print(f'verified {rounds} paced commands, idle input, burst recovery, and top return' +
               (' with guest console wakeups' if verify_vm else ''))
 

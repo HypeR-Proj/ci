@@ -43,6 +43,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-io-vm.py
         python3 -B tests/qemu/test-stack.py
         python3 -B tests/qemu/test-session.py
+        python3 -B tests/qemu/test-console.py
         command -v shellcheck >/dev/null 2>&1 || {
             echo "shellcheck is required for the script-quality suite" >&2
             exit 2
