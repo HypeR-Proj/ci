@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 roolrz
 # SPDX-License-Identifier: Apache-2.0
 
-"""Exercise Linux SMP, PSCI CPU hotplug, guest reboot, and guest poweroff."""
+"""Exercise Linux SMP, host-CPU migration, hotplug, reboot, and poweroff."""
 
 import os
 from pathlib import Path
@@ -78,6 +78,9 @@ def main():
                     send(b'vmm console alpine')
                     result = await_text(rb'Connected to alpine\.|hyper-sh\$ ')
                     if result.startswith(b'Connected'):
+                        # Reattachment need not replay an already consumed
+                        # shell prompt; request a fresh empty command response.
+                        send(b'')
                         await_text(rb'~ # ', timeout=GUEST_BOOT_TIMEOUT_SECONDS)
                         return
                     # The old runtime may exit between status and attach.
@@ -117,6 +120,39 @@ def main():
             await_text(rb'\n' + token.encode() + b'=' + re.escape(expected.encode()) + rb'\n')
             await_text(rb'~ # ')
 
+        def migrate_guest_cpus(cycle):
+            if host_cpus < 2:
+                return
+            # Leave a guest timer pending across detachment and migration.
+            # The kernel self-test separately migrates a guest that never WFI's.
+            marker = f'/tmp/hyper-migration-{cycle}'
+            send(f'(sleep 2; echo TIMER_OK > {marker}) &'.encode())
+            await_text(rb'~ # ')
+            process.stdin.write(b'\x1dd')
+            process.stdin.flush()
+            await_text(rb'hyper-sh\$ ')
+            for cpu in range(guest_cpus):
+                # Also share one physical CPU to exercise virtual hardware
+                # ownership when several vCPUs of the same VM time-slice.
+                target = 0 if cycle == 1 else (cpu + cycle + 1) % host_cpus
+                send(f'vmm affinity alpine {cpu} {target}'.encode())
+                await_text(fr'vCPU {cpu}: affinity accepted; inspect vmm status for placement\n'.encode())
+                await_text(rb'hyper-sh\$ ')
+                deadline = time.monotonic() + 30
+                while True:
+                    send(b'vmm status alpine')
+                    placement = await_text(fr'vCPU {cpu}: host CPU [^\n]*\n'.encode())
+                    await_text(rb'hyper-sh\$ ')
+                    if placement == f'vCPU {cpu}: host CPU {target}; pending target: none\n'.encode():
+                        break
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(f'vCPU {cpu} migration did not complete: {placement!r}')
+                    time.sleep(0.1)
+            attach()
+            send(f'while [ ! -f {marker} ]; do sleep 1; done; cat {marker}'.encode())
+            await_text(rb'\nTIMER_OK\n')
+            await_text(rb'~ # ')
+
         def wait_state(expected):
             for _ in range(90):
                 send(b'vmm status alpine')
@@ -143,6 +179,8 @@ def main():
                 online(f'SMP_ONLINE_{cycle}', f'0-{guest_cpus - 1}')
                 if cycle == 0:
                     verify_host_placement()
+                migrate_guest_cpus(cycle)
+                online(f'SMP_MIGRATED_{cycle}', f'0-{guest_cpus - 1}')
                 # Offline all secondaries, then bring them back repeatedly.
                 # This exercises fresh PSCI contexts and per-vCPU timers/IPIs.
                 for cpu in range(1, guest_cpus):
@@ -177,7 +215,8 @@ def main():
             _user, guest = memory_owners()
             if guest != 0:
                 raise RuntimeError('guest poweroff leaked guest pages')
-            print(f'verified {guest_cpus} guest CPUs, hotplug, two reboots, and poweroff reclamation')
+            print(f'verified {guest_cpus} guest CPUs, migration, hotplug, two reboots, '
+                  'and poweroff reclamation')
         except Exception:
             sys.stderr.write(pending[-16384:].decode(errors='replace'))
             raise
