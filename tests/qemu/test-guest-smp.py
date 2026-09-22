@@ -39,6 +39,26 @@ class ConsoleOutputTests(unittest.TestCase):
         data = b'[   63.704984] CPU1: Booted secondary processor\r\n~ # '
         self.assertEqual(self.normalize((data,)), data.replace(b'\r', b''))
 
+    def test_native_acceptance_retains_guest_crlf_across_host_records(self):
+        expected = b'HYPER_GUEST_CONSOLE_RX\r\n'
+        data = b'HYPER_GUEST' + self.warning + b'_CONSOLE' + self.warning + b'_RX\r\n'
+        for split in range(len(data) + 1):
+            with self.subTest(split=split):
+                pending = bytearray()
+                for chunk in (data[:split], data[split:]):
+                    guest_smp.append_console_output(pending, chunk, preserve_cr=True)
+                self.assertEqual(pending, expected)
+
+    def test_preserving_cr_does_not_invent_tty_conversion(self):
+        pending = bytearray()
+        guest_smp.append_console_output(pending, b'result\n', preserve_cr=True)
+        self.assertEqual(pending, b'result\n')
+
+    def test_preserving_cr_still_rejects_fatal_host_records(self):
+        with self.assertRaisesRegex(RuntimeError, 'kernel failure'):
+            guest_smp.append_console_output(
+                bytearray(), b'<0>[ 1.000000] HypeR KERNEL PANIC\r\n', preserve_cr=True)
+
     def test_host_panic_is_never_filtered_out(self):
         data = b'<0>[ 66.700000] HypeR KERNEL PANIC - NOT SYNCING\r\n'
         for split in range(len(data) + 1):

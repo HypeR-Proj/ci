@@ -67,7 +67,7 @@ def main():
                'virt,virtualization=on,gic-version=3,dtb-randomness=on'),
                '-cpu', os.environ.get('QEMU_CPU', 'max'),
                '-smp', os.environ.get('QEMU_CPUS', '4'),
-               '-m', os.environ.get('QEMU_MEMORY', '512M'),
+               '-m', os.environ.get('QEMU_MEMORY', '1G'),
                '-nodefaults', '-display', 'none', '-serial', 'stdio',
                '-no-reboot', '-monitor', 'none', '-kernel', args.image,
                '-initrd', args.initramfs, '-append', os.environ.get(

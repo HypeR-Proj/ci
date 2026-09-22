@@ -27,7 +27,7 @@ def main():
     command = [qemu, '-machine', os.environ.get('QEMU_MACHINE', 'virt,virtualization=on,gic-version=3'),
                '-cpu', os.environ.get('QEMU_CPU', 'max'),
                '-smp', os.environ.get('QEMU_CPUS', '4'),
-               '-m', os.environ.get('QEMU_MEMORY', '512M'),
+               '-m', os.environ.get('QEMU_MEMORY', '1G'),
                '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
                '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
                '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]

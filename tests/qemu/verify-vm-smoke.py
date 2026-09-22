@@ -19,7 +19,7 @@ def main():
         qemu, "-machine", os.environ.get("QEMU_MACHINE", "virt"),
         "-cpu", os.environ.get("QEMU_CPU", "rv64"),
         "-smp", os.environ.get("QEMU_CPUS", "4"),
-        "-m", os.environ.get("QEMU_MEMORY", "512M"),
+        "-m", os.environ.get("QEMU_MEMORY", "1G"),
         "-nodefaults", "-display", "none", "-serial", "stdio",
         "-monitor", "none", "-no-reboot", "-kernel", image, "-initrd", initramfs,
         "-append", os.environ.get("QEMU_BOOTARGS", "earlycon=uart8250,mmio,0x10000000"),
