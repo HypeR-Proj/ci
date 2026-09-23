@@ -57,6 +57,7 @@ case "${1:-}" in
         make sdk-test
         make app-check
         make app-test
+        python3 -B tests/build/service-manifest.py
         make app-sdk-test
         QEMU_TEST_LOG=target/app/aarch64/native-init.log \
             make test-native ARCH=aarch64 QEMU_CPU=max QEMU_CPUS=4
@@ -94,6 +95,11 @@ case "${1:-}" in
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-guest-smp-runtime-crash.log
         make -o image test-power-crash ARCH=aarch64 QEMU_CPUS=4
         make test-stack ARCH=aarch64
+        # The TC-test image forces the GICv3 common-register trap even on
+        # QEMU CPUs with TDIR, covering the compatibility DIR/PMR/CTLR/RPR path.
+        make -C kernel image ARCH=aarch64 CARGO_FEATURES='--features kernel-vgic-tc-test'
+        make -o image test-vm-smoke ARCH=aarch64 QEMU_CPUS=4
+        cp target/app/aarch64/vm-smoke-4.log target/app/aarch64/native-gicv3-tc.log
         ;;
     io-vm)
         package=$(python3 -B scripts/fetch-io-vm.py \

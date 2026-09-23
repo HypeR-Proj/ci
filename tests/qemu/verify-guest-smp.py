@@ -141,9 +141,9 @@ def main():
                 deadline = time.monotonic() + 30
                 while True:
                     send(b'vmm status alpine')
-                    placement = await_text(fr'vCPU {cpu}: host CPU [^\n]*\n'.encode())
+                    placement = await_text(fr'vCPU {cpu}: pCPU [^\n]*\n'.encode())
                     await_text(rb'hyper-sh\$ ')
-                    if placement == f'vCPU {cpu}: host CPU {target}; pending target: none\n'.encode():
+                    if placement == f'vCPU {cpu}: pCPU {target}\n'.encode():
                         break
                     if time.monotonic() >= deadline:
                         raise TimeoutError(f'vCPU {cpu} migration did not complete: {placement!r}')

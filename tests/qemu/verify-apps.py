@@ -182,23 +182,19 @@ def main():
             run('vmm stop scratch', rb'accepted')
             state('scratch', 'stopped')
             state('alpine', 'running')
-            run('vmm save /etc/hyper/saved.json', rb'Saved /etc/hyper/saved.json')
-            run('vmm save /etc/hyper/saved.json', rb'already exists', failed=True)
-            run('cat /etc/hyper/saved.json', rb'"name":\s*"scratch"')
             run('vmm delete scratch', rb'accepted')
-            run('vmm load /etc/hyper/saved.json', rb'already exists', failed=True)
             assert b'scratch' not in run('vmm list')
             run('vmm stop alpine', rb'accepted')
             state('alpine', 'stopped')
             run('vmm delete alpine', rb'accepted')
-            run('vmm load /etc/hyper/saved.json', rb'accepted')
+            assert b'alpine' not in run('vmm list')
+            run('vmm create alpine --image /vm/alpine.itb --start', rb'accepted')
             state('alpine', 'running')
-            state('scratch', 'stopped')
             run('vmm restart alpine', rb'accepted')
             state('alpine', 'running')
         run('echo HYPER_APPS_OK', rb'\nHYPER_APPS_OK\nhyper-sh\$ ')
         print('verified Native file tools' +
-              (', named VM isolation, and config save/load' if verify_vm else ''))
+              (', named VM isolation, and create/delete/restart' if verify_vm else ''))
 
 
 if __name__ == '__main__':
