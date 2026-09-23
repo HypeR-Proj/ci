@@ -9,7 +9,7 @@ root=$(CDPATH='' cd -- "$(dirname "$0")/../.." && pwd)
 cd "$root"
 
 usage() {
-    echo "usage: tests/ci/run.sh {quality|scripts|native|io-vm|board-storage|riscv64-native|aarch64-build|aarch64-qemu|riscv64-qemu|x86_64-build}" >&2
+    echo "usage: tests/ci/run.sh {quality|scripts|native|native-sdk|native-gicv3|native-gicv2|native-smp-stack|io-vm|board-storage|riscv64-native|aarch64-build|aarch64-qemu|riscv64-qemu|x86_64-build}" >&2
     exit 2
 }
 
@@ -53,12 +53,21 @@ case "${1:-}" in
             xargs -0 shellcheck --severity=warning
         ;;
     native)
+        # Separate processes keep dispatch state local to each suite. Local
+        # runs remain serial because fixtures reuse the same output paths.
+        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack; do
+            sh tests/ci/run.sh "$shard"
+        done
+        ;;
+    native-sdk)
         make sdk-check
         make sdk-test
         make app-check
         make app-test
         python3 -B tests/build/service-manifest.py
         make app-sdk-test
+        ;;
+    native-gicv3)
         QEMU_TEST_LOG=target/app/aarch64/native-init.log \
             make test-native ARCH=aarch64 QEMU_CPU=max QEMU_CPUS=4
         make -o image -o native-initramfs test-console ARCH=aarch64
@@ -69,6 +78,13 @@ case "${1:-}" in
             QEMU_MACHINE=virt,virtualization=on,gic-version=2
         cp target/app/aarch64/console.log target/app/aarch64/native-gicv3-console.log
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv3-runtime-crash.log
+        # The TC-test image forces the GICv3 common-register trap even on
+        # QEMU CPUs with TDIR, covering the compatibility DIR/PMR/CTLR/RPR path.
+        make -C kernel image ARCH=aarch64 CARGO_FEATURES='--features kernel-vgic-tc-test'
+        make -o image test-vm-smoke ARCH=aarch64 QEMU_CPUS=4
+        cp target/app/aarch64/vm-smoke-4.log target/app/aarch64/native-gicv3-tc.log
+        ;;
+    native-gicv2)
         QEMU_TEST_LOG=target/app/aarch64/native-gicv2-smp.log \
             make test-native-gicv2 QEMU_CPUS=4
         make -o image -o native-initramfs test-console test-runtime-crash ARCH=aarch64 \
@@ -78,7 +94,9 @@ case "${1:-}" in
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-runtime-crash.log
         QEMU_TEST_LOG=target/app/aarch64/native-gicv2-up.log \
             make -o image -o native-initramfs test-native-gicv2 QEMU_CPUS=1
-        make -o image test-guest-smp ARCH=aarch64 QEMU_CPUS=4
+        ;;
+    native-smp-stack)
+        make test-guest-smp ARCH=aarch64 QEMU_CPUS=4
         cp target/app/aarch64/guest-smp.log target/app/aarch64/native-gicv3-guest-smp.log
         make -o image -o guest-smp-initramfs test-guest-smp ARCH=aarch64 \
             QEMU_MACHINE=virt,virtualization=on,gic-version=2 QEMU_CPUS=4
@@ -95,11 +113,6 @@ case "${1:-}" in
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-guest-smp-runtime-crash.log
         make -o image test-power-crash ARCH=aarch64 QEMU_CPUS=4
         make test-stack ARCH=aarch64
-        # The TC-test image forces the GICv3 common-register trap even on
-        # QEMU CPUs with TDIR, covering the compatibility DIR/PMR/CTLR/RPR path.
-        make -C kernel image ARCH=aarch64 CARGO_FEATURES='--features kernel-vgic-tc-test'
-        make -o image test-vm-smoke ARCH=aarch64 QEMU_CPUS=4
-        cp target/app/aarch64/vm-smoke-4.log target/app/aarch64/native-gicv3-tc.log
         ;;
     io-vm)
         package=$(python3 -B scripts/fetch-io-vm.py \

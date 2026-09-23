@@ -17,7 +17,11 @@ ShellCheck; GitHub Actions installs both tools explicitly.
 | --- | --- |
 | `quality` | Architecture, bootstrap-stack, and IRQ-ownership boundary checks, formatting, host, Kconfig, and kallsyms tests |
 | `scripts` | Incremental build, deployment, board/package/rootfs, developer-entrypoint and QEMU transport Python tests; ShellCheck for test, acquisition and SDK scripts |
-| `native` | AArch64 SDK publication/consumer checks, portable runtime tests, Native apps, and userspace-managed Linux guests on FEAT_VHE hosts |
+| `native` | Serial local aggregate of the four AArch64 Native suites below |
+| `native-sdk` | SDK publication/consumer checks, portable runtime and app tests, and service-manifest validation |
+| `native-gicv3` | Native boot, console, apps, runtime-crash recovery, VM smoke on both GIC backends, and forced GICv3 common-register traps |
+| `native-gicv2` | GICv2 Native boot on one/four CPUs, console and runtime-crash recovery |
+| `native-smp-stack` | Guest SMP on both GIC backends, host overcommit, runtime/power crash retirement and stack limits |
 | `riscv64-native` | RISC-V SDK publication/consumer checks, Native static/dynamic std and application acceptance on one and four harts, file tools, paced shell input, userspace-managed guest boot and runtime-crash recovery |
 | `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
 | `board-storage` | Configuration storage, Alpine rootfs, business guest, broker and userspace-device acceptance with stack watermarks |
@@ -25,6 +29,14 @@ ShellCheck; GitHub Actions installs both tools explicitly.
 | `aarch64-qemu` | Standalone kernel mechanism self-tests and the AArch64 feature markers described below |
 | `riscv64-qemu` | RISC-V kernel startup, SMP admission, and standalone mechanism self-tests |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
+
+GitHub Actions runs the four Native suites on independent runners. Each suite
+builds its own prerequisites; no suite consumes mutable outputs from another.
+Use `sh tests/ci/run.sh native-gicv2`, for example, to reproduce one shard.
+The local `native` aggregate stays serial because kernel feature variants and
+initramfs fixtures share output paths. Do not run shards concurrently in the
+same checkout. Source quality runs alongside builds; only kernel QEMU jobs wait
+for their image-producing job. All checks must still pass.
 
 The architecture QEMU runtime suites deliberately build with
 `kernel-self-test` and use an empty initramfs. They do not select a guest.

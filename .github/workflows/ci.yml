@@ -41,7 +41,6 @@ jobs:
     name: AArch64 / build and image checks
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    needs: quality
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
@@ -56,10 +55,21 @@ jobs:
           retention-days: 7
 
   native:
-    name: AArch64 / SDK, apps and guest VMs
+    name: AArch64 / ${{ matrix.name }}
     runs-on: ubuntu-24.04
     timeout-minutes: 40
-    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: native-sdk
+            name: SDK and app contracts
+          - suite: native-gicv3
+            name: GICv3 apps and guest VMs
+          - suite: native-gicv2
+            name: GICv2 apps and guest VMs
+          - suite: native-smp-stack
+            name: Guest SMP, retirement and stack limits
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
@@ -68,8 +78,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends \
             clang cmake cpio lld llvm make qemu-system-arm shellcheck squashfs-tools
-      - name: Build and consume the Native SDK
-        run: sh tests/ci/run.sh native
+      - name: Run Native validation shard
+        run: sh tests/ci/run.sh "${{ matrix.suite }}"
       - name: Clean up AArch64 QEMU
         if: always()
         run: sh tests/ci/cleanup-qemu.sh aarch64
@@ -77,19 +87,15 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: aarch64-native-logs
+          name: aarch64-${{ matrix.suite }}-logs
           path: |
-            target/app/aarch64/native-init.log
-            target/app/aarch64/native-gicv*-*.log
-            target/app/aarch64/runtime-crash.log
-            target/app/aarch64/apps.log
-            target/app/aarch64/console.log
-            target/app/aarch64/guest-smp.log
+            target/app/aarch64/*.log
             target/stack-audit/aarch64/*.json
             target/stack-audit/aarch64/*.log
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the Native SDK
+        if: matrix.suite == 'native-sdk'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: hyper-sdk-aarch64-linux-x86_64
@@ -101,7 +107,6 @@ jobs:
     name: AArch64 / board storage and managed VM lifecycle
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    needs: quality
     permissions:
       contents: read
       packages: read
@@ -134,7 +139,6 @@ jobs:
     name: RISC-V / SDK, apps and guest VM
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    needs: quality
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
@@ -267,7 +271,6 @@ jobs:
     name: RISC-V / kernel self-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    needs: quality
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
@@ -293,7 +296,6 @@ jobs:
     name: x86-64 / build checks
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    needs: quality
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
