@@ -53,7 +53,7 @@ case also boots an unsupported `cortex-a72` and uses QMP register inspection to
 prove it reaches the dedicated FEAT_VHE rejection loop before MMU setup.
 Every case verifies kernel self-tests, guarded thread, IRQ and
 emergency stacks, scheduler and sleeping synchronization, SMP admission,
-GICv3/vGIC, host and guest timers, virtual system registers, PL011 RX, KASLR
+the selected GICv2/GICv3 backend, host and guest timers, virtual system registers, PL011 RX, KASLR
 geometry, allocator ownership statistics, and lazy guest demand paging.
 The separate Native suite validates guest userspace and interactive console
 input. The kernel matrix also requires Native dispatcher validation, bounded Channel
@@ -78,14 +78,9 @@ cannot satisfy this source ratchet.
 carry SPDX copyright and Apache-2.0 identifiers. The complete license text and
 Cargo-generated lockfiles are intentionally exempt.
 
-`check-arch-facades.sh` prevents migrated CPU-lifecycle, Linux guest-ABI,
-host-interrupt, host-memory, host-platform, host-time, and
-hardware-virtualization mechanisms from returning to the legacy flat `arch`
-namespace. Extend this topical contract list as each architecture domain
-completes its migration.
-
-`check-arch-boundaries.sh` permits only the selected architecture bootstrap
-adapters to call the kernel directly. Its allowlist is exact by architecture,
-boot contract, and reference count; exception, interrupt, failure, and VM-exit
-mechanisms cannot be added as migration debt. The lexical check is not proof of
-the Rust module graph; privacy and review must also reject indirect re-exports.
+`check-arch-boundaries.sh` invokes `hal-boundary.py graph` to inspect Cargo's
+resolved dependency direction: `hyper-hal` depends on `hyper-core`, never the
+kernel binary. `check-arch-facades.sh` also compiles positive HAL imports and a
+negative private-architecture import probe. Rust privacy enforces the exported
+crate boundary. These checks do not prove synchronization or lifecycle safety;
+behavioral tests and review remain necessary.
