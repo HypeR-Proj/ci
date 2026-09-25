@@ -40,7 +40,19 @@ git ls-files --cached --others --exclude-standard | sort -u | while IFS= read -r
             ;;
     esac
 
-    header=$(sed -n '1,8p' "$path")
+    # Binary artwork keeps SPDX metadata in a text sidecar; do not parse image
+    # bytes as shell strings or exempt the artwork from attribution checks.
+    metadata=$path
+    case "$path" in
+        *.png | *.jpg | *.jpeg | *.gif | *.webp | *.ico)
+            metadata=$path.license
+            if [ ! -f "$metadata" ]; then
+                printf '%s\n' "$path (missing .license sidecar)" >>"$missing"
+                continue
+            fi
+            ;;
+    esac
+    header=$(sed -n '1,8p' "$metadata")
     case "$path" in
         *.json)
             copyright='"SPDX-FileCopyrightText"[[:space:]]*:[[:space:]]*"[0-9]{4}(-[0-9]{4})?[[:space:]]+[^"[:space:]][^"]*"'

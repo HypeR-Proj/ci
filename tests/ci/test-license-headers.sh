@@ -44,3 +44,18 @@ if check >/dev/null 2>&1; then
     echo 'changed upstream notice accepted' >&2
     exit 1
 fi
+
+# Binary images require independently checked text metadata, including spaces.
+rm -rf "$fixture/third_party"
+printf '\211PNG\r\n\032\n\000' >"$fixture/Test Logo.png"
+if check >/dev/null 2>&1; then
+    echo 'image without license sidecar accepted' >&2
+    exit 1
+fi
+printf 'SPDX-FileCopyrightText: 2026 Contributor\nSPDX-License-Identifier: Apache-2.0\n' >"$fixture/Test Logo.png.license"
+check
+printf 'SPDX-License-Identifier: Apache-2.0\n' >"$fixture/Test Logo.png.license"
+if check >/dev/null 2>&1; then
+    echo 'image with incomplete sidecar accepted' >&2
+    exit 1
+fi
