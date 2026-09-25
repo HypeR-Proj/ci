@@ -9,6 +9,7 @@ import re
 import sys
 
 from session import Session
+from guest_console import append_console_output
 
 
 def console_lines(*lines):
@@ -31,7 +32,7 @@ def main():
                '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
                '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
                '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
-    with Session(command, logfile) as session:
+    with Session(command, logfile, output_filter=append_console_output) as session:
         pending = session.pending
         pump = session.pump
         send = session.send

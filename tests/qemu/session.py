@@ -11,11 +11,12 @@ import time
 
 class Session:
     def __init__(self, command, logfile, *, failures=(b'HypeR: fatal', b'kernel panic'),
-                 cleanup_timeout=3):
+                 cleanup_timeout=3, output_filter=None):
         self.command = command
         self.logfile = logfile
         self.failures = failures
         self.cleanup_timeout = cleanup_timeout
+        self.output_filter = output_filter
         self.pending = bytearray()
         self.process = None
         self.selector = None
@@ -76,6 +77,13 @@ class Session:
         return progress
 
     def _failure(self):
+        # Inspect custom failure markers before a scenario filters logs, then
+        # check again after reconstructing text split by those records. Keep
+        # filtering out of _read so cleanup always drains and closes pipes.
+        if any(marker in self.pending for marker in self.failures):
+            raise RuntimeError(f'kernel failure: {bytes(self.pending[-4096:])!r}')
+        if self.output_filter is not None:
+            self.output_filter(self.pending, b'')
         if any(marker in self.pending for marker in self.failures):
             raise RuntimeError(f'kernel failure: {bytes(self.pending[-4096:])!r}')
 

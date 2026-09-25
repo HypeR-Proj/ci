@@ -35,6 +35,34 @@ class ConsoleOutputTests(unittest.TestCase):
         data = b'hyper-' + self.warning + b'sh$ \r\nSMP_ON' + self.warning + b'LINE=0-3\r\n'
         self.assertEqual(self.normalize((data,)), b'hyper-sh$ \nSMP_ONLINE=0-3\n')
 
+    def test_guest_printk_interleaved_with_cpu_result(self):
+        warning = b'[   60.431869] hrtimer: interrupt took 6591392 ns\r\n'
+        data = b'\r\nSMP_MIGRATED_1=' + warning + b'0-3\r\n~ # '
+        for split in range(len(data) + 1):
+            with self.subTest(split=split):
+                pending = bytearray()
+                for chunk in (data[:split], data[split:]):
+                    guest_smp.append_console_output(pending, chunk, filter_guest_logs=True)
+                self.assertEqual(pending, b'\nSMP_MIGRATED_1=0-3\n~ # ')
+        pending = bytearray()
+        for byte in data:
+            guest_smp.append_console_output(pending, bytes([byte]), filter_guest_logs=True)
+        self.assertEqual(pending, b'\nSMP_MIGRATED_1=0-3\n~ # ')
+
+    def test_guest_filter_preserves_incorrect_cpu_result(self):
+        pending = bytearray()
+        guest_smp.append_console_output(
+            pending, b'\nSMP_MIGRATED_1=[ 1.0] diagnostic\n0-2\n', filter_guest_logs=True)
+        self.assertEqual(pending, b'\nSMP_MIGRATED_1=0-2\n')
+
+    def test_guest_filter_never_hides_panic_split_by_host_record(self):
+        data = b'[ 1.0] Kernel pa' + self.warning + b'nic: failure\n'
+        for split in range(len(data) + 1):
+            with self.subTest(split=split), self.assertRaisesRegex(RuntimeError, 'kernel failure'):
+                pending = bytearray()
+                for chunk in (data[:split], data[split:]):
+                    guest_smp.append_console_output(pending, chunk, filter_guest_logs=True)
+
     def test_guest_boot_diagnostics_are_preserved(self):
         data = b'[   63.704984] CPU1: Booted secondary processor\r\n~ # '
         self.assertEqual(self.normalize((data,)), data.replace(b'\r', b''))

@@ -58,7 +58,7 @@ def main():
                         raise RuntimeError('QEMU output closed')
                     log.write(data)
                     log.flush()
-                    append_console_output(pending, data)
+                    append_console_output(pending, data, filter_guest_logs=True)
             raise TimeoutError(f'waiting for {pattern!r}')
 
         def send(command):
