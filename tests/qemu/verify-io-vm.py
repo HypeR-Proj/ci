@@ -17,6 +17,8 @@ import sys
 import tempfile
 import time
 
+from session import native_command
+
 MIB = 1024 * 1024
 DISK_BYTES = 8 * MIB
 WRITE_OFFSET = 8 * 512
@@ -70,20 +72,12 @@ def run(qemu, image, initramfs, logfile, timeout, test="basic"):
     disk = evidence / 'physical-disk.img'
     with disk.open('xb') as stream:
         stream.truncate(DISK_BYTES)
-    command = [qemu, '-machine', os.environ.get('QEMU_MACHINE',
-               'virt,virtualization=on,gic-version=3'),
-               '-cpu', os.environ.get('QEMU_CPU', 'max'),
-               '-smp', os.environ.get('QEMU_CPUS', '4'),
-               '-m', os.environ.get('QEMU_MEMORY', '1G'),
-               '-nodefaults', '-display', 'none', '-serial', 'stdio',
-               '-monitor', 'none', '-nic', 'none', '-no-reboot', '-kernel', str(image),
-               '-initrd', str(initramfs), '-append', os.environ.get('QEMU_BOOTARGS',
-               'earlycon=pl011,mmio32,0x09000000'),
-               '-global', 'virtio-mmio.force-legacy=false',
-               '-drive', 'if=none,id=physicaldisk,format=raw,file='
-               + str(disk).replace(',', ',,') + ',cache=writeback',
-               '-device', 'virtio-scsi-device,id=physicalscsi,iommu_platform=on',
-               '-device', 'scsi-hd,drive=physicaldisk,bus=physicalscsi.0,scsi-id=0,lun=0']
+    command = native_command(qemu, image, initramfs) + [
+        '-nic', 'none', '-global', 'virtio-mmio.force-legacy=false',
+        '-drive', 'if=none,id=physicaldisk,format=raw,file='
+        + str(disk).replace(',', ',,') + ',cache=writeback',
+        '-device', 'virtio-scsi-device,id=physicalscsi,iommu_platform=on',
+        '-device', 'scsi-hd,drive=physicaldisk,bus=physicalscsi.0,scsi-id=0,lun=0']
     started = time.monotonic()
     pending = bytearray()
     with logfile.open('wb') as log, selectors.DefaultSelector() as selector:

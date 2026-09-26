@@ -9,6 +9,20 @@ import subprocess
 import time
 
 
+def native_command(qemu, image, initramfs, *, machine='virt,virtualization=on,gic-version=3'):
+    """Serial Native test boot; QEMU_* overrides also select RISC-V platforms.
+
+    Scenarios append device arguments and keep their own expectations/deadlines.
+    """
+    return [qemu, '-machine', os.environ.get('QEMU_MACHINE', machine),
+            '-cpu', os.environ.get('QEMU_CPU', 'max'),
+            '-smp', os.environ.get('QEMU_CPUS', '4'),
+            '-m', os.environ.get('QEMU_MEMORY', '1G'),
+            '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
+            '-monitor', 'none', '-kernel', str(image), '-initrd', str(initramfs),
+            '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
+
+
 class Session:
     def __init__(self, command, logfile, *, failures=(b'HypeR: fatal', b'kernel panic'),
                  cleanup_timeout=3, output_filter=None):

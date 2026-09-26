@@ -5,12 +5,13 @@
 """Exercise Linux SMP, host-CPU migration, hotplug, reboot, and poweroff."""
 
 import os
+from functools import partial
 from pathlib import Path
 import re
-import selectors
-import subprocess
 import sys
 import time
+
+from session import Session, native_command
 
 from guest_console import append_console_output
 
@@ -27,43 +28,17 @@ def main():
     host_cpus = int(os.environ.get('QEMU_CPUS', '4'))
     if not 2 <= guest_cpus <= 8:
         raise ValueError('SMP acceptance requires 2..8 guest CPUs')
-    command = [qemu, '-machine', os.environ.get(
-        'QEMU_MACHINE', 'virt,virtualization=on,gic-version=3'),
-        '-cpu', os.environ.get('QEMU_CPU', 'max'),
-        '-smp', os.environ.get('QEMU_CPUS', '4'),
-        '-m', os.environ.get('QEMU_MEMORY', '1G'),
-        '-nodefaults', '-display', 'none', '-serial', 'stdio',
-        '-monitor', 'none', '-no-reboot', '-kernel', image, '-initrd', initramfs,
-        '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
+    command = native_command(qemu, image, initramfs)
     Path(logfile).parent.mkdir(parents=True, exist_ok=True)
-    with open(logfile, 'wb') as log, selectors.DefaultSelector() as selector:
-        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT)
-        selector.register(process.stdout, selectors.EVENT_READ)
-        pending = bytearray()
+    with Session(command, logfile, cleanup_timeout=5,
+                 output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
+        pending = session.pending
 
         def await_text(pattern, timeout=90):
-            deadline = time.monotonic() + timeout
-            while time.monotonic() < deadline:
-                match = re.search(pattern, pending)
-                if match:
-                    result = match.group(0)
-                    del pending[:match.end()]
-                    return result
-                if process.poll() is not None:
-                    raise RuntimeError(f'QEMU exited with {process.returncode}')
-                for key, _ in selector.select(0.2):
-                    data = os.read(key.fd, 65536)
-                    if not data:
-                        raise RuntimeError('QEMU output closed')
-                    log.write(data)
-                    log.flush()
-                    append_console_output(pending, data, filter_guest_logs=True)
-            raise TimeoutError(f'waiting for {pattern!r}')
+            return session.await_text(pattern, timeout, match_only=True)
 
         def send(command):
-            process.stdin.write(command + b'\n')
-            process.stdin.flush()
+            session.send(command + b'\n')
 
         def attach():
             # A reboot creates a fresh runtime asynchronously. Status polling
@@ -93,7 +68,7 @@ def main():
             # Startup records capture the actual executing host CPU, not a
             # requested affinity or a scheduler queue assignment. Group by VM
             # incarnation so a reboot cannot fabricate distinct placement.
-            log.flush()
+            session.log.flush()
             records = re.findall(
                 rb'HypeR: vCPU (\d+) running as scheduler thread \d+ '
                 rb'on guarded stack [^;]+; host CPU (\d+); '
@@ -128,8 +103,7 @@ def main():
             marker = f'/tmp/hyper-migration-{cycle}'
             send(f'(sleep 2; echo TIMER_OK > {marker}) &'.encode())
             await_text(rb'~ # ')
-            process.stdin.write(b'\x1dd')
-            process.stdin.flush()
+            session.send(b'\x1dd')
             await_text(rb'hyper-sh\$ ')
             for cpu in range(guest_cpus):
                 # Also share one physical CPU to exercise virtual hardware
@@ -220,16 +194,6 @@ def main():
         except Exception:
             sys.stderr.write(pending[-16384:].decode(errors='replace'))
             raise
-        finally:
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
-            process.stdin.close()
-            process.stdout.close()
 
 
 if __name__ == '__main__':

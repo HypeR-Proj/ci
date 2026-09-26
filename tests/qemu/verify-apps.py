@@ -8,7 +8,7 @@ import re
 import sys
 import time
 
-from session import Session
+from session import Session, native_command
 
 
 def main():
@@ -17,13 +17,7 @@ def main():
     if verify_vm not in ("0", "1"):
         raise ValueError("HYPER_TEST_VM must be 0 or 1")
     verify_vm = verify_vm == "1"
-    command = [qemu, '-machine', os.environ.get('QEMU_MACHINE', 'virt,virtualization=on,gic-version=3'),
-               '-cpu', os.environ.get('QEMU_CPU', 'max'),
-               '-smp', os.environ.get('QEMU_CPUS', '4'),
-               '-m', os.environ.get('QEMU_MEMORY', '1G'),
-               '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
-               '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
-               '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
+    command = native_command(qemu, image, initramfs)
     with Session(command, logfile) as session:
         await_text = session.await_text
         send = session.send

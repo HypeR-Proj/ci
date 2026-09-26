@@ -3,23 +3,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Use a test-runtime-crash image to prove repeated runtime-loss retirement."""
-import os
 import re
 import sys
 import time
 
-from session import Session
+from session import Session, native_command
 
 
 def main():
     qemu, image, initramfs, logfile = sys.argv[1:]
-    command = [qemu, '-machine', os.environ.get('QEMU_MACHINE', 'virt,virtualization=on,gic-version=3,dtb-randomness=on'),
-               '-cpu', os.environ.get('QEMU_CPU', 'max'),
-               '-smp', os.environ.get('QEMU_CPUS', '4'),
-               '-m', os.environ.get('QEMU_MEMORY', '1G'),
-               '-nodefaults', '-display', 'none', '-serial', 'stdio', '-no-reboot',
-               '-monitor', 'none', '-kernel', image, '-initrd', initramfs,
-               '-append', os.environ.get('QEMU_BOOTARGS', 'earlycon=pl011,mmio32,0x09000000')]
+    command = native_command(
+        qemu, image, initramfs,
+        machine='virt,virtualization=on,gic-version=3,dtb-randomness=on')
     with Session(command, logfile) as session:
         def await_text(pattern, timeout=40):
             return session.await_text(pattern, timeout, match_only=True)
