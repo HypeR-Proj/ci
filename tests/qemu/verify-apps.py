@@ -68,7 +68,9 @@ def main():
         run('echo "a|b>c"|grep -F "a|b>c"', rb'\na\|b>c\n')
         run('echo ignored>/pipe-data|cat')
         run('cat /pipe-data', rb'\nignored\n')
-        run('echo upstream|cat</pipe-pwd', rb'\n/\n')
+        # Redirecting stdin closes the pipe reader; upstream may report EPIPE.
+        # Keep that diagnostic separate from the consumer output being checked.
+        run('echo upstream 2>/pipe-upstream-errors|cat</pipe-pwd', rb'\n/\n')
         # Input exceeds channel capacity; -q closes early and the producer
         # must observe peer closure instead of blocking the shell forever.
         run('cat /bin/grep|grep -q .', timeout=15)
