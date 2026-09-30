@@ -44,6 +44,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-stack.py
         python3 -B tests/qemu/test-session.py
         python3 -B tests/qemu/test-console.py
+        python3 -B tests/qemu/test-fleet-config.py
         command -v shellcheck >/dev/null 2>&1 || {
             echo "shellcheck is required for the script-quality suite" >&2
             exit 2
@@ -72,6 +73,7 @@ case "${1:-}" in
             make test-native ARCH=aarch64 QEMU_CPU=max QEMU_CPUS=4
         make -o image -o native-initramfs test-console ARCH=aarch64
         make -o image -o native-initramfs test-apps ARCH=aarch64
+        make -o image -o app test-fleet-config ARCH=aarch64
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64
         make -o image test-vm-smoke ARCH=aarch64 QEMU_CPUS=4
         make -o image test-vm-smoke ARCH=aarch64 QEMU_CPUS=1 \
@@ -153,6 +155,7 @@ case "${1:-}" in
             make -o image -o native-initramfs test-native ARCH=riscv64 QEMU_CPUS=1
         make -o image -o native-initramfs test-console ARCH=riscv64
         make -o image -o native-initramfs test-apps ARCH=riscv64
+        make -o image -o app test-fleet-config ARCH=riscv64
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=4
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=1
         make -o image -o native-initramfs test-runtime-crash ARCH=riscv64

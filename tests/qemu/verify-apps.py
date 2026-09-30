@@ -155,22 +155,28 @@ def main():
         run('ps -T --name shell', rb'thread\s+\d+\s+\d+\s+shell\s+user/resident')
         run('handle --objects --kind process', rb'\sprocess\s')
         if verify_vm:
+            # This archive grants no I/O broker capability. A name alone must
+            # not fabricate an entry or determine its access permissions.
+            for action in ('status', 'start', 'stop', 'restart', 'delete', 'console'):
+                run(f'vmm {action} io', rb"VM 'io' does not exist", failed=True)
+            run('vmm affinity io 0 0', rb"VM 'io' does not exist", failed=True)
             run('vmm status missing', rb"does not exist", failed=True)
-            run('vmm create scratch --config /etc/hyper/vms.json --from missing', rb'not found in configuration', failed=True)
-            missing_image = '{"format":"hyper.vm-config","virtual-machines":[{"name":"scratch","image":"/missing","configuration":{"vcpus":1,"memory-bytes":67108864,"bootargs":""}}]}'
+            run('vmm create io --config /etc/hyper/vms.json --from missing', rb'not found in configuration', failed=True)
+            missing_image = '{"format":"hyper.vm-config","virtual-machines":[{"name":"io","image":"/missing","configuration":{"vcpus":1,"memory-bytes":67108864,"bootargs":""}}]}'
             run(f"echo '{missing_image}' > /missing-vm.json")
-            run('vmm create scratch --config /missing-vm.json', rb'cannot open image', failed=True)
+            run('vmm create io --config /missing-vm.json', rb'cannot open image', failed=True)
             run('rm /missing-vm.json')
             output = run('vmm list')
-            assert b'scratch' not in output
-            run('vmm create scratch --config /etc/hyper/vms.json --from alpine', rb'accepted')
-            run('vmm create scratch --config /etc/hyper/vms.json --from alpine', rb'already exists', failed=True)
-            run('vmm start scratch', rb'accepted')
-            state('scratch', 'running')
+            assert not re.search(rb'\nio\s', output)
+            run('vmm create io --config /etc/hyper/vms.json --from alpine', rb'accepted')
+            run('vmm create io --config /etc/hyper/vms.json --from alpine', rb'already exists', failed=True)
+            run('vmm start io', rb'accepted')
+            state('io', 'running')
             state('alpine', 'running')
-            run('vmm delete scratch', rb'stop the VM', failed=True)
-            send(b'vmm console scratch\n')
-            await_text(rb'Connected to scratch\.')
+            run('vmm affinity io 0 0', rb'vCPU 0: affinity accepted')
+            run('vmm delete io', rb'stop the VM', failed=True)
+            send(b'vmm console io\n')
+            await_text(rb'Connected to io\.')
             # Validate the guest launched through the CLI, not a kernel boot
             # shortcut or another VM's retained output.
             await_text(rb'HypeR guest: Linux userspace is running')
@@ -179,11 +185,11 @@ def main():
             await_text(rb'\nHYPER_CLI_GUEST_OK\n')
             send(b'\x1dq')
             await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
-            run('vmm stop scratch', rb'accepted')
-            state('scratch', 'stopped')
+            run('vmm stop io', rb'accepted')
+            state('io', 'stopped')
             state('alpine', 'running')
-            run('vmm delete scratch', rb'accepted')
-            assert b'scratch' not in run('vmm list')
+            run('vmm delete io', rb'accepted')
+            assert not re.search(rb'\nio\s', run('vmm list'))
             run('vmm stop alpine', rb'accepted')
             state('alpine', 'stopped')
             run('vmm delete alpine', rb'accepted')

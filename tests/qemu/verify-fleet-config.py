@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+"""Check fleet admission outcomes independently of guest runtime success."""
+from pathlib import Path
+import re
+import sys
+import time
+
+from session import Session, native_command
+
+
+CONFIGURED = b'HypeR init: VM fleet configured'
+REJECTED = b'HypeR vm-manager: fleet configuration rejected:'
+BOOT_FAILED = b'HypeR init: bootstrap failed'
+GUEST_RUNNING = b'HypeR: vCPU 0 running as scheduler thread'
+CASES = ('empty', 'no-autostart', 'malformed', 'missing-image', 'start-failure')
+KERNEL_FAILURES = (b'HypeR: fatal', b'kernel panic', b'HypeR crash monitor')
+
+
+def validate_log(case, output):
+    if any(marker in output for marker in KERNEL_FAILURES):
+        raise AssertionError('kernel failure during fleet provisioning')
+    if case in ('malformed', 'missing-image'):
+        # Process termination may win over the queued Rejected reply. Require
+        # the manager's admission error and init's explicit bootstrap failure.
+        if REJECTED not in output or BOOT_FAILED not in output:
+            raise AssertionError('configuration rejection did not fail init bootstrap')
+        if CONFIGURED in output or GUEST_RUNNING in output:
+            raise AssertionError('rejected fleet was acknowledged or partially started')
+    else:
+        if CONFIGURED not in output or REJECTED in output or BOOT_FAILED in output:
+            raise AssertionError('admitted fleet did not complete init provisioning')
+        if case in ('empty', 'no-autostart') and GUEST_RUNNING in output:
+            raise AssertionError('idle fleet unexpectedly started a guest')
+
+
+def main():
+    qemu, image, initramfs, logfile, case = sys.argv[1:]
+    if case not in CASES:
+        raise ValueError('unknown fleet configuration case')
+    command = native_command(qemu, image, initramfs)
+    rejected = case in ('malformed', 'missing-image')
+    failures = KERNEL_FAILURES if rejected else KERNEL_FAILURES + (
+        BOOT_FAILED, REJECTED, b'HypeR init: critical service ')
+    with Session(command, logfile, failures=failures) as session:
+        if rejected:
+            session.await_text(rb'(?s)(?=.*' + re.escape(REJECTED)
+                               + rb')(?=.*' + re.escape(BOOT_FAILED) + rb')')
+        else:
+            session.await_text(rb'(?s)(?=.*HypeR session: console ready)'
+                               rb'(?=.*' + re.escape(CONFIGURED) + rb')')
+            session.await_text(rb'hyper-sh\$ ')
+
+            def run(command, timeout=60):
+                session.send(command + b'\n')
+                output = session.await_text(rb'hyper-sh\$ ', timeout)
+                if b'sh: command failed' in output:
+                    raise AssertionError(f'{command!r} failed: {output!r}')
+                return output
+
+            if case == 'start-failure':
+                # A valid image and policy were admitted. CPU affinity fails
+                # only inside alpine's runtime; the next autostart must run.
+                deadline = time.monotonic() + 60
+                while (remaining := deadline - time.monotonic()) > 0:
+                    failed = run(b'vmm status alpine', remaining)
+                    survivor = run(b'vmm status survivor', max(0.01, deadline - time.monotonic()))
+                    if (re.search(rb'\nalpine\s+failed\s', failed)
+                            and re.search(rb'\nsurvivor\s+running\s', survivor)
+                            and re.search(rb'allocated VM backing: \d+ bytes', survivor)):
+                        break
+                    time.sleep(min(0.1, max(0, deadline - time.monotonic())))
+                else:
+                    raise AssertionError('one autostart failure blocked the other VM')
+            else:
+                listing = run(b'vmm list')
+                rows = re.findall(rb'^\S+\s+(?:starting|running|stopping|stopped|failed)\s+',
+                                  listing, flags=re.M)
+                if case == 'empty' and rows:
+                    raise AssertionError(f'empty fleet published definitions: {listing!r}')
+                if case == 'no-autostart' and not re.search(
+                        rb'\nalpine\s+stopped\s+no\s', listing):
+                    raise AssertionError(f'non-autostart definition was not idle: {listing!r}')
+                memory = run(b'free --bytes')
+                if not re.search(rb'Owners:[^\n]*guest=0 B', memory):
+                    raise AssertionError(f'idle fleet owns guest pages: {memory!r}')
+            output = run(b'echo HYPER_FLEET_CONFIG_OK')
+            if b'\nHYPER_FLEET_CONFIG_OK\n' not in output:
+                raise AssertionError('Native shell did not survive fleet provisioning')
+    validate_log(case, Path(logfile).read_bytes())
+    print(f'verified fleet configuration case: {case}')
+
+
+if __name__ == '__main__':
+    main()

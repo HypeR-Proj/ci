@@ -6,10 +6,12 @@
 
 import argparse
 import importlib.util
+import json
 import os
 from pathlib import Path
 import re
 import selectors
+import shlex
 import subprocess
 import sys
 import time
@@ -75,22 +77,55 @@ def boot(args, mode):
             copied = await_text(rb'hyper-sh\$ ')
             if b'sh: command failed' in copied or b'cp:' in copied:
                 raise RuntimeError(f'copy across ramfs/FAT failed: {copied!r}')
-            child.stdin.write(b'vmm status io\n')
+            child.stdin.write(f'vmm status {args.observed_name}\n'.encode())
             child.stdin.flush()
             observed = await_text(rb'hyper-sh\$ ')
-            if not re.search(rb'\bio\s+running\s+yes\s+read-only', observed):
+            if not re.search(re.escape(args.observed_name.encode())
+                             + rb'\s+running\s+yes\s+read-only\s+'
+                             + re.escape(args.observed_image.encode()) + rb'\n', observed):
                 raise RuntimeError(f'I/O VM observation unavailable: {observed!r}')
             if b'vCPUs:' not in observed or b'RAM capacity: 128 MiB' not in observed:
                 raise RuntimeError(f'I/O VM metrics missing: {observed!r}')
+            for affinity in args.io_configuration.get('affinity', []):
+                vcpu = affinity['vcpu']
+                placement = re.search(fr'vCPU {vcpu}: pCPU ([0-9]+)\b'.encode(), observed)
+                if placement is None or int(placement[1]) not in affinity['cpus']:
+                    raise RuntimeError(f'configured I/O VM affinity not applied: {observed!r}')
             # The fixture admits 128 MiB RAM plus a 1 MiB initiator pool.
             resident = re.search(rb'allocated VM backing: ([0-9]+) bytes', observed)
             if resident is None or not 0 < int(resident[1]) <= 129 * 1024 * 1024:
                 raise RuntimeError(f'I/O VM allocated backing missing or invalid: {observed!r}')
-            child.stdin.write(b'vmm stop io\n')
+            # Observation is granted by the broker; no management capability is
+            # held for this target, including console and placement operations.
+            commands = [f'vmm {action} {args.observed_name}' for action in
+                        ('start', 'stop', 'restart', 'delete', 'console')]
+            commands.append(f'vmm affinity {args.observed_name} 0 0')
+            for command in commands:
+                child.stdin.write(command.encode() + b'\n')
+                child.stdin.flush()
+                refused = await_text(rb'hyper-sh\$ ')
+                if (f"VM '{args.observed_name}' is read-only: vm-manager has no management capability".encode() not in refused
+                        or b'sh: command failed' not in refused):
+                    raise RuntimeError(f'{command}: missing capability rejection: {refused!r}')
+            child.stdin.write(f'vmm status {args.observed_name}\n'.encode())
+            child.stdin.flush()
+            if not re.search(re.escape(args.observed_name.encode()) + rb'\s+running\s+yes\s+read-only',
+                             await_text(rb'hyper-sh\$ ')):
+                raise RuntimeError('rejected control request changed the observed VM')
+            # This fixture may intentionally have no business VMs. Submit a
+            # complete definition so the request reaches manager admission.
+            child.stdin.write(args.conflict_config_command)
+            child.stdin.flush()
+            prepared = await_text(rb'hyper-sh\$ ')
+            if b'sh: ' in prepared or b'echo:' in prepared:
+                raise RuntimeError(f'cannot prepare name-conflict configuration: {prepared!r}')
+            child.stdin.write(
+                f'vmm create {args.observed_name} --config /data/observed-name-conflict.json\n'.encode())
             child.stdin.flush()
             refused = await_text(rb'hyper-sh\$ ')
-            if b'I/O VM is read-only' not in refused:
-                raise RuntimeError(f'I/O VM control was not rejected: {refused!r}')
+            if (f"VM '{args.observed_name}' already exists (observed through broker)".encode() not in refused
+                    or b'sh: command failed' not in refused):
+                raise RuntimeError(f'observed VM name was not protected from shadowing: {refused!r}')
             # Keep the real human-paced console path in coverage too.
             for character in b'echo BOARD-SHELL-RESPONSIVE\n':
                 child.stdin.write(bytes([character]))
@@ -121,6 +156,17 @@ def main():
     for name in ('image', 'initramfs', 'disk', 'board', 'log'):
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
+    io_vm = json.loads(args.board.read_text())['io-vm']
+    args.observed_name = io_vm['name']
+    args.observed_image = io_vm['image']
+    args.io_configuration = io_vm['configuration']
+    conflict_config = {'format': 'hyper.vm-config', 'virtual-machines': [
+        {field: io_vm[field] for field in ('name', 'image', 'configuration')}]}
+    command = ('echo ' + shlex.quote(json.dumps(conflict_config, separators=(',', ':')))
+               + ' > /data/observed-name-conflict.json')
+    if len(command.encode()) > 512:
+        parser.error('name-conflict fixture exceeds the Native shell command-line limit')
+    args.conflict_config_command = command.encode() + b'\n'
     if args.minimum_stack_remaining is not None and args.minimum_stack_remaining < 0:
         parser.error('stack reserve must be nonnegative')
     if args.maximum_stack_used is not None and args.maximum_stack_used < 1:

@@ -56,7 +56,7 @@ def main():
         try:
             # Config publication and shell readiness may print in either order.
             await_text(rb'(?s)(?=.*HypeR session: console ready)'
-                       rb'(?=.*HypeR init: VM configuration loaded; no autostart VMs)')
+                       rb'(?=.*HypeR init: VM fleet configured)')
             send(b'echo HYPER_POWER_CRASH_READY')
             await_text(rb'\nHYPER_POWER_CRASH_READY\nhyper-sh\$ ')
             baseline_user, baseline_guest = owners()

@@ -132,7 +132,20 @@ def main():
                 await_text(rb'hyper-sh\$ ')
             stop_start = len(raw)
             send(b'vmm stop alpine')
-            await_text(rb'HypeR init: initial VM stopped cleanly', raw_since=stop_start)
+            await_text(rb'hyper-sh\$ ')
+            deadline = time.monotonic() + 60
+            while (remaining := deadline - time.monotonic()) > 0:
+                send(b'vmm status alpine')
+                status = await_text(rb'alpine\s+(?:starting|running|stopping|stopped|failed)',
+                                    timeout=remaining)
+                await_text(rb'hyper-sh\$ ', timeout=max(0.01, deadline - time.monotonic()))
+                if status.endswith(b'stopped'):
+                    break
+                if status.endswith(b'failed'):
+                    raise RuntimeError('VM failed during stack workload shutdown')
+                time.sleep(min(0.1, max(0, deadline - time.monotonic())))
+            else:
+                raise TimeoutError('VM did not stop after stack workload')
             # A post-stop command proves the control command returned, without
             # confusing a preexisting prompt with current command completion.
             send(b'echo HYPER_STACK_STOPPED')
