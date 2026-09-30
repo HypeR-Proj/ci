@@ -156,11 +156,15 @@ def main():
         run('handle --objects --kind process', rb'\sprocess\s')
         if verify_vm:
             run('vmm status missing', rb"does not exist", failed=True)
-            run('vmm create scratch --image /missing', rb'cannot open image', failed=True)
+            run('vmm create scratch --config /etc/hyper/vms.json --from missing', rb'not found in configuration', failed=True)
+            missing_image = '{"format":"hyper.vm-config","virtual-machines":[{"name":"scratch","image":"/missing","configuration":{"vcpus":1,"memory-bytes":67108864,"bootargs":""}}]}'
+            run(f"echo '{missing_image}' > /missing-vm.json")
+            run('vmm create scratch --config /missing-vm.json', rb'cannot open image', failed=True)
+            run('rm /missing-vm.json')
             output = run('vmm list')
             assert b'scratch' not in output
-            run('vmm create scratch --image /vm/alpine.itb', rb'accepted')
-            run('vmm create scratch --image /vm/alpine.itb', rb'already exists', failed=True)
+            run('vmm create scratch --config /etc/hyper/vms.json --from alpine', rb'accepted')
+            run('vmm create scratch --config /etc/hyper/vms.json --from alpine', rb'already exists', failed=True)
             run('vmm start scratch', rb'accepted')
             state('scratch', 'running')
             state('alpine', 'running')
@@ -184,7 +188,7 @@ def main():
             state('alpine', 'stopped')
             run('vmm delete alpine', rb'accepted')
             assert b'alpine' not in run('vmm list')
-            run('vmm create alpine --image /vm/alpine.itb --start', rb'accepted')
+            run('vmm create alpine --config /etc/hyper/vms.json --start', rb'accepted')
             state('alpine', 'running')
             run('vmm restart alpine', rb'accepted')
             state('alpine', 'running')

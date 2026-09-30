@@ -30,14 +30,15 @@ def prepare(args):
     kernel, ramfs = images.package_payloads(args.package)
     args.output.mkdir(parents=True, exist_ok=True)
     subprocess.run([str(args.fit_pack.resolve()), str(args.output / 'business.itb'), 'arm64',
-                    str(128 * 1024 * 1024), '1', str(kernel), '0x40200000', '0x40200000',
-                    str(ramfs), 'console=ttyAMA0 earlycon=pl011,mmio32,0x09000000 '
-                    'rdinit=/init loglevel=4 hyper.role=business hyper.test=hold'], check=True)
+                    str(kernel), '0x40200000', '0x40200000', str(ramfs)], check=True)
     board = json.loads((ROOT / 'boards/qemu.json').read_text())
     board['files'].pop('vm/alpine.itb')
     board['files']['vm/business.itb'] = 'business'
     board['virtual-machines'] = [{'name': 'business', 'image': 'vm/business.itb',
-                                  'autostart': False, 'disk-mib': 8}]
+                                  'autostart': False, 'disk-mib': 8,
+                                  'configuration': {'vcpus': 1,
+                                                    'memory-bytes': 128 * 1024 * 1024,
+                                                    'bootargs': 'console=ttyAMA0 earlycon=pl011,mmio32,0x09000000 rdinit=/init loglevel=4 hyper.role=business hyper.test=hold'}}]
     config = args.output / 'config.json'
     config.write_text(json.dumps(board, indent=2) + '\n')
     Board.load(config)
@@ -152,7 +153,7 @@ def run(args):
                     raise TimeoutError('init did not provision the board VM')
                 time.sleep(0.2)
             shell('vmm delete business')
-            shell('vmm create scatter-smoke --image /data/vm/business.itb --disk-volume business --disk-client 1')
+            shell('vmm create scatter-smoke --config /data/vms.json --from business')
             shell('vmm start scatter-smoke'); verify_guest()
             shell('vmm stop scatter-smoke'); stopped()
             shell('vmm start scatter-smoke'); verify_guest()

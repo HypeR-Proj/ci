@@ -108,7 +108,7 @@ case "${1:-}" in
         # configured dormant and running CPU Threads in either case.
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64 \
             QEMU_MACHINE=virt,virtualization=on,gic-version=2 QEMU_CPUS=4 \
-            NATIVE_GUEST_VCPUS=4 \
+            NATIVE_VM_CONFIG="$root/app/init/tests/config/vms-smp-4.json" \
             NATIVE_GUEST_ITB="$root/kernel/target/guest/aarch64/alpine-smp.itb"
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-guest-smp-runtime-crash.log
         make -o image test-power-crash ARCH=aarch64 QEMU_CPUS=4

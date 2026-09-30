@@ -32,7 +32,10 @@ def prepare(args):
     board['files'].pop('vm/alpine.itb')
     board['files']['vm/business.itb'] = 'business'
     board['virtual-machines'] = [
-        {'name': name, 'image': 'vm/business.itb', 'autostart': False, 'disk-mib': 8}
+        {'name': name, 'image': 'vm/business.itb', 'autostart': False, 'disk-mib': 8,
+         'configuration': {'vcpus': 1,
+                           'memory-bytes': 128 * 1024 * 1024,
+                           'bootargs': 'console=ttyAMA0 earlycon=pl011,mmio32,0x09000000 rdinit=/init loglevel=4 hyper.role=business hyper.test=hold'}}
         for name in ('slow', 'fast')]
     args.board.parent.mkdir(parents=True, exist_ok=True)
     args.board.write_text(json.dumps(board, indent=2) + '\n')
