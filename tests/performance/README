@@ -67,8 +67,8 @@ Measurements
   Allocation, page fault, NUMA and multi-thread scaling are not measured.
 * file_read_first: first application data read after boot, 16 MiB, 128 KiB
   requests. Guest filesystem metadata may already be warm from mounting.
-* file_read_repeat: two immediate repeats. Linux page-cache hits and HypeR's
-  device-backed reads are intentionally reported separately from first reads.
+* file_read_repeat: two immediate repeats, reported separately from first
+  reads to distinguish guest cache reuse from the initial backend traversal.
 * file_random_read_4k: 512 deterministic requests per sample, three samples,
   after sequential reading, one application request outstanding.
 * file_grow_sync: write a newly created file to 16 MiB and fsync once. Open and
@@ -76,6 +76,14 @@ Measurements
 * file_overwrite_sync: overwrite the allocated file twice, fsync per pass.
 * file_random_write_sync_4k: 64 deterministic overwrites per sample, fsync
   after each request, three samples. No O_DIRECT is used in either OS.
+* file_random_read_hot_4k: 512 deterministic aligned requests per sample over
+  the first 256 KiB of seed.bin, three samples. The complete 64-page working
+  set is read and checked before each sample, outside timing. Every returned
+  byte is checked afterward using the existing resident memory buffer. This
+  isolates a small working set; the 16 MiB scan/random cases exercise a
+  larger one. HypeR cache capacity now grows with available managed RAM. The hot case
+  runs after all existing cases and readback checks, preserving their order
+  and data. Both systems run the same code; run.py reports this case in IOPS.
 
 The native kernel may batch device requests internally; QD1 describes the
 application, not every layer below it. Guest monotonic clocks measure each
@@ -95,7 +103,8 @@ successful readback; failed-run disks remain for diagnosis. QEMU processes are
 owned by the runner and terminated on success and failure.
 
 QMP counters cover the entire workload, including untimed verification reads;
-do not describe them as the traffic of a single 16 MiB sample. Short Linux
+the added hot-case warmup also contributes to them. Do not describe these
+counters as the traffic of a single 16 MiB sample. Short Linux
 cached reads can be only a few milliseconds: treat their precise throughput
 as exploratory. Three boots are an initial baseline, not confidence intervals.
 TCG includes translation and software MMU overhead and does not model the host
@@ -104,7 +113,7 @@ bare-metal HypeR or hardware-assisted virtualization. Raw block performance,
 ext4, larger-than-memory datasets, concurrent I/O and long-duration tail
 latency require separate workloads.
 
-Cold VM startup
+Cold and repeated VM startup
 
 vm-start.py measures HypeR startup through an ordinary Alpine VM loaded from
 the board FAT volume. Prepare a disposable board-image fixture from boards/qemu.json,
@@ -126,6 +135,14 @@ includes console attachment and guest boot; it is not pure file-read latency.
 It verifies a guest shell command before cleaning up its owned QEMU process.
 For an application change, pass --initramfs with the new production archive;
 keep the board and initial disk identical. --boots 1 is useful for diagnosis.
+Use --starts 3 to follow the initial autostart with two vmm stop/start alpine
+cycles in the same HypeR boot. Each cycle verifies the guest shell and the final
+cycle stops the VM. Results retain cold-start fields and report each restart
+separately; restart wall time starts immediately before the vmm start command.
+The manager retains its image handle between cycles, so these measurements
+exercise ITB cache reuse, not final-handle-close identity retention. The FAT
+lifecycle tests cover that separate contract.
 The existing startup-profile runtime feature can explain stages in a separate
-archive, but final timing comparisons must use ordinary production applications.
+archive. Its per-payload read/write durations are recorded under starts[].payloads;
+final timing comparisons must use ordinary production applications.
 This startup runner is also local/manual only, with no CI performance gates.

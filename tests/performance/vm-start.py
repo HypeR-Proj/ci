@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 roolrz
 # SPDX-License-Identifier: Apache-2.0
 
-"""Manually measure fresh HypeR/Alpine starts; never impose CI timing gates."""
+"""Manually measure cold and repeated Alpine starts; never impose CI timing gates."""
 import argparse
 import hashlib
 import json
@@ -17,6 +17,53 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tests/qemu'))
 from session import Session
+
+
+def shell(vm, command, marker):
+    # Split the marker in the echoed input so only executed output can match.
+    quoted = marker.replace('-COMMAND-', "-''COMMAND-", 1)
+    vm.send(f'{command}\necho {quoted}\n'.encode())
+    output = vm.await_text(re.escape(marker.encode()) + rb'\n', timeout=60)
+    vm.await_text(rb'hyper-sh\$ ', timeout=30)
+    if b'vmm:' in output or b'sh: command' in output:
+        raise RuntimeError(f'command failed: {output!r}')
+    return output
+
+
+def stop(vm, index):
+    shell(vm, 'vmm stop alpine', f'START-COMMAND-{index}-STOP')
+    deadline = time.monotonic() + 60
+    attempt = 0
+    while True:
+        output = shell(vm, 'vmm status alpine', f'START-COMMAND-{index}-STATUS-{attempt}')
+        if re.search(rb'\balpine\s+stopped\b', output):
+            return
+        if time.monotonic() >= deadline:
+            raise TimeoutError(f'Alpine did not stop: {output!r}')
+        vm.pump(0.1)
+        attempt += 1
+
+
+def start_result(vm, started, index):
+    output = vm.await_text(rb'HypeR vm-runtime: vCPU start submitted in ([0-9]+\.[0-9]+) ms \(from main\)\n', timeout=240)
+    submitted = time.monotonic() - started
+    duration = re.search(rb'vCPU start submitted in ([0-9]+\.[0-9]+) ms', output)
+    vm.send(b'vmm console alpine\n')
+    vm.await_text(rb'HypeR guest: Linux userspace is running\n', timeout=180)
+    vm.await_text(rb'~ # ', timeout=60)
+    ready = time.monotonic() - started
+    vm.send(f"echo LOCAL-''BOOT-PASS-{index}\n".encode())
+    vm.await_text(f'\nLOCAL-BOOT-PASS-{index}\n'.encode(), timeout=30)
+    vm.await_text(rb'~ # ', timeout=30)
+    vm.send(b'\x1dd')
+    vm.await_text(rb'hyper-sh\$ ', timeout=30)
+    payloads = re.findall(rb'payload ([0-9]+) bytes read=([0-9]+) us write=([0-9]+) us', output)
+    return {'start': index, 'start_to_vcpu_seconds': submitted,
+            'runtime_main_to_vcpu_ms': float(duration[1]),
+            'start_to_guest_shell_seconds': ready, 'guest_shell': 'passed',
+            'profile_lines': [line.decode() for line in output.splitlines() if b'startup profile:' in line],
+            'payloads': [{'bytes': int(size), 'read_us': int(read), 'write_us': int(write)}
+                         for size, read, write in payloads]}
 
 
 def boot(args, index):
@@ -39,21 +86,21 @@ def boot(args, index):
     start = time.monotonic()
     with Session(command, folder / 'serial.log', failures=(b'HypeR: fatal', b'HypeR KERNEL PANIC',
                  b'Kernel panic', b'HypeR vm-runtime: failed', b'HypeR io-runtime: failed')) as vm:
-        output = vm.await_text(rb'HypeR vm-runtime: vCPU start submitted in ([0-9]+\.[0-9]+) ms \(from main\)\n', timeout=240)
-        submitted = time.monotonic() - start
-        duration = re.search(rb'vCPU start submitted in ([0-9]+\.[0-9]+) ms', output)
-        vm.send(b'vmm console alpine\n')
-        vm.await_text(rb'HypeR guest: Linux userspace is running\n', timeout=180)
-        vm.await_text(rb'~ # ', timeout=60)
-        ready = time.monotonic() - start
-        vm.send(b"echo LOCAL-''BOOT-PASS\n")
-        vm.await_text(rb'\nLOCAL-BOOT-PASS\n', timeout=30)
+        starts = [start_result(vm, start, 0)]
+        for restart in range(1, args.starts):
+            stop(vm, restart)
+            started = time.monotonic()
+            vm.send(b'vmm start alpine\n')
+            starts.append(start_result(vm, started, restart))
+        if args.starts > 1:
+            stop(vm, args.starts)
+    cold = starts[0]
     result = {'boot': index, 'disk_sha256': disk_sha256,
-              'cold_start_to_vcpu_seconds': submitted,
-              'runtime_main_to_vcpu_ms': float(duration[1]),
-              'cold_start_to_guest_shell_seconds': ready,
+              'cold_start_to_vcpu_seconds': cold['start_to_vcpu_seconds'],
+              'runtime_main_to_vcpu_ms': cold['runtime_main_to_vcpu_ms'],
+              'cold_start_to_guest_shell_seconds': cold['start_to_guest_shell_seconds'],
               'guest_shell': 'passed',
-              'profile_lines': [line.decode() for line in output.splitlines() if b'startup profile:' in line]}
+              'profile_lines': cold['profile_lines'], 'starts': starts}
     (folder / 'results.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result), flush=True)
     return result
@@ -68,9 +115,13 @@ def main():
     parser.add_argument('--initramfs', type=Path)
     parser.add_argument('--qemu', default='qemu-system-aarch64')
     parser.add_argument('--boots', type=int, default=3)
+    parser.add_argument('--starts', type=int, default=1,
+                        help='Starts per boot; subsequent starts alternate vmm stop/start alpine')
     args = parser.parse_args()
     if args.boots < 1:
         parser.error('--boots must be positive')
+    if args.starts < 1:
+        parser.error('--starts must be positive')
     args.fixture = args.fixture.resolve()
     args.image = args.image.resolve()
     args.initramfs = (args.initramfs or args.fixture / 'bootstrap.cpio').resolve()
@@ -81,6 +132,8 @@ def main():
                 'sha256': {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
                            for path in (args.image, args.initramfs, args.fixture / 'board.json')},
                 'limits': ['Fresh guests, warm host disk cache, snapshot writes discarded',
+                           'Later starts reuse the host-kernel cache within the same boot',
+                           'The manager retains its image handle between start/stop commands',
                            'Guest-shell interval includes console attachment',
                            'Runtime metric ends at start submission, not first guest entry',
                            'Profile-enabled runs are diagnostic, not final performance results']}
@@ -90,6 +143,12 @@ def main():
     keys = ('cold_start_to_vcpu_seconds', 'runtime_main_to_vcpu_ms', 'cold_start_to_guest_shell_seconds')
     summary = {key: {'median': statistics.median(r[key] for r in results),
                      'min': min(r[key] for r in results), 'max': max(r[key] for r in results)} for key in keys}
+    for ordinal in range(1, args.starts):
+        summary[f'restart_{ordinal}'] = {
+            key: {'median': statistics.median(r['starts'][ordinal][key] for r in results),
+                  'min': min(r['starts'][ordinal][key] for r in results),
+                  'max': max(r['starts'][ordinal][key] for r in results)}
+            for key in ('runtime_main_to_vcpu_ms', 'start_to_vcpu_seconds', 'start_to_guest_shell_seconds')}
     (args.output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(summary, indent=2))
 

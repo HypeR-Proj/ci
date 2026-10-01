@@ -6,6 +6,7 @@
 #define MIB (1024u * 1024u)
 #define MEMORY_BYTES (8u * MIB)
 #define FILE_BYTES (16u * MIB)
+#define HOT_FILE_BYTES (256u * 1024u)
 #define IO_BYTES (128u * 1024u)
 #define RANDOM_OPS 512u
 #define SYNC_OPS 64u
@@ -179,11 +180,47 @@ static void storage(void)
 	bench_close(file);
 }
 
+static void hot_random_read(void)
+{
+	/* Reuse the already resident memory-copy destination to verify every
+	 * returned byte after timing, without changing the earlier workloads. */
+	_Static_assert(RANDOM_OPS * 4096u <= MEMORY_BYTES, "random read results fit");
+	unsigned char *reads = (unsigned char *)destination;
+	uint64_t file = bench_open("/data/seed.bin", 0);
+	for (unsigned sample = 0; sample < SAMPLES; sample++) {
+		/* Warm the entire 64-page working set before each timed sample. */
+		for (uint64_t offset = 0; offset < HOT_FILE_BYTES; offset += IO_BYTES) {
+			bench_read(file, offset, io_buffer, IO_BYTES);
+			verify_buffer(offset, IO_BYTES);
+		}
+		uint32_t random = 12345;
+		uint64_t start = bench_clock();
+		for (unsigned i = 0; i < RANDOM_OPS; i++) {
+			random = random * 1664525u + 1013904223u;
+			uint64_t offset = (uint64_t)(random % (HOT_FILE_BYTES / 4096)) * 4096;
+			bench_read(file, offset, reads + i * 4096u, 4096);
+		}
+		uint64_t elapsed = bench_clock() - start;
+		random = 12345;
+		for (unsigned i = 0; i < RANDOM_OPS; i++) {
+			random = random * 1664525u + 1013904223u;
+			uint64_t offset = (uint64_t)(random % (HOT_FILE_BYTES / 4096)) * 4096;
+			for (size_t byte = 0; byte < 4096; byte++)
+				if (reads[i * 4096u + byte] !=
+				    (unsigned char)(((offset + byte) * 17 + 31) % 251))
+					bench_fail("hot random read verification", offset + byte);
+		}
+		result("file_random_read_hot_4k", sample, RANDOM_OPS, elapsed);
+	}
+	bench_close(file);
+}
+
 int bench_main(void)
 {
 	print("BENCH-BEGIN\n");
 	memory();
 	storage();
+	hot_random_read();
 	print("BENCH-PASS\n");
 	return 0;
 }
