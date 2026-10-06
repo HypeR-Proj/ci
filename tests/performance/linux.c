@@ -54,10 +54,11 @@ uint64_t bench_clock(void)
 	return (uint64_t)time.seconds * 1000000000 + (uint64_t)time.nanoseconds;
 }
 
-uint64_t bench_open(const char *path, int create)
+uint64_t bench_open(const char *path, int mode)
 {
-	/* AT_FDCWD; O_RDWR | O_CREAT | O_TRUNC, or O_RDONLY. */
-	int64_t file = call(56, (uint64_t)-100, (uintptr_t)path, create ? 578 : 0, 0666);
+	/* AT_FDCWD; O_RDWR | O_CREAT | O_TRUNC, O_RDWR, or O_RDONLY. */
+	uint64_t flags = mode == BENCH_CREATE ? 578 : mode == BENCH_READ_WRITE ? 2 : 0;
+	int64_t file = call(56, (uint64_t)-100, (uintptr_t)path, flags, 0666);
 	if (file < 0)
 		bench_fail("openat", file);
 	return (uint64_t)file;
@@ -101,8 +102,28 @@ void bench_sync(uint64_t file)
 		bench_fail("fsync", status);
 }
 
+void bench_sync_volume(uint64_t file)
+{
+	int64_t status = call(267, file, 0, 0, 0); /* syncfs: this filesystem only. */
+	if (status)
+		bench_fail("syncfs", status);
+}
+
+void bench_pause(uint64_t nanoseconds)
+{
+	struct {
+		uint64_t seconds, nanoseconds;
+	} delay = {nanoseconds / 1000000000, nanoseconds % 1000000000};
+
+	int64_t status = call(115, 1, 0, (uintptr_t)&delay, 0); /* clock_nanosleep */
+	if (status && status != -4)
+		bench_fail("clock_nanosleep", status);
+}
+
+#ifndef BENCH_CUSTOM_ENTRY
 __attribute__((noreturn)) void _start(void)
 {
 	call(93, bench_main(), 0, 0, 0);
 	__builtin_unreachable();
 }
+#endif

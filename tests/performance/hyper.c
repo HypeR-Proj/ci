@@ -32,11 +32,12 @@ void bench_output(const char *text, size_t length)
 	}
 }
 
-uint64_t bench_open(const char *path, int create)
+uint64_t bench_open(const char *path, int mode)
 {
 	uint64_t file;
-	/* SDK std bridge: READ | WRITE, optionally CREATE | TRUNCATE. */
-	int64_t status = __hyper_std_fs_open(path, strlen(path), create ? 27 : 1, &file);
+	/* SDK std bridge: READ, READ | WRITE, or READ | WRITE | CREATE | TRUNCATE. */
+	uint32_t options = mode == BENCH_CREATE ? 27 : mode == BENCH_READ_WRITE ? 3 : 1;
+	int64_t status = __hyper_std_fs_open(path, strlen(path), options, &file);
 	if (status)
 		bench_fail("open", status);
 	return file;
@@ -82,8 +83,21 @@ void bench_sync(uint64_t file)
 		bench_fail("sync", status);
 }
 
+void bench_sync_volume(uint64_t file)
+{
+	/* The current FAT file-sync operation commits the mounted volume. */
+	bench_sync(file);
+}
+
+void bench_pause(uint64_t nanoseconds)
+{
+	__hyper_std_sleep(nanoseconds);
+}
+
+#ifndef BENCH_CUSTOM_ENTRY
 int hyper_main(const hyper_startup_t *startup)
 {
 	(void)startup;
 	return bench_main();
 }
+#endif

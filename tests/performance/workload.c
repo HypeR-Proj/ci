@@ -120,7 +120,7 @@ static void read_file(uint64_t file)
 
 static void storage(void)
 {
-	uint64_t file = bench_open("/data/seed.bin", 0);
+	uint64_t file = bench_open("/data/seed.bin", BENCH_READ_ONLY);
 	for (unsigned sample = 0; sample < SAMPLES; sample++) {
 		uint64_t start = bench_clock();
 		read_file(file);
@@ -151,7 +151,7 @@ static void storage(void)
 	bench_close(file);
 	for (size_t i = 0; i < IO_BYTES; i++)
 		io_buffer[i] = (unsigned char)(i * 13 + 7);
-	file = bench_open("/data/write.bin", 1);
+	file = bench_open("/data/write.bin", BENCH_CREATE);
 	for (unsigned sample = 0; sample < SAMPLES; sample++) {
 		uint64_t start = bench_clock();
 		for (uint64_t offset = 0; offset < FILE_BYTES; offset += IO_BYTES)
@@ -186,7 +186,7 @@ static void hot_random_read(void)
 	 * returned byte after timing, without changing the earlier workloads. */
 	_Static_assert(RANDOM_OPS * 4096u <= MEMORY_BYTES, "random read results fit");
 	unsigned char *reads = (unsigned char *)destination;
-	uint64_t file = bench_open("/data/seed.bin", 0);
+	uint64_t file = bench_open("/data/seed.bin", BENCH_READ_ONLY);
 	for (unsigned sample = 0; sample < SAMPLES; sample++) {
 		/* Warm the entire 64-page working set before each timed sample. */
 		for (uint64_t offset = 0; offset < HOT_FILE_BYTES; offset += IO_BYTES) {

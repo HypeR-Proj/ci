@@ -7,6 +7,9 @@ Manual local measurements only. Do not add these workloads to QEMU CI or use
 their timings as CI thresholds. Cross-architecture TCG and shared runner CPU
 availability make GitHub performance numbers unsuitable for this comparison.
 The runners refuse execution when CI=true or GITHUB_ACTIONS=true.
+For physical Pi 5 storage/network measurements, use tests/hardware/storage
+and tests/hardware/network. Those are separate manual fixtures and are not
+built or packaged by default; their results are not comparable to TCG timings.
 
 This fixture compares a Native HypeR process with a direct Linux process on
 the same QEMU machine. It measures application-visible performance, including
