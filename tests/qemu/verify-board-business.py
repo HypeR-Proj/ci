@@ -32,6 +32,8 @@ def prepare(args):
     subprocess.run([str(args.fit_pack.resolve()), str(args.output / 'business.itb'), 'arm64',
                     str(kernel), '0x40200000', '0x40200000', str(ramfs)], check=True)
     board = json.loads((ROOT / 'boards/qemu.json').read_text())
+    board['io-vm'].pop('network-device', None)
+    board['io-vm'].pop('networks', None)
     board['files'].pop('vm/alpine.itb')
     board['files']['vm/business.itb'] = 'business'
     board['virtual-machines'] = [{'name': 'business', 'image': 'vm/business.itb',

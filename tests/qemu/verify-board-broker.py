@@ -29,6 +29,8 @@ from board_config import Board
 
 def prepare(args):
     board = json.loads((ROOT / 'boards/qemu.json').read_text())
+    board['io-vm'].pop('network-device', None)
+    board['io-vm'].pop('networks', None)
     board['files'].pop('vm/alpine.itb')
     board['files']['vm/business.itb'] = 'business'
     board['virtual-machines'] = [

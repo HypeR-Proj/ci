@@ -14,14 +14,11 @@ spec.loader.exec_module(fleet)
 
 
 class FleetLogTests(unittest.TestCase):
-    def test_both_init_supervision_orders_accept_explicit_configuration_rejection(self):
-        for init_failure in (
-            b'HypeR init: VM fleet configuration rejected\n',
-            b"HypeR init: critical service 'vm-manager' terminated: code=1\n",
-        ):
-            output = (fleet.REJECTED + b' missing image\n' + init_failure
-                      + fleet.BOOT_FAILED + b'\n')
-            fleet.validate_log('missing-image', output)
+    def test_configuration_rejection_requires_surviving_native_services(self):
+        output = fleet.REJECTED + b' missing image\n' + fleet.DEGRADED
+        fleet.validate_log('missing-image', output)
+        with self.assertRaises(AssertionError):
+            fleet.validate_log('missing-image', output + b'\n' + fleet.BOOT_FAILED)
 
     def test_guest_or_unrelated_service_failure_is_not_configuration_rejection(self):
         for output in (
@@ -33,13 +30,13 @@ class FleetLogTests(unittest.TestCase):
                 fleet.validate_log('malformed', output)
 
     def test_rejected_batch_cannot_publish_success_or_start_a_guest(self):
-        rejected = fleet.REJECTED + b'\n' + fleet.BOOT_FAILED
+        rejected = fleet.REJECTED + b'\n' + fleet.DEGRADED
         for extra in (fleet.CONFIGURED, fleet.GUEST_RUNNING):
             with self.assertRaises(AssertionError):
                 fleet.validate_log('missing-image', rejected + b'\n' + extra)
 
-    def test_kernel_failure_cannot_hide_behind_expected_init_failure(self):
-        rejected = fleet.REJECTED + b'\n' + fleet.BOOT_FAILED
+    def test_kernel_failure_cannot_hide_behind_expected_storage_failure(self):
+        rejected = fleet.REJECTED + b'\n' + fleet.DEGRADED
         for marker in fleet.KERNEL_FAILURES:
             with self.assertRaises(AssertionError):
                 fleet.validate_log('malformed', rejected + b'\n' + marker)

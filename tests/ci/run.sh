@@ -9,7 +9,7 @@ root=$(CDPATH='' cd -- "$(dirname "$0")/../.." && pwd)
 cd "$root"
 
 usage() {
-    echo "usage: tests/ci/run.sh {quality|scripts|native|native-sdk|native-gicv3|native-gicv2|native-smp-stack|io-vm|board-storage|riscv64-native|aarch64-build|aarch64-qemu|riscv64-qemu|x86_64-build}" >&2
+    echo "usage: tests/ci/run.sh {quality|scripts|native|native-sdk|native-gicv3|native-gicv2|native-smp-stack|io-vm|io-network|board-storage|riscv64-native|aarch64-build|aarch64-qemu|riscv64-qemu|x86_64-build}" >&2
     exit 2
 }
 
@@ -30,6 +30,7 @@ case "${1:-}" in
         run_kernel_suite quality
         ;;
     scripts)
+        python3 -B tests/build/kernel-version.py
         python3 -B tests/build/developer-entrypoints.py
         python3 tests/build/incremental.py
         python3 -B tests/build/app-deployment.py
@@ -45,6 +46,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-session.py
         python3 -B tests/qemu/test-console.py
         python3 -B tests/qemu/test-fleet-config.py
+        python3 -B tests/qemu/test-network.py
         command -v shellcheck >/dev/null 2>&1 || {
             echo "shellcheck is required for the script-quality suite" >&2
             exit 2
@@ -74,6 +76,7 @@ case "${1:-}" in
         make -o image -o native-initramfs test-console ARCH=aarch64
         make -o image -o native-initramfs test-apps ARCH=aarch64
         make -o image -o app test-fleet-config ARCH=aarch64
+        make -o image -o app test-storage-failure ARCH=aarch64
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64
         make -o image test-vm-smoke ARCH=aarch64 QEMU_CPUS=4
         make -o image test-vm-smoke ARCH=aarch64 QEMU_CPUS=1 \
@@ -129,6 +132,11 @@ case "${1:-}" in
             QEMU_CPUS=4 QEMU_MACHINE=virt,virtualization=on,gic-version=3
         make -o image -o app test-io-standby ARCH=aarch64 IO_VM_PACKAGE="$package" \
             QEMU_CPUS=1 QEMU_MACHINE=virt,virtualization=on,gic-version=2
+        ;;
+    io-network)
+        package=$(python3 -B scripts/fetch-io-vm.py \
+            --reference "${IO_VM_REFERENCE:-}" --platform qemu)
+        make test-board-network ARCH=aarch64 IO_VM_PACKAGE="$package"
         ;;
     board-storage)
         package=$(python3 -B scripts/fetch-io-vm.py \

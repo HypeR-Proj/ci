@@ -56,3 +56,42 @@ jobs:
             target/app/aarch64/io-standby-*
           if-no-files-found: ignore
           retention-days: 7
+
+  network:
+    name: AArch64 / guest networking / GICv${{ matrix.gic }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        gic: [2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4
+        with:
+          version: 1.3.0
+      - name: Install deployment and QEMU tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools e2fsprogs squashfs-tools device-tree-compiler
+      - name: Verify guest network and shared backend lifecycle
+        env:
+          IO_VM_REFERENCE: ${{ inputs.reference }}
+          QEMU_MACHINE: virt,virtualization=on,gic-version=${{ matrix.gic }}
+          QEMU_CPUS: 4
+        run: sh tests/ci/run.sh io-network
+      - name: Clean up AArch64 QEMU
+        if: always()
+        run: sh tests/ci/cleanup-qemu.sh aarch64
+      - name: Upload network acceptance diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: io-vm-network-gicv${{ matrix.gic }}-evidence
+          path: |
+            target/board-tests/network.*/network.log
+            target/board-tests/network.*/config.json
+          if-no-files-found: ignore
+          retention-days: 7

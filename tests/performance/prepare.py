@@ -52,6 +52,9 @@ def main():
          SOURCE / 'hyper.c', out / 'workload.o', '-lhyper-std', '-o', out / 'bench-hyper'])
     board = json.loads((ROOT / 'boards/qemu.json').read_text())
     board['virtual-machines'] = []
+    # Preserve the disk/memory baseline's identical network-free machines.
+    board['io-vm'].pop('network-device', None)
+    board['io-vm'].pop('networks', None)
     board['files'] = {'seed.bin': 'seed'}
     (out / 'board.json').write_text(json.dumps(board, indent=2) + '\n')
     seed = bytes((i * 17 + 31) % 251 for i in range(251))

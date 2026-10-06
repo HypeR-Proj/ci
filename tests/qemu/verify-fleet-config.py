@@ -14,6 +14,7 @@ from session import Session, native_command
 CONFIGURED = b'HypeR init: VM fleet configured'
 REJECTED = b'HypeR vm-manager: fleet configuration rejected:'
 BOOT_FAILED = b'HypeR init: bootstrap failed'
+DEGRADED = b'HypeR init: VM fleet configuration unavailable; Native services remain available'
 GUEST_RUNNING = b'HypeR: vCPU 0 running as scheduler thread'
 CASES = ('empty', 'no-autostart', 'malformed', 'missing-image', 'start-failure')
 KERNEL_FAILURES = (b'HypeR: fatal', b'kernel panic', b'HypeR crash monitor')
@@ -23,10 +24,8 @@ def validate_log(case, output):
     if any(marker in output for marker in KERNEL_FAILURES):
         raise AssertionError('kernel failure during fleet provisioning')
     if case in ('malformed', 'missing-image'):
-        # Process termination may win over the queued Rejected reply. Require
-        # the manager's admission error and init's explicit bootstrap failure.
-        if REJECTED not in output or BOOT_FAILED not in output:
-            raise AssertionError('configuration rejection did not fail init bootstrap')
+        if REJECTED not in output or DEGRADED not in output or BOOT_FAILED in output:
+            raise AssertionError('configuration rejection did not retain Native services')
         if CONFIGURED in output or GUEST_RUNNING in output:
             raise AssertionError('rejected fleet was acknowledged or partially started')
     else:
@@ -42,12 +41,26 @@ def main():
         raise ValueError('unknown fleet configuration case')
     command = native_command(qemu, image, initramfs)
     rejected = case in ('malformed', 'missing-image')
-    failures = KERNEL_FAILURES if rejected else KERNEL_FAILURES + (
-        BOOT_FAILED, REJECTED, b'HypeR init: critical service ')
+    failures = KERNEL_FAILURES + (BOOT_FAILED, b'HypeR init: critical service ')
+    if not rejected:
+        failures += (REJECTED,)
     with Session(command, logfile, failures=failures) as session:
         if rejected:
             session.await_text(rb'(?s)(?=.*' + re.escape(REJECTED)
-                               + rb')(?=.*' + re.escape(BOOT_FAILED) + rb')')
+                               + rb')(?=.*' + re.escape(DEGRADED) + rb')')
+            # Provisioning errors must leave the console and manager responsive.
+            session.send(b"echo FLEET-''RECOVERY-OK\n")
+            session.await_text(rb'FLEET-RECOVERY-OK\n')
+            session.await_text(rb'hyper-sh\$ ')
+            session.send(b'vmm list\n')
+            listing = session.await_text(rb'hyper-sh\$ ')
+            if re.search(rb'^\S+\s+(?:starting|running|stopping|stopped|failed)\s+',
+                         listing, flags=re.M):
+                raise AssertionError('rejected fleet published definitions')
+            session.send(b'vmm start alpine\n')
+            response = session.await_text(rb'hyper-sh\$ ')
+            if b'VM fleet unavailable: initial configuration is unavailable' not in response:
+                raise AssertionError(f'rejected fleet did not report unavailability: {response!r}')
         else:
             session.await_text(rb'(?s)(?=.*HypeR session: console ready)'
                                rb'(?=.*' + re.escape(CONFIGURED) + rb')')

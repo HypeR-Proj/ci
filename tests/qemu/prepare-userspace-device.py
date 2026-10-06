@@ -40,6 +40,8 @@ def main():
                    check=True)
     board = json.loads(args.board.read_text())
     board['virtual-machines'] = []
+    board['io-vm'].pop('network-device', None)
+    board['io-vm'].pop('networks', None)
     board['files'].pop('vm/alpine.itb', None)
     board['io-vm']['io-device'] = {'profile': 'virtio-mmio-scsi', 'path': node}
     (args.output / 'config.json').write_text(json.dumps(board, indent=2) + '\n')

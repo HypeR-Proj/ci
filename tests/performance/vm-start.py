@@ -5,6 +5,7 @@
 """Manually measure cold and repeated Alpine starts; never impose CI timing gates."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,12 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tests/qemu'))
 from session import Session
+sys.path.insert(0, str(ROOT / 'scripts'))
+from board_config import Board
+
+_runner_spec = importlib.util.spec_from_file_location('board_runner', ROOT / 'scripts/run-io-vm.py')
+_runner = importlib.util.module_from_spec(_runner_spec)
+_runner_spec.loader.exec_module(_runner)
 
 
 def shell(vm, command, marker):
@@ -82,6 +89,7 @@ def boot(args, index):
                '-device', 'virtio-scsi-device,id=scsi,iommu_platform=on',
                '-device', 'scsi-hd,drive=disk,bus=scsi.0,scsi-id=0,lun=0',
                '-serial', 'stdio', '-monitor', 'none']
+    command.extend(_runner.network_arguments(args.board))
     (folder / 'command.json').write_text(json.dumps(command, indent=2) + '\n')
     start = time.monotonic()
     with Session(command, folder / 'serial.log', failures=(b'HypeR: fatal', b'HypeR KERNEL PANIC',
@@ -123,6 +131,7 @@ def main():
     if args.starts < 1:
         parser.error('--starts must be positive')
     args.fixture = args.fixture.resolve()
+    args.board = Board.load(args.fixture / 'board.json')
     args.image = args.image.resolve()
     args.initramfs = (args.initramfs or args.fixture / 'bootstrap.cpio').resolve()
     args.output = args.output.resolve()
