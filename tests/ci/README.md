@@ -6,16 +6,23 @@ SPDX-License-Identifier: Apache-2.0
 # CI test policy
 
 The scripts in this directory are the stable repository-level boundary between
-GitHub Actions and the project build/test system. Kernel-only source contracts
+GitHub Actions and the project build/test system. Kernel-only compiler checks
 and architecture suites live under `kernel/tests/ci`; this dispatcher enters
 the kernel component before running them. All suites are directly runnable
 locally.
 The `quality` suite requires ripgrep, while the `scripts` suite requires
 ShellCheck; GitHub Actions installs both tools explicitly.
 
+The separate `Documentation` workflow builds the complete Markdown, Rustdoc
+and Doxygen site on every pull request and push to `main`. Its build job checks
+documentation diagnostics and local links in the generated HTML artifact. Only
+the default-branch deployment job receives Pages write permission. See the
+[documentation build guide](../../docs/documentation.md) for local reproduction
+and the one-time Pages/required-check setup.
+
 | Suite | Required contract |
 | --- | --- |
-| `quality` | Architecture, bootstrap-stack, and IRQ-ownership boundary checks, formatting, host, Kconfig, and kallsyms tests |
+| `quality` | Parsed workspace declarations, resolved Cargo graph, HAL privacy compilation, formatting, host and Loom concurrency tests, Kconfig, and kallsyms tests |
 | `scripts` | Incremental build, deployment, board/package/rootfs, developer-entrypoint and QEMU transport Python tests; ShellCheck for test, acquisition and SDK scripts |
 | `native` | Serial local aggregate of the four AArch64 Native suites below |
 | `native-sdk` | SDK publication/consumer checks, portable runtime and app tests, and service-manifest validation |
@@ -74,25 +81,49 @@ transaction tests, and the AArch64 VHE raw-code EL0 proof: repeated direct
 contained breakpoint fault,
 Process/Thread join, and acknowledged retirement.
 
+The standalone AArch64 runner explicitly uses multithreaded TCG. With at least
+three CPUs, its wait-arbitration test races two remote resolvers through Armed
+and queued waits, then checks worker retirement; smaller configurations require
+an explicit skip marker. Host `quality` additionally runs Loom scenarios
+against production publication/admission mechanisms. See the commands and
+coverage limits in [validation coverage](../../kernel/tests/VALIDATION.md).
+These are correctness tests; storage/network performance benchmarks remain
+manual and have no CI throughput or latency thresholds.
+
 Failed QEMU jobs retain their complete serial logs as CI artifacts. Guest
 Linux inputs are checksum-pinned by `kernel/tools/guest` and cached only as CI
 inputs; they are not included in the distributable kernel artifact.
 
-`check-boot-stack-contract.sh` protects the bounded scratch headroom required
-by allocation-free firmware discovery on every architecture. Image validation
-also checks the linked stack-symbol span, so source declarations and delivered
-artifacts must agree on the minimum.
-
-`test-boot-stack-contract.sh` verifies that comments and duplicate declarations
-cannot satisfy this source ratchet.
+Final bootstrap-stack sizes have Rust const assertions in each architecture's
+layout owner. Image validation independently checks the linked initial stack's
+symbol span. Both require at least 256 KiB for bounded, allocation-free firmware
+discovery; neither depends on how a constant is spelled.
 
 `check-license-headers.sh` requires every project-authored tracked text file to
 carry SPDX copyright and Apache-2.0 identifiers. The complete license text and
 Cargo-generated lockfiles are intentionally exempt.
 
-`check-arch-boundaries.sh` invokes `hal-boundary.py graph` to inspect Cargo's
-resolved dependency direction: `hyper-hal` depends on `hyper-core`, never the
-kernel binary. `check-arch-facades.sh` also compiles positive HAL imports and a
-negative private-architecture import probe. Rust privacy enforces the exported
-crate boundary. These checks do not prove synchronization or lifecycle safety;
-behavioral tests and review remain necessary.
+`check-workspace.py` parses Cargo manifests to enforce in-tree ABI ownership,
+installed-SDK consumption and app-local sharing. It recognizes renamed packages,
+workspace dependencies, target-specific tables and patches. Apps cannot declare
+a direct `hyper-sys` dependency. Normal compilation resolves imports; comments
+and documentation mentioning a crate are not dependency violations. The check
+also reads Git index modes to reject submodules and obsolete component locks.
+
+`kernel/tests/ci/hal-boundary.py` checks Cargo's resolved dependency direction
+and compiles public/private HAL import probes. The negative probe must fail with
+rustc E0603 at the intended import, with no unrelated compiler errors. Network
+errors or a broken public interface cannot count as a successful privacy test.
+There are no per-rule shell wrappers.
+
+Ownership traits and consuming IRQ API signatures are checked against the real
+types in `kernel/tests/kernel/type_contracts.rs` whenever `kernel-self-test` is
+compiled, including the AArch64, RISC-V and x86-64 build checks.
+
+See [validation coverage](../../kernel/tests/VALIDATION.md) for subsystem
+coverage and the limits of these checks. Do not add grep/sed assertions over
+function bodies or `include_str!` tests over Rust implementations. Such checks
+freeze a spelling or statement order without executing the invariant. Use a
+compiler check, a behavioral test of production code, or an artifact/runtime
+test appropriate to the property. Assembly/weak-memory ordering and unsafe
+lifetime proofs still require review; a source pattern was never a substitute.

@@ -24,7 +24,8 @@ case "${1:-}" in
             echo "ripgrep is required for the source-quality suite" >&2
             exit 2
         }
-        sh tests/ci/check-monorepo-contract.sh
+        python3 -B tests/ci/test-workspace.py
+        python3 -B tests/ci/check-workspace.py
         sh tests/ci/check-license-headers.sh
         sh tests/ci/test-license-headers.sh
         run_kernel_suite quality
