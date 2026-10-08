@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: Install CI tools
+description: Reuse available tools and verified package downloads with bounded mirror fallback
+inputs:
+  packages:
+    description: Whitespace-separated Ubuntu packages supported by install-tools.py
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Identify tool cache
+      id: key
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        echo "profile=$(printf '%s' "$PACKAGES" | sha256sum | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+        echo "day=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+    - name: Restore package downloads
+      id: cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/hyper-apt/*.deb
+        key: apt-ubuntu24-${{ runner.arch }}-${{ hashFiles('.github/actions/tools/**', 'tests/ci/install-tools.py') }}-${{ steps.key.outputs.profile }}-${{ steps.key.outputs.day }}
+        restore-keys: |
+          apt-ubuntu24-${{ runner.arch }}-${{ hashFiles('.github/actions/tools/**', 'tests/ci/install-tools.py') }}-${{ steps.key.outputs.profile }}-
+    - name: Install missing tools
+      id: install
+      shell: bash
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        read -r -a packages <<< "$(echo "$PACKAGES" | tr '\n' ' ')"
+        python3 tests/ci/install-tools.py --cache "$RUNNER_TEMP/hyper-apt" "${packages[@]}"
+    - name: Save package downloads
+      if: steps.cache.outputs.cache-hit != 'true' && steps.install.outputs.cacheable == 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ runner.temp }}/hyper-apt/*.deb
+        key: ${{ steps.cache.outputs.cache-primary-key }}

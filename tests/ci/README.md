@@ -11,7 +11,16 @@ and architecture suites live under `kernel/tests/ci`; this dispatcher enters
 the kernel component before running them. All suites are directly runnable
 locally.
 The `quality` suite requires ripgrep, while the `scripts` suite requires
-ShellCheck; GitHub Actions installs both tools explicitly.
+ShellCheck. The shared `tools` action reuses available runner commands and
+installs missing Ubuntu packages. It caches only downloaded `.deb` archives;
+APT still refreshes authenticated package indexes and validates the selected
+archives. Cache keys include the package set, installer revision, runner
+architecture and UTC date, with older matching downloads available as a fallback.
+Index updates have a 60-second deadline and archive downloads a 180-second
+deadline per mirror. A failed or slow download retries through the other Ubuntu
+mirror; package installation starts only after downloading succeeds and is not
+subject to that download deadline. This keeps slow package servers from consuming
+the entire test job's budget without interrupting dpkg midway through an install.
 
 The separate `Documentation` workflow builds the complete Markdown, Rustdoc
 and Doxygen site on every pull request and push to `main`. Its build job checks
@@ -24,26 +33,43 @@ and the one-time Pages/required-check setup.
 | --- | --- |
 | `quality` | Parsed workspace declarations, resolved Cargo graph, HAL privacy compilation, formatting, host and Loom concurrency tests, Kconfig, and kallsyms tests |
 | `scripts` | Incremental build, deployment, board/package/rootfs, developer-entrypoint and QEMU transport Python tests; ShellCheck for test, acquisition and SDK scripts |
-| `native` | Serial local aggregate of the four AArch64 Native suites below |
+| `native` | Serial local aggregate of all AArch64 Native suites below |
 | `native-sdk` | SDK publication/consumer checks, portable runtime and app tests, and service-manifest validation |
-| `native-gicv3` | Native boot, console, apps, runtime-crash recovery, VM smoke on both GIC backends, and forced GICv3 common-register traps |
+| `native-gicv3` | Serial aggregate of `native-console` and `native-vm` |
+| `native-console` | GICv3 Native boot, console, apps, fleet/storage failure and runtime-crash recovery |
+| `native-vm` | VM smoke on both GIC backends and forced GICv3 common-register traps |
 | `native-gicv2` | GICv2 Native boot on one/four CPUs, console and runtime-crash recovery |
-| `native-smp-stack` | Guest SMP on both GIC backends, host overcommit, runtime/power crash retirement and stack limits |
-| `riscv64-native` | RISC-V SDK publication/consumer checks, Native static/dynamic std and application acceptance on one and four harts, file tools, paced shell input, userspace-managed guest boot and runtime-crash recovery |
+| `native-smp-stack` | Serial aggregate of the three SMP suites and `native-retirement-stack` |
+| `native-smp-gicv3` | Guest SMP on GICv3 with four host CPUs |
+| `native-smp-gicv2` | Guest SMP on GICv2 with four host CPUs and abrupt runtime-exit retirement |
+| `native-smp-overcommit` | Guest SMP with one host CPU |
+| `native-retirement-stack` | Power-crash retirement in dormant/pending/powered-off states and stack limits |
+| `riscv64-native` | Serial aggregate of `riscv64-sdk` and `riscv64-runtime` |
+| `riscv64-sdk` | RISC-V SDK publication/consumer checks, app lint and host tests |
+| `riscv64-runtime` | Native static/dynamic std and application acceptance on one/four harts, file tools, paced shell input, userspace-managed guest boot, runtime-crash recovery and stack limits |
 | `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
 | `board-storage` | Configuration storage, Alpine rootfs, business guest, broker and userspace-device acceptance with stack watermarks |
-| `aarch64-build` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity, image ABI/instruction checks, and a separate kernel-self-test image |
+| `aarch64-build` | Serial aggregate of the three AArch64 image build suites below |
+| `aarch64-production` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity and image ABI/instruction checks |
+| `aarch64-self-test` | Separate kernel-self-test image and image ABI/instruction checks |
+| `aarch64-compact` | Self-test image with 42-bit VA / 40-bit PA and image ABI/instruction checks |
 | `aarch64-qemu` | Standalone kernel mechanism self-tests and the AArch64 feature markers described below |
 | `riscv64-qemu` | RISC-V kernel startup, SMP admission, and standalone mechanism self-tests |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
 
-GitHub Actions runs the four Native suites on independent runners. Each suite
+GitHub Actions runs eight AArch64 Native shards and two RISC-V Native shards
+on independent runners. Each shard
 builds its own prerequisites; no suite consumes mutable outputs from another.
 Use `sh tests/ci/run.sh native-gicv2`, for example, to reproduce one shard.
-The local `native` aggregate stays serial because kernel feature variants and
+The local aggregates stay serial because kernel feature variants and
 initramfs fixtures share output paths. Do not run shards concurrently in the
-same checkout. Source quality runs alongside builds; only kernel QEMU jobs wait
-for their image-producing job. All checks must still pass.
+same checkout. The three AArch64 image variants also build on separate runners;
+their artifacts are named `aarch64-kernels-production`, `aarch64-kernels-self-test`
+and `aarch64-kernels-compact`. Kernel QEMU jobs download only their image variant.
+Source quality runs alongside builds; only kernel QEMU jobs wait for image builds.
+All checks must still pass. Sharding reduces elapsed time by doing independent
+work in parallel; it does not remove test cases or reuse a test result from a
+previous commit, and the independent builds can increase total runner minutes.
 
 The architecture QEMU runtime suites deliberately build with
 `kernel-self-test` and use an empty initramfs. They do not select a guest.
