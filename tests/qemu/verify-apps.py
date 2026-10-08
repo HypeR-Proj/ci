@@ -9,6 +9,7 @@ import sys
 import time
 
 from session import Session, native_command
+from handle_checks import verify_handles
 
 
 def main():
@@ -153,7 +154,7 @@ def main():
         run('free --bytes', rb'Mem:\s+\d+ B')
         run('ps --name shell', rb'process\s+\d+.*shell')
         run('ps -T --name shell', rb'thread\s+\d+\s+\d+\s+shell\s+user/resident')
-        run('handle --objects --kind process', rb'\sprocess\s')
+        verify_handles(run)
         if verify_vm:
             # This archive grants no I/O broker capability. A name alone must
             # not fabricate an entry or determine its access permissions.
