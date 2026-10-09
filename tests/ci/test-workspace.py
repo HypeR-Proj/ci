@@ -78,6 +78,25 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'escapes app'):
             workspace.check_apps(self.root)
 
+    def test_shared_library_members_obey_the_same_sdk_boundary(self):
+        self.write('app/Cargo.toml', '[workspace]\nmembers = ["tool", "policy", "../lib/args"]\n')
+        self.write('lib/args/Cargo.toml', '[package]\nname = "args"\n')
+        self.write('app/tool/Cargo.toml', '[package]\nname = "tool"\n[dependencies]\n'
+                   'args = {path = "../../lib/args"}\n')
+        workspace.check_apps(self.root)
+        self.write('lib/args/Cargo.toml', '[package]\nname = "args"\n[dependencies]\n'
+                   'os = {package = "hyper-os", path = "../../sdk/rust/hyper-os"}\n')
+        with self.assertRaisesRegex(ValueError, 'installed SDK'):
+            workspace.check_apps(self.root)
+
+    def test_shared_library_cannot_escape_through_symlink(self):
+        (self.root / 'outside').mkdir()
+        (self.root / 'lib').symlink_to(self.root / 'outside', target_is_directory=True)
+        self.write('lib/args/Cargo.toml', '[package]\nname = "args"\n')
+        self.write('app/Cargo.toml', '[workspace]\nmembers = ["../lib/args"]\n')
+        with self.assertRaisesRegex(ValueError, 'escapes app'):
+            workspace.check_apps(self.root)
+
     def test_kernel_cannot_use_published_or_foreign_abi(self):
         for declaration in ('"=0.0.0"', '{path = "../foreign"}'):
             self.write('kernel/core/Cargo.toml', f'[dependencies]\nhyper-abi = {declaration}\n')

@@ -53,8 +53,8 @@ def check_apps(root):
             raise ValueError(f'app workspace member does not exist: {pattern}')
         for candidate in candidates:
             directory = candidate.resolve()
-            if not directory.is_relative_to(app):
-                raise ValueError(f'app workspace member escapes app/: {pattern}')
+            if not any(directory.is_relative_to(base) for base in (app, root / 'lib')):
+                raise ValueError(f'app workspace member escapes app/ or lib/: {pattern}')
             if directory not in excluded:
                 members[directory] = read_manifest(directory / 'Cargo.toml')
     for directory, manifest in [(app, workspace_manifest), *members.items()]:

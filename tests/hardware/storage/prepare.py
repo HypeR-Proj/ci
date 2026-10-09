@@ -100,16 +100,14 @@ def main():
         app_override = []
         if args.retirement_probe:
             probe_target = out / 'probe-cargo'
-            probe_env = dict(env, CARGO_TARGET_DIR=str(probe_target), HYPER_ARCH='aarch64',
-                             HYPER_SYSROOT=str(sdk), HYPER_RUST_STD='1')
-            # The probe binary has a private Cargo output directory. Ordinary
-            # app output and the published I/O VM package remain untouched.
-            command = [str(sdk / 'bin/hyper-cargo'), 'build', '--manifest-path', 'app/Cargo.toml',
-                       '--release', '--locked', '--offline', '-p', 'hyper-io-runtime',
-                       '--bin', 'hyper-io-runtime', '--features', 'physical-retirement-probe']
-            commands.append(command)
-            subprocess.run(command, cwd=ROOT, env=probe_env, check=True)
-            app_override = [f'APP_CARGO_OUTPUT={probe_target}']
+            probe_apps = out / 'probe-apps'
+            # Stage the entire application/DSO set together; Rust generics can
+            # move between binaries and shared libraries in a feature build.
+            run(['make', '-o', 'app-fetch', 'app', 'ARCH=aarch64',
+                 f'CLANG={clang}', f'HYPER_LD={linker}', f'SDK_OUTPUT={sdk}',
+                 f'APP_CARGO_OUTPUT={probe_target}', f'APP_OUTPUT={probe_apps}',
+                 'APP_FEATURES=hyper-io-runtime/physical-retirement-probe'])
+            app_override = [f'APP_OUTPUT={probe_apps}']
         run(['make', '-o', 'image', '-o', 'app', 'board-initramfs', 'board-guest-images', *app_override,
              'ARCH=aarch64', 'BOARD=rpi5', f'BOARD_CONFIG={out}/config.json', f'BOARD_OUTPUT={out}',
              f'CONFIG_FILE={out}/kernel.config', 'NATIVE_IMAGE_PROFILE=system',

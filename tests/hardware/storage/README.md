@@ -246,7 +246,8 @@ python3 -B tests/hardware/storage/prepare.py --retirement-probe \
 ```
 
 Only this image builds `io-runtime` with `physical-retirement-probe`, in a private
-Cargo output directory. It preserves the published Linux appliance. Sixty
+Cargo output directory. Its applications and Rust shared libraries are built and
+staged together in private `probe-apps/` output. It preserves the published Linux appliance. Sixty
 seconds after storage readiness, a test thread exits the entire Native I/O
 runtime with status 99, without cooperative Linux/device shutdown. It is not a
 performance image. The test does not reset controllers or weaken quarantine.

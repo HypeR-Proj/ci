@@ -56,6 +56,14 @@ def main():
         await_text(rb'hyper-sh\$ ', timeout=60)
         pump(5)
         pending.clear()
+        run('echo HISTORY_RECALL', rb'\nHISTORY_RECALL\n')
+        # Split the escape sequence across transport writes, as real terminals do.
+        for part in (b'\x1b', b'[', b'A\n'):
+            send(part)
+            pump(0.01)
+        await_text(console_lines(b'HISTORY_RECALL', b'hyper-sh$ '))
+        send(b'echo DISCARDED\x15echo LINE_CLEARED\n')
+        await_text(console_lines(b'LINE_CLEARED', b'hyper-sh$ '))
         # Deliberately send typeahead in one burst: a non-reading child
         # must never steal the following command into a disposable pipe.
         send(b'echo TYPEAHEAD_FIRST\necho TYPEAHEAD_SECOND\n')

@@ -10,6 +10,7 @@ import time
 
 from session import Session, native_command
 from handle_checks import verify_handles
+from command_checks import verify_command_options
 
 
 def main():
@@ -49,6 +50,12 @@ def main():
         await_text(rb'hyper-sh\$ ')
         if verify_vm:
             state('alpine', 'running')
+        run('ls -d /lib', rb'l[rwx-]{9}\s+.* /lib@')
+        architecture = re.search(rb'\n((?:aarch64|riscv64)-hyper-hyper)/\n', run('ls -1 /lib/'))
+        if architecture is None:
+            raise AssertionError('missing architecture-specific library directory')
+        for prefix in ('/lib/', '/lib64/'):
+            run(f'ls -1 {prefix}{architecture[1].decode()}', rb'\nlibhyper_rust_std.so\n')
         # Pipelines run concurrently, close unused endpoints, and preserve
         # file-open/truncation semantics without buffering whole commands.
         run('grep --help', rb'Usage:')
@@ -152,9 +159,10 @@ def main():
         run('ls /file-tools', failed=True)
         run('top -b -n 1 -d 0.1', rb'CPU: user-thread')
         run('free --bytes', rb'Mem:\s+\d+ B')
-        run('ps --name shell', rb'process\s+\d+.*shell')
-        run('ps -T --name shell', rb'thread\s+\d+\s+\d+\s+shell\s+user/resident')
+        run('ps --name shell', rb'process\s+0x[0-9a-f]{16}.*shell')
+        run('ps -T --name shell', rb'thread\s+0x[0-9a-f]{16}\s+0x[0-9a-f]{16}\s+shell\s+user/resident')
         verify_handles(run)
+        verify_command_options(run)
         if verify_vm:
             # This archive grants no I/O broker capability. A name alone must
             # not fabricate an entry or determine its access permissions.
@@ -171,7 +179,7 @@ def main():
             assert not re.search(rb'\nio\s', output)
             run('vmm create io --config /etc/hyper/vms.json --from alpine', rb'accepted')
             run('vmm create io --config /etc/hyper/vms.json --from alpine', rb'already exists', failed=True)
-            run('vmm start io', rb'accepted')
+            run('vmm start io --wait --timeout 60', rb'io: running', timeout=65)
             state('io', 'running')
             state('alpine', 'running')
             run('vmm affinity io 0 0', rb'vCPU 0: affinity accepted')
@@ -186,7 +194,7 @@ def main():
             await_text(rb'\nHYPER_CLI_GUEST_OK\n')
             send(b'\x1dq')
             await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
-            run('vmm stop io', rb'accepted')
+            run('vmm stop io --wait --timeout 60', rb'io: stopped', timeout=65)
             state('io', 'stopped')
             state('alpine', 'running')
             run('vmm delete io', rb'accepted')
@@ -197,7 +205,7 @@ def main():
             assert b'alpine' not in run('vmm list')
             run('vmm create alpine --config /etc/hyper/vms.json --start', rb'accepted')
             state('alpine', 'running')
-            run('vmm restart alpine', rb'accepted')
+            run('vmm restart alpine --wait --timeout 60', rb'alpine: running', timeout=65)
             state('alpine', 'running')
         run('echo HYPER_APPS_OK', rb'\nHYPER_APPS_OK\nhyper-sh\$ ')
         print('verified Native file tools' +

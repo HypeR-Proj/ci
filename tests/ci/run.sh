@@ -36,6 +36,7 @@ case "${1:-}" in
         python3 -B tests/build/developer-entrypoints.py
         python3 tests/build/incremental.py
         python3 -B tests/build/app-deployment.py
+        python3 -B tests/build/native-libraries.py
         python3 -B tests/build/io-vm-run.py
         python3 -B tests/build/io-vm-package.py
         python3 -B tests/build/board-image.py

@@ -28,11 +28,11 @@ def verify_handles(run):
     run('handle --object 0xffffffffffffffff', rb'not visible or no longer exists', failed=True)
 
     # The shell's directory handle remains live while short-lived tools exit.
-    processes = run('ps --name shell', rb'process\s+\d+.*shell')
-    process = re.search(rb'\nprocess\s+(\d+)\s+-\s+shell\s', processes)
+    processes = run('ps --name shell', rb'process\s+0x[0-9a-f]{16}.*shell')
+    process = re.search(rb'\nprocess\s+(0x[0-9a-f]{16})\s+-\s+shell\s', processes)
     if not process:
         raise AssertionError(f'missing shell process: {processes!r}')
-    koid = int(process[1])
+    koid = int(process[1], 16)
     handles = run('handle shell --kind directory --no-headers')
     record = re.search(rb'\n(0x[0-9a-f]{16})\s+(0x[0-9a-f]{16})\s+directory\s+(\S+)', handles)
     if not record or b'HANDLE ' in handles or b'Process ' in handles:
