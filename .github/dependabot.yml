@@ -23,7 +23,7 @@ updates:
       - /kernel
       - /kernel/tests/host
       - /kernel/tools/kallsyms
-      - /sdk/rust
+      - /lib/rust
       - /tools/fit-pack
     schedule:
       interval: weekly

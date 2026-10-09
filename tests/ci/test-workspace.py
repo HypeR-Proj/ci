@@ -57,7 +57,7 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_sdk_path_cannot_bypass_installed_sdk(self):
         self.write('app/tool/Cargo.toml', '[package]\nname = "tool"\n[dependencies]\n'
-                   'os = {package = "hyper-os", path = "../../sdk/rust/hyper-os"}\n')
+                   'os = {package = "hyper-os", path = "../../lib/rust/hyper-os"}\n')
         with self.assertRaisesRegex(ValueError, 'installed SDK'):
             workspace.check_apps(self.root)
 
@@ -85,7 +85,7 @@ class WorkspaceTests(unittest.TestCase):
                    'args = {path = "../../lib/args"}\n')
         workspace.check_apps(self.root)
         self.write('lib/args/Cargo.toml', '[package]\nname = "args"\n[dependencies]\n'
-                   'os = {package = "hyper-os", path = "../../sdk/rust/hyper-os"}\n')
+                   'os = {package = "hyper-os", path = "../../lib/rust/hyper-os"}\n')
         with self.assertRaisesRegex(ValueError, 'installed SDK'):
             workspace.check_apps(self.root)
 
