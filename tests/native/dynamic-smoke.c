@@ -52,10 +52,40 @@ static int check_initial_stack(void)
 	return 1;
 }
 
+static int check_opaque_startup_data(const hyper_startup_t *startup)
+{
+	const uint32_t purposes[] = {
+		HYPER_NATIVE_STARTUP_HANDLE_PURPOSE_TASK_FACTORY,
+		HYPER_NATIVE_STARTUP_HANDLE_PURPOSE_TASK_GROUP,
+		HYPER_NATIVE_STARTUP_HANDLE_PURPOSE_RESOURCE_DOMAIN,
+		HYPER_NATIVE_STARTUP_HANDLE_PURPOSE_ROOT_DIRECTORY,
+	};
+	hyper_native_handle_t handles[4];
+	for (size_t i = 0; i < 4; ++i)
+		if (hyper_startup_find_handle(startup, purposes[i], &handles[i]))
+			return 0;
+	const char path[] = "/bin/echo";
+	hyper_call_result_t file = hyper_directory_open_file(handles[3], path, sizeof(path) - 1,
+							     HYPER_NATIVE_RIGHT_EXECUTE);
+	if (file.status)
+		return 0;
+	hyper_call_result_t builder =
+		hyper_process_builder_create(handles[0], handles[1], handles[2], file.value0);
+	(void)hyper_handle_close(file.value0);
+	if (builder.status)
+		return 0;
+	/* The kernel must accept opaque bytes and a subsequent empty replacement,
+	 * without parsing either or trying to account a zero-byte allocation. */
+	const unsigned char bytes[] = {0xff, 0, 0xfe};
+	int ok = !hyper_process_builder_set_data(builder.value0, bytes, sizeof(bytes)) &&
+		 !hyper_process_builder_set_data(builder.value0, NULL, 0);
+	return !hyper_process_builder_abort(builder.value0) && ok;
+}
+
 int hyper_main(const hyper_startup_t *startup)
 {
 	static const char success[] = "HYPER_DYNAMIC_LINK_OK\n";
-	if (!startup_heap_ok || !check_initial_stack())
+	if (!startup_heap_ok || !check_initial_stack() || !check_opaque_startup_data(startup))
 		return 1;
 	hyper_native_handle_t directory = 0;
 	hyper_native_handle_t output = 0;
