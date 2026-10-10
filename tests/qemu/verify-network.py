@@ -13,6 +13,7 @@ persistent proof file in /root.
 import argparse
 import copy
 from contextlib import contextmanager
+from functools import partial
 import hashlib
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -335,7 +336,8 @@ def run(args):
                 b'HypeR I/O: service failed', b'HypeR vm-runtime: failed:',
                 b'[vmm] virtual machine disconnected')
     with payload_server() as (url, digest), Session(
-            command, args.log, failures=failures, output_filter=append_console_output) as session:
+            command, args.log, failures=failures,
+            output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
         scenario = Scenario(session, url, digest, args.expect_tx_offload)
         session.await_text(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n', timeout=180)
         deadline = time.monotonic() + 90

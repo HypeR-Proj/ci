@@ -4,7 +4,9 @@
 
 """Keep backend retirement proofs distinct from shell progress and log noise."""
 import importlib.util
+from functools import partial
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest.mock import Mock
@@ -61,6 +63,32 @@ class NetworkTransferTests(unittest.TestCase):
 
 
 class NetworkLogTests(unittest.TestCase):
+    def test_guest_status_survives_interleaved_printk_without_hiding_errors(self):
+        # CI observed PF_PACKET registration between the status and newline.
+        # Also split a nonzero status to ensure a partial digit cannot pass.
+        diagnostic = b'[   39.701068] NET: Registered PF_PACKET protocol family\r\n'
+        for status in (b'0', b'10'):
+            raw = b'\r\nNETWORK-GUEST-1:' + status[:1] + diagnostic + status[1:] + b'\r\n~ # '
+            script = (
+                f'import sys,time; sys.stdin.buffer.readline(); data={raw!r}; '
+                '[(sys.stdout.buffer.write(bytes([b])), sys.stdout.flush(), '
+                'time.sleep(0.001)) for b in data]; time.sleep(30)')
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
+                logfile = Path(directory) / 'network.log'
+                with network.Session(
+                    [sys.executable, '-u', '-c', script], logfile,
+                    output_filter=partial(network.append_console_output, filter_guest_logs=True)
+                ) as session:
+                    scenario = network.Scenario(session, 'http://unused', 'unused')
+                    if status == b'0':
+                        self.assertEqual(scenario.guest('true'), b'\nNETWORK-GUEST-1:0\n')
+                    else:
+                        with self.assertRaisesRegex(RuntimeError, 'guest command failed'):
+                            scenario.guest('false')
+                        session.await_text(rb'~ # ')
+                self.assertEqual(logfile.read_bytes(), raw)
+                self.assertIsNotNone(session.process.returncode)
+
     def test_stop_acknowledgement_and_prompt_can_split_release(self):
         for fragment in (b'accepted\n', b'hyper-sh$ ', b'accepted\nhyper-sh$ '):
             for offset in range(len(RELEASE) - 1):
