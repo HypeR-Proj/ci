@@ -7,7 +7,11 @@
 import argparse
 from pathlib import Path
 import subprocess
+import sys
 import tomllib
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+from cargo_workspace import member_directories
 
 
 def read_manifest(path):
@@ -43,20 +47,11 @@ def check_abi(root):
 def check_apps(root):
     app = root / 'app'
     workspace_manifest = read_manifest(app / 'Cargo.toml')
-    workspace = workspace_manifest['workspace']
-    excluded = {path.resolve() for pattern in workspace.get('exclude', [])
-                for path in app.glob(pattern)}
     members = {}
-    for pattern in workspace['members']:
-        candidates = list(app.glob(pattern))
-        if not candidates:
-            raise ValueError(f'app workspace member does not exist: {pattern}')
-        for candidate in candidates:
-            directory = candidate.resolve()
-            if not any(directory.is_relative_to(base) for base in (app, root / 'lib')):
-                raise ValueError(f'app workspace member escapes app/ or lib/: {pattern}')
-            if directory not in excluded:
-                members[directory] = read_manifest(directory / 'Cargo.toml')
+    for directory in sorted(member_directories(app / 'Cargo.toml')):
+        if not any(directory.is_relative_to(base) for base in (app, root / 'lib')):
+            raise ValueError(f'app workspace member escapes app/ or lib/: {directory}')
+        members[directory] = read_manifest(directory / 'Cargo.toml')
     for directory, manifest in [(app, workspace_manifest), *members.items()]:
         for alias, spec in dependencies(manifest):
             name = package_name(alias, spec)

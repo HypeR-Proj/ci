@@ -58,7 +58,7 @@ def prepare(args):
             sys.executable, '-B', str(ROOT / 'scripts/pack-native-initramfs.py'),
             '--packer', args.packer, '--strip', args.strip,
             '--output', str(args.output / f'{case}.cpio'),
-            '--deployment', str(ROOT / 'app/deployment.json'), '--profile', 'system',
+            '--deployment', str(ROOT / 'mk/components.mk'), '--profile', 'system',
             '--apps', str(args.apps), '--sdk', str(args.sdk), '--std', str(args.output),
             '--arch', 'aarch64', *replacements,
             '0755', 'svc/io-runtime', str(provider),

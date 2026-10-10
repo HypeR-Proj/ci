@@ -39,6 +39,18 @@ class WorkspaceTests(unittest.TestCase):
         workspace.check_apps(self.root)
         workspace.check_abi(self.root)
 
+    def test_glob_members_still_enforce_dependency_policy(self):
+        self.write('app/Cargo.toml', '[workspace]\nmembers = ["*"]\n'
+                   'exclude = [".cargo", "target"]\n')
+        self.write('app/README.md', 'not a package')
+        self.write('app/.cargo/config.toml', '')
+        self.write('app/target/Cargo.toml', 'not a package manifest')
+        workspace.check_apps(self.root)
+        self.write('app/new-tool/Cargo.toml', '[package]\nname = "new-tool"\n'
+                   '[dependencies]\nhyper-sys = "=0.0.0"\n')
+        with self.assertRaisesRegex(ValueError, 'raw syscalls'):
+            workspace.check_apps(self.root)
+
     def test_aliased_raw_syscalls_in_every_dependency_context(self):
         for section in ('dependencies', 'dev-dependencies', 'build-dependencies',
                         'target.\'cfg(target_os = "hyper")\'.dependencies',
