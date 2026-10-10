@@ -70,11 +70,13 @@ def verify_handles(run):
     for kind, expected in [('vmar', rb'permissions: [r-][w-][x-]; maximum:'),
                            ('byte-channel', rb'peer-holder: process 0x[0-9a-f]{16}')]:
         rows = run(f'handle shell --kind {kind} --no-headers')
-        # The shell temporarily holds this tool's pipe endpoints too. Select
-        # a persistent read-only input endpoint, never an rw pipeline handle.
+        # The terminal input has read+inspect rights. The shell may still hold
+        # this tool's read+wait launch receipt when scanned; it closes as soon
+        # as ProcessBuilder.start returns. Exclude that receipt and rw pipes.
         candidates = re.findall(rb'\n(0x[0-9a-f]{16})\s+(0x[0-9a-f]{16})\s+' + kind.encode() + rb'\s+(\S+)', rows)
         match = next((row for row in candidates if kind != 'byte-channel' or
-                      (b'read' in row[2].split(b'|') and b'write' not in row[2].split(b'|'))), None)
+                      ({b'read', b'inspect'} <= set(row[2].split(b'|')) and
+                       b'write' not in row[2].split(b'|'))), None)
         if not match:
             raise AssertionError(f'missing shell {kind}: {rows!r}')
         run(f'handle shell --handle {match[0].decode()}', expected)

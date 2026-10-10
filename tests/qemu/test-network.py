@@ -8,6 +8,8 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import Mock
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 spec = importlib.util.spec_from_file_location(
     'verify_network', Path(__file__).with_name('verify-network.py'))
@@ -15,6 +17,47 @@ network = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(network)
 
 RELEASE = b'HypeR IO VM: HypeR I/O [hbr0]: reply RELEASE_MEMORY: ok\r\n'
+
+
+class NetworkTransferTests(unittest.TestCase):
+    def test_upload_requires_exact_payload_not_only_length(self):
+        with network.payload_server() as (url, digest):
+            url = url.replace('10.0.2.2', '127.0.0.1')
+            with urlopen(url, timeout=5) as response:
+                payload = response.read()
+            self.assertEqual(len(payload), 256 * 1024 + 137)
+            self.assertNotIn(b'\0', payload)
+            with urlopen(Request(url, data=payload), timeout=5) as response:
+                self.assertEqual(response.read(), digest.encode() + b'\n')
+            corrupted = bytes([payload[0] ^ 1]) + payload[1:]
+            for invalid in (b'', payload[:-1], corrupted):
+                with self.subTest(length=len(invalid)):
+                    with self.assertRaises(HTTPError) as error:
+                        urlopen(Request(url, data=invalid), timeout=5)
+                    self.assertEqual(error.exception.code, 400)
+                    error.exception.close()
+
+    def test_transfer_checks_negotiated_bits_before_sending_payload(self):
+        offloads = (1 << 0) | (1 << 11) | (1 << 12)
+        for expected, actual, passes in (
+            ('enabled', offloads, True), ('disabled', 0, True),
+            ('enabled', 0, False), ('enabled', 1, False),
+            ('disabled', offloads, False), (None, offloads | (1 << 7), False),
+        ):
+            with self.subTest(expected=expected, actual=actual):
+                scenario = network.Scenario(Mock(), 'http://unused', 'digest', expected)
+                # Recent Linux exposes 128 bits, older guests expose 64.
+                width = 128 if expected == 'enabled' else 64
+                output = b'VIRTIO-FEATURES=' + f'{actual:0{width}b}'[::-1].encode() + b'\n'
+                scenario.guest = Mock(return_value=output)
+                if passes:
+                    scenario.transfer()
+                    self.assertEqual(scenario.guest.call_count, 3)
+                    self.assertIn('--post-file=', scenario.guest.call_args.args[0])
+                else:
+                    with self.assertRaises(RuntimeError):
+                        scenario.transfer()
+                    self.assertEqual(scenario.guest.call_count, 1)
 
 
 class NetworkLogTests(unittest.TestCase):

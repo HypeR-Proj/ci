@@ -16,10 +16,10 @@ from session import Session, native_command
 from guest_console import append_console_output
 
 
-# Shared CI TCG hosts can exceed 90 seconds while a fresh Alpine SMP guest
-# is still progressing (observed IPv6 initialization at guest t=76s). This
-# remains a fixed total boot deadline; ordinary commands keep 90 seconds.
-GUEST_BOOT_TIMEOUT_SECONDS = 180
+# Shared CI TCG hosts can exceed 180 seconds while a fresh Alpine SMP guest
+# is still progressing (observed initrd release at guest t=172.6s on reboot).
+# Keep a fixed total boot deadline; ordinary commands retain 90 seconds.
+GUEST_BOOT_TIMEOUT_SECONDS = 300
 
 
 def main():
@@ -32,8 +32,6 @@ def main():
     Path(logfile).parent.mkdir(parents=True, exist_ok=True)
     with Session(command, logfile, cleanup_timeout=5,
                  output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
-        pending = session.pending
-
         def await_text(pattern, timeout=90):
             return session.await_text(pattern, timeout, match_only=True)
 
@@ -192,7 +190,11 @@ def main():
             print(f'verified {guest_cpus} guest CPUs, migration, hotplug, two reboots, '
                   'and poweroff reclamation')
         except Exception:
-            sys.stderr.write(pending[-16384:].decode(errors='replace'))
+            # The match buffer filters printk records. Retain the raw boot
+            # progress in CI errors so a slow guest is distinguishable from
+            # a stalled console even when no prompt has arrived yet.
+            session.log.flush()
+            sys.stderr.write(Path(logfile).read_bytes()[-16384:].decode(errors='replace'))
             raise
 
 

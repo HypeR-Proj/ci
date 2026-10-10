@@ -20,6 +20,11 @@ the same model are still different devices. HypeR uses FAT32; retain and record
 Raspbian's existing filesystem, normally ext4. The result describes these two
 deployments, not isolated hypervisor overhead or a controlled filesystem study.
 
+For baseline/candidate comparisons, keep the published I/O VM, guest CPU
+placement and test parameters fixed, record both build identities, and report
+repeated runs with medians and ranges. Collect the
+[network measurements](../network/README.md) separately from storage workloads.
+
 ## Build and artifacts
 
 These payloads are opt-in. Default Make targets, board profiles and Native

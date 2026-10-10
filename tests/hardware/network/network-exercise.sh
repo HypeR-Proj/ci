@@ -22,6 +22,10 @@ ip route show
 # BusyBox ip does not implement iproute2's -s option. The kernel counter
 # interface below provides RX/TX bytes, packets, errors and drops directly.
 cat /proc/net/dev
+for interface in /sys/class/net/*; do
+    [ -r "$interface/device/features" ] || continue
+    printf 'NETWORK,VIRTIO_FEATURES,%s,%s\n' "${interface##*/}" "$(cat "$interface/device/features")"
+done
 echo 'NETWORK,METADATA,END'
 [ "$mode" = serve ] || exit 0
 

@@ -61,10 +61,17 @@ def prepare(args):
 
 @contextmanager
 def payload_server():
-    """Serve only one in-memory object, reachable via SLIRP's 10.0.2.2 alias."""
-    payload = secrets.token_bytes(256 * 1024 + 137)
+    """Download and verify an upload of one bounded, non-MTU-aligned object."""
+    # BusyBox wget handles POST data as a C string. Random ASCII keeps its
+    # --post-file upload intact; packet tests also exercise arbitrary bytes.
+    size = 256 * 1024 + 137
+    payload = secrets.token_hex((size + 1) // 2).encode()[:size]
 
     class Handler(BaseHTTPRequestHandler):
+        def setup(self):
+            super().setup()
+            self.connection.settimeout(60)
+
         def do_GET(self):
             if self.path != '/payload':
                 self.send_error(404)
@@ -75,6 +82,23 @@ def payload_server():
             self.send_header('Cache-Control', 'no-store')
             self.end_headers()
             self.wfile.write(payload)
+
+        def do_POST(self):
+            if self.path != '/payload':
+                self.send_error(404)
+                return
+            if self.headers.get('Content-Length') != str(len(payload)):
+                self.send_error(400, 'unexpected payload length')
+                return
+            received = self.rfile.read(len(payload))
+            if received != payload:
+                self.send_error(400, 'payload mismatch')
+                return
+            receipt = hashlib.sha256(received).hexdigest().encode() + b'\n'
+            self.send_response(200)
+            self.send_header('Content-Length', str(len(receipt)))
+            self.end_headers()
+            self.wfile.write(receipt)
 
         def log_message(self, *_args):
             pass
@@ -114,10 +138,11 @@ def release_acknowledgements(data):
 
 
 class Scenario:
-    def __init__(self, session, url, digest):
+    def __init__(self, session, url, digest, expect_tx_offload=None):
         self.session = session
         self.url = shlex.quote(url)
         self.digest = digest
+        self.expect_tx_offload = expect_tx_offload
         self.counter = 0
         self.releases = 0
         self.storage_proof = secrets.token_hex(16)
@@ -207,11 +232,32 @@ class Scenario:
                    'kill -0 "$(cat "/run/udhcpc-$netif.pid")"')
 
     def transfer(self):
+        result = self.guest("printf 'VIRTIO-''FEATURES=%s\\n' "
+                            '"$(cat "/sys/class/net/$netif/device/features")"')
+        # Linux prints negotiated bits least significant first. Check the
+        # runtime state, not merely the model's advertised capabilities.
+        match = re.search(rb'VIRTIO-FEATURES=([01]{64,})\n', result)
+        if not match:
+            raise RuntimeError(f'missing negotiated virtio features: {result!r}')
+        features = int(match[1][::-1], 2)
+        offloads = (1 << 0) | (1 << 11) | (1 << 12)
+        if self.expect_tx_offload is not None:
+            wanted = offloads if self.expect_tx_offload == 'enabled' else 0
+            if features & offloads != wanted:
+                raise RuntimeError(f'unexpected TX offload features: {features:#x}')
+        if features & ((1 << 1) | (1 << 7) | (1 << 8) | (1 << 9) | (1 << 15)):
+            raise RuntimeError(f'unsupported guest RX offloads: {features:#x}')
         # Remove the previous object so an unsuccessful download cannot pass.
         self.guest(f'rm -f /tmp/hyper-network-payload && '
                    f'wget -T 60 -q -O /tmp/hyper-network-payload {self.url} && '
                    f'test "$(sha256sum /tmp/hyper-network-payload | cut -d\' \' -f1)" '
                    f'= {self.digest}')
+        # TCP guest TX must reach the peer intact, including the odd final
+        # segment. RX alone would not detect a backend dropping GSO metadata.
+        self.guest('rm -f /tmp/hyper-network-receipt && '
+                   'wget -T 60 -q --post-file=/tmp/hyper-network-payload '
+                   f'-O /tmp/hyper-network-receipt {self.url} && '
+                   f'test "$(cat /tmp/hyper-network-receipt)" = {self.digest}')
 
     def external_transfer(self, url):
         # Explicitly requested smoke coverage for DNS and an external HTTP
@@ -290,7 +336,7 @@ def run(args):
                 b'[vmm] virtual machine disconnected')
     with payload_server() as (url, digest), Session(
             command, args.log, failures=failures, output_filter=append_console_output) as session:
-        scenario = Scenario(session, url, digest)
+        scenario = Scenario(session, url, digest, args.expect_tx_offload)
         session.await_text(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n', timeout=180)
         deadline = time.monotonic() + 90
         while True:
@@ -336,7 +382,7 @@ def run(args):
             scenario.stop(vm)
         scenario.retired(2 * len(guests))
         scenario.native('echo NETWORK-LIFECYCLE-PASS')
-    print(f'Guest automatic DHCP, HTTP checksum, reset/rebind, stop/start and memory release passed: {args.log}')
+    print(f'Guest automatic DHCP, bidirectional HTTP checksum, reset/rebind, stop/start and memory release passed: {args.log}')
 
 
 def main():
@@ -350,6 +396,8 @@ def main():
     execute.add_argument('--qemu', default='qemu-system-aarch64')
     execute.add_argument('--board', type=Path, required=True)
     execute.add_argument('--external-url', help='optionally fetch a small public HTTP file once per guest')
+    execute.add_argument('--expect-tx-offload', choices=('enabled', 'disabled'),
+                         help='require the negotiated TX checksum/TSO state on every transfer')
     for name in ('image', 'initramfs', 'disk', 'log'):
         execute.add_argument('--' + name, type=Path, required=True)
     execute.set_defaults(handler=run)

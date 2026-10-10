@@ -86,6 +86,9 @@ multi-command run has a 300-second deadline (`QEMU_NATIVE_TIMEOUT_SECONDS`).
 The workflow retains the raw Native console log alongside runtime-crash logs,
 including on failure, so a stalled phase can be distinguished from exhaustion
 of the overall test budget.
+The separate guest SMP scenario allows a fixed 300 seconds for each guest boot
+or reboot on shared TCG runners; ordinary commands retain a 90-second deadline.
+On failure it prints the raw serial tail, including filtered guest boot records.
 Ordinary command submissions wait for the expected shell prompt count, so a
 child's final output cannot trigger input intended for its successor. Interactive
 guest console and std input probes instead use their own readiness markers.

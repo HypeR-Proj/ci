@@ -69,6 +69,10 @@ network-exercise
 This prints kernel/tool versions, interface addresses, routes and counters,
 then runs the server in the foreground. Record the guest IPv4 address. It does
 not change DHCP, reset the interface, or start automatically at boot.
+For virtio interfaces it also records negotiated feature bits as
+`NETWORK,VIRTIO_FEATURES,INTERFACE,BITS`. Linux lists bit 0 first; TX checksum,
+TCPv4 segmentation and TCPv6 segmentation are bits 0, 11 and 12 respectively.
+Keep this record with both image identities when comparing offload candidates.
 
 ## Collect on the Mac
 
