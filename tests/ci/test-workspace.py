@@ -90,16 +90,19 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'escapes app'):
             workspace.check_apps(self.root)
 
-    def test_shared_library_members_obey_the_same_sdk_boundary(self):
-        self.write('app/Cargo.toml', '[workspace]\nmembers = ["tool", "policy", "../lib/args"]\n')
-        self.write('lib/args/Cargo.toml', '[package]\nname = "args"\n')
-        self.write('app/tool/Cargo.toml', '[package]\nname = "tool"\n[dependencies]\n'
-                   'args = {path = "../../lib/args"}\n')
-        workspace.check_apps(self.root)
-        self.write('lib/args/Cargo.toml', '[package]\nname = "args"\n[dependencies]\n'
-                   'os = {package = "hyper-os", path = "../../lib/rust/hyper-os"}\n')
-        with self.assertRaisesRegex(ValueError, 'installed SDK'):
+    def test_external_members_obey_the_same_sdk_boundary(self):
+        for member, sdk_path in [('lib/args', '../../lib/rust/hyper-os'),
+                                 ('bootstrap/stage1/init', '../../../lib/rust/hyper-os')]:
+            self.write('app/Cargo.toml', '[workspace]\n'
+                       f'members = ["tool", "policy", "../{member}"]\n')
+            self.write(f'{member}/Cargo.toml', '[package]\nname = "external"\n')
+            self.write('app/tool/Cargo.toml', '[package]\nname = "tool"\n[dependencies]\n'
+                       f'external = {{path = "../../{member}"}}\n')
             workspace.check_apps(self.root)
+            self.write(f'{member}/Cargo.toml', '[package]\nname = "external"\n[dependencies]\n'
+                       f'os = {{package = "hyper-os", path = "{sdk_path}"}}\n')
+            with self.subTest(member=member), self.assertRaisesRegex(ValueError, 'installed SDK'):
+                workspace.check_apps(self.root)
 
     def test_shared_library_cannot_escape_through_symlink(self):
         (self.root / 'outside').mkdir()

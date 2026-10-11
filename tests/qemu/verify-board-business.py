@@ -36,8 +36,11 @@ def prepare(args):
     board['io-vm'].pop('networks', None)
     board['files'].pop('vm/alpine.itb')
     board['files']['vm/business.itb'] = 'business'
+    board['disk']['partitions'] = [
+        part for part in board['disk']['partitions'] if 'content' in part
+    ] + [{'label': 'business', 'size-mib': 8}]
     board['virtual-machines'] = [{'name': 'business', 'image': 'vm/business.itb',
-                                  'autostart': False, 'disk-mib': 8,
+                                  'autostart': False, 'disk': {'source': 'PARTLABEL=business'},
                                   'configuration': {'vcpus': 1,
                                                     'memory-bytes': 128 * 1024 * 1024,
                                                     'bootargs': 'console=ttyAMA0 earlycon=pl011,mmio32,0x09000000 rdinit=/init loglevel=4 hyper.role=business hyper.test=hold'}}]
@@ -145,7 +148,7 @@ def run(args):
             raise TimeoutError('ordinary VM did not reach stopped state')
 
         try:
-            await_text(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n')
+            await_text(rb'HypeR io-runtime: ready; Native volumes mounted\n')
             # READY precedes init provisioning. Wait for its stopped definition
             # before replacing it with the CLI-created test VM; both cannot own
             # the same volume concurrently.

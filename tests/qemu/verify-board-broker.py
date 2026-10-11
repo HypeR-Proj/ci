@@ -33,8 +33,12 @@ def prepare(args):
     board['io-vm'].pop('networks', None)
     board['files'].pop('vm/alpine.itb')
     board['files']['vm/business.itb'] = 'business'
+    board['disk']['partitions'] = [
+        part for part in board['disk']['partitions'] if 'content' in part
+    ] + [{'label': name, 'size-mib': 8} for name in ('slow', 'fast')]
     board['virtual-machines'] = [
-        {'name': name, 'image': 'vm/business.itb', 'autostart': False, 'disk-mib': 8,
+        {'name': name, 'image': 'vm/business.itb', 'autostart': False,
+         'disk': {'source': f'PARTLABEL={name}'},
          'configuration': {'vcpus': 1,
                            'memory-bytes': 128 * 1024 * 1024,
                            'bootargs': 'console=ttyAMA0 earlycon=pl011,mmio32,0x09000000 rdinit=/init loglevel=4 hyper.role=business hyper.test=hold'}}
@@ -103,7 +107,7 @@ def run(args):
             return output
 
         try:
-            await_text(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n')
+            await_text(rb'HypeR io-runtime: ready; Native volumes mounted\n')
             # Init's initial provisioning can complete after storage READY.
             limit = time.monotonic() + 60
             while True:

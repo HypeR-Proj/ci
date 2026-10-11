@@ -31,7 +31,7 @@ jobs:
       - name: Install source analysis tools
         uses: ./.github/actions/tools
         with:
-          packages: ripgrep shellcheck dosfstools mtools e2fsprogs squashfs-tools
+          packages: ripgrep shellcheck dosfstools mtools e2fsprogs erofs-utils squashfs-tools
       - name: Check shell test infrastructure
         run: sh tests/ci/run.sh scripts
       - name: Check formatting and host-side behavior
@@ -130,7 +130,7 @@ jobs:
       - name: Install deployment and QEMU tools
         uses: ./.github/actions/tools
         with:
-          packages: clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools e2fsprogs squashfs-tools device-tree-compiler
+          packages: clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler
       - name: Verify persistent Native storage and managed guests
         run: sh tests/ci/run.sh board-storage
       - name: Clean up AArch64 QEMU

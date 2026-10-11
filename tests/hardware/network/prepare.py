@@ -8,16 +8,24 @@ import argparse
 import copy
 import gzip
 import hashlib
+import importlib.util
 import io
 import json
 import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[3]
 SOURCE = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / 'scripts'))
+from board_config import Board
+
+spec = importlib.util.spec_from_file_location('board_packer', ROOT / 'scripts/pack-board-image.py')
+packer = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(packer)
 
 
 def digest(path):
@@ -87,12 +95,20 @@ def main():
     parser.add_argument('--license', dest='license_file', type=Path, required=True,
                         help='upstream iperf3 license and bundled notices from the lock')
     parser.add_argument('--output', type=Path, required=True)
+    erofs_tool = ROOT / 'target/host-tools/erofs/bin/mkfs.erofs'
+    parser.add_argument('--mkfs-erofs', default=os.environ.get(
+        'EROFS_MKFS', str(erofs_tool) if erofs_tool.is_file() else 'mkfs.erofs'))
     args = parser.parse_args()
     base, out = args.base.resolve(), args.output.resolve()
     source_manifest = json.loads((base / 'build.json').read_text())
     if source_manifest.get('physical_retirement_probe') or source_manifest.get('guest_program') != '/usr/bin/storage-qual':
         raise ValueError('require an ordinary storage qualification image containing the guest payload')
-    names = ('hyper.img', 'bootstrap.cpio', 'config.json', 'kernel.config', 'io.itb',
+    if not source_manifest.get('system_payload'):
+        raise ValueError('base lacks the system payload record; rebuild the storage qualification image')
+    board = Board.load(base / 'deployment.json')
+    if source_manifest['system_payload'] != packer.system_state(base / 'system-root', board):
+        raise ValueError('base system payload changed; rebuild the storage qualification image')
+    names = ('hyper.img', 'bootstrap.cpio', 'config.json', 'deployment.json', 'kernel.config', 'io.itb',
              'alpine.itb', 'storage-qual-linux', 'storage-qual-hyper', 'alpine-storage-rootfs.tar')
     for name in names:
         if digest(base / name) != source_manifest['sha256'][name]:
@@ -106,16 +122,20 @@ def main():
     for name in names:
         if name != 'alpine-storage-rootfs.tar':
             shutil.copyfile(base / name, out / name)
+    shutil.copytree(base / 'system-root', out / 'system-root', symlinks=True)
+    if source_manifest['system_payload'] != packer.system_state(out / 'system-root', board):
+        raise ValueError('base system payload changed while copying; retry from an unchanged build')
     shutil.copyfile(base / 'build.json', out / 'base-build.json')
     shutil.copyfile(args.package, out / 'iperf3.apk')
     shutil.copyfile(args.license_file, out / 'iperf3-LICENSE')
     rootfs(base / 'alpine-storage-rootfs.tar', args.package, args.license_file,
            out / 'alpine-io-rootfs.tar')
     commands = [
-        ['python3', '-B', 'scripts/pack-guest-disk.py', '--board', str(out / 'config.json'),
+        ['python3', '-B', 'scripts/pack-guest-disk.py', '--board', str(out / 'deployment.json'),
          '--rootfs', str(out / 'alpine-io-rootfs.tar'), '--output', str(out / 'alpine.ext4')],
-        ['python3', '-B', 'scripts/rpi5-bringup.py', '--board', str(out / 'config.json'),
+        ['python3', '-B', 'scripts/rpi5-bringup.py', '--board', str(out / 'deployment.json'),
          '--kernel', str(out / 'hyper.img'), '--initramfs', str(out / 'bootstrap.cpio'),
+         '--system-root', str(out / 'system-root'), '--mkfs-erofs', args.mkfs_erofs,
          '--output', str(out / 'disk.img'), '--artifact', f'alpine={out}/alpine.itb',
          '--artifact', f'alpine-rootfs={out}/alpine.ext4'],
     ]
@@ -125,6 +145,7 @@ def main():
         'format': 'hyper.io-qualification.v1', 'base_build': 'base-build.json',
         'storage_payload_bytes': 1024 ** 3, 'network_package': lock,
         'physical_retirement_probe': False, 'commands': commands,
+        'system_payload': json.loads((out / 'disk.img.system.json').read_text()),
         'sha256': {path.name: digest(path) for path in sorted(out.iterdir()) if path.is_file()},
         'sources': {str(path.relative_to(ROOT)): digest(path)
                     for path in sorted(SOURCE.iterdir()) if path.is_file()},

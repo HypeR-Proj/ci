@@ -149,3 +149,30 @@ The existing startup-profile runtime feature can explain stages in a separate
 archive. Its per-payload read/write durations are recorded under starts[].payloads;
 final timing comparisons must use ordinary production applications.
 This startup runner is also local/manual only, with no CI performance gates.
+
+Interactive Native application startup
+
+app-start.py compares the first and repeated invocation of small commands using
+an existing board-image fixture. It does not rebuild or modify that fixture:
+each QEMU boot writes to a temporary disk overlay. For example:
+
+  python3 -B tests/performance/app-start.py \
+    --qemu /opt/homebrew/bin/qemu-system-aarch64 \
+    --image kernel/target/aarch64-unknown-none/kernel/hyper.img \
+    --initramfs target/board/qemu/bootstrap.cpio \
+    --disk target/board/qemu/disk.img \
+    --output target/app-start-before
+
+Repeat with --image pointing at the candidate kernel and a new output directory
+to isolate kernel changes from application and filesystem image changes. The
+defaults run three boots and ten repeated samples per command. Use --command
+multiple times for a focused comparison. Do not compile concurrently.
+
+The host clock measures command submission through the next shell prompt,
+including program execution, serial output and process retirement. The pwd
+builtin is a transport/control sample; ls -d emits one line, while ls -1 lists
+the system directory and includes its metadata traversal cost. A first command
+after normal boot is not a claim of entirely cold storage: the formal init and
+other services may already have loaded common libraries. Logs, raw samples,
+artifact hashes and the exact QEMU command accompany the result. No performance
+threshold is added to CI.

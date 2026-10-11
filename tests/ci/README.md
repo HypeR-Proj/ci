@@ -48,7 +48,7 @@ and the one-time Pages/required-check setup.
 | `riscv64-sdk` | RISC-V SDK publication/consumer checks, app lint and host tests |
 | `riscv64-runtime` | Native static/dynamic std and application acceptance on one/four harts, file tools, paced shell input, userspace-managed guest boot, runtime-crash recovery and stack limits |
 | `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
-| `board-storage` | Configuration storage, Alpine rootfs, business guest, broker and userspace-device acceptance with stack watermarks |
+| `board-storage` | Configuration storage, split-root boot and disk-independent recovery, Alpine rootfs, business guest, broker and userspace-device acceptance with stack watermarks |
 | `aarch64-build` | Serial aggregate of the three AArch64 image build suites below |
 | `aarch64-production` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity and image ABI/instruction checks |
 | `aarch64-self-test` | Separate kernel-self-test image and image ABI/instruction checks |
@@ -118,6 +118,16 @@ against production publication/admission mechanisms. See the commands and
 coverage limits in [validation coverage](../../kernel/tests/VALIDATION.md).
 These are correctness tests; storage/network performance benchmarks remain
 manual and have no CI throughput or latency thresholds.
+
+`make test-boot-system ARCH=aarch64` reproduces the split-root and recovery
+part of `board-storage`. It creates an isolated disk, checks supervision handoff,
+the final namespace, shell/tool capabilities, VM start/stop and writable/read-only
+unmount/remount behavior, then boots the same archive without storage controllers
+and requires the static recovery shell to remain usable. A third boot uses
+a copied bootstrap policy selecting an exiting init candidate; it verifies
+rollback, live storage services, and formal shells launched from recovery.
+The disk and all serial logs stay under `target/board-tests/boot-system.*/`;
+this test never modifies the developer's deployment disk.
 
 Failed QEMU jobs retain their complete serial logs as CI artifacts. Guest
 Linux inputs are checksum-pinned by `kernel/tools/guest` and cached only as CI

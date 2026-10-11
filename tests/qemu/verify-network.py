@@ -38,15 +38,14 @@ def prepare(args):
     source = copy.deepcopy(board.source)
     guests = source['virtual-machines']
     if (source['boot'] != 'qemu-direct' or len(guests) != 1
-            or 'disk-mib' not in guests[0] or 'network' not in guests[0]):
+            or 'disk' not in guests[0] or 'network' not in guests[0]):
         raise ValueError('prepare requires a QEMU board with one disk+network guest')
     if args.output.resolve() == args.board.resolve():
         raise ValueError('the network fixture must not replace the input board')
     guests[0]['autostart'] = False
     peer = copy.deepcopy(guests[0])
     peer['name'] = 'alpine-net'
-    peer.pop('disk-mib')
-    peer.pop('disk-image', None)
+    peer.pop('disk', None)
     config = peer['configuration']
     config['bootargs'] = re.sub(r'(?<!\S)hyper\.root=\S+\s*', '', config['bootargs']).rstrip()
     mac = peer['network']['mac'].split(':')
@@ -120,8 +119,8 @@ def test_guests(board):
     if board.source['boot'] != 'qemu-direct' or 'network-device' not in board.source['io-vm']:
         raise ValueError('network acceptance requires a QEMU board with a physical uplink')
     guests = board.source['virtual-machines']
-    disk = [vm for vm in guests if 'disk-mib' in vm and 'network' in vm]
-    network = [vm for vm in guests if 'disk-mib' not in vm and 'network' in vm]
+    disk = [vm for vm in guests if 'disk' in vm and 'network' in vm]
+    network = [vm for vm in guests if 'disk' not in vm and 'network' in vm]
     if len(disk) != 1 or len(network) != 1 or any(vm['autostart'] for vm in guests):
         raise ValueError('require one disk+network and one network-only guest, without autostart')
     return disk[0], network[0]
@@ -268,7 +267,7 @@ class Scenario:
                    'test -s /tmp/hyper-network-external')
 
     def storage(self, vm, *, create=False):
-        if 'disk-mib' not in vm:
+        if 'disk' not in vm:
             self.guest('test ! -e /sys/block/sda && '
                        '! grep -qx 0x00000008 /sys/bus/virtio/devices/*/device')
             return
@@ -339,7 +338,7 @@ def run(args):
             command, args.log, failures=failures,
             output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
         scenario = Scenario(session, url, digest, args.expect_tx_offload)
-        session.await_text(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n', timeout=180)
+        session.await_text(rb'HypeR io-runtime: ready; Native volumes mounted\n', timeout=180)
         deadline = time.monotonic() + 90
         while True:
             listing = scenario.native('vmm list')
@@ -349,13 +348,13 @@ def run(args):
             if time.monotonic() >= deadline:
                 raise TimeoutError('init did not provision both network guests')
             session.pump(0.2)
-        clients = scenario.native('cat /etc/hyper/io-clients.conf')
+        clients = scenario.native('cat /boot/etc/hyper/io-clients.conf')
         if board.bootstrap_clients().encode() not in clients:
             raise RuntimeError(f'boot client policy does not match board: {clients!r}')
-        # Native 0 has storage only. FDT and backend-plan tests independently
-        # ensure the reservation does not instantiate a notification or TAP.
-        if not re.search(rb'^0 config - -$', clients, re.MULTILINE):
-            raise RuntimeError('Native client unexpectedly has a network assignment')
+        # Owner 0 has management only. FDT and backend-plan tests independently
+        # ensure it does not instantiate a data notification or TAP.
+        if not re.search(rb'^0 - - -$', clients, re.MULTILINE):
+            raise RuntimeError('block owner unexpectedly has a data assignment')
 
         for vm in guests:
             scenario.native(f'vmm start {vm["name"]}')

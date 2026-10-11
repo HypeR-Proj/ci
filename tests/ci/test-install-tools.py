@@ -37,6 +37,15 @@ class ToolInstallation(unittest.TestCase):
         with patch.object(tools.shutil, 'which', side_effect=lambda name: name != 'llvm-ranlib'):
             self.assertEqual(tools.missing_packages(['cmake', 'llvm', 'llvm']), ['llvm'])
 
+    def test_erofs_deployments_install_only_when_builder_is_missing(self):
+        with patch.object(tools.shutil, 'which', return_value=None):
+            self.assertEqual(tools.missing_packages(['erofs-utils']), ['erofs-utils'])
+        with patch.object(tools.shutil, 'which', side_effect=lambda name: name == 'mkfs.erofs'), \
+                patch.object(tools.subprocess, 'run') as run:
+            tools.install(['erofs-utils'], self.cache)
+            run.assert_not_called()
+        self.assertFalse(self.cache.exists())
+
     def test_unknown_package_cannot_reach_sudo(self):
         with patch.object(tools.subprocess, 'run') as run:
             with self.assertRaisesRegex(ValueError, 'unknown CI tool'):

@@ -85,8 +85,8 @@ def verify_handles(run):
     assert b'inspect-details' in granted
     task_grants = run('handle shell --kind task-inspector --no-headers')
     assert b'inspect-details' not in task_grants
-    run('/bin/./handle shell --kind directory', rb'directory')
-    run('cp /bin/handle /handle-copy')
+    run('/system/bin/./handle shell --kind directory', rb'directory')
+    run('cp /system/bin/handle /handle-copy')
     run('chmod 755 /handle-copy')
     run('/handle-copy', rb'object-inspector capability unavailable', failed=True)
     run('rm /handle-copy')

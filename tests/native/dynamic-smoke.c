@@ -4,6 +4,7 @@
 
 #include <hyper/dlfcn.h>
 #include <hyper/startup.h>
+#include <hyper/launch.h>
 #include <hyper/syscall.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -64,13 +65,52 @@ static int check_opaque_startup_data(const hyper_startup_t *startup)
 	for (size_t i = 0; i < 4; ++i)
 		if (hyper_startup_find_handle(startup, purposes[i], &handles[i]))
 			return 0;
-	const char path[] = "/bin/echo";
-	hyper_call_result_t file = hyper_directory_open_file(handles[3], path, sizeof(path) - 1,
-							     HYPER_NATIVE_RIGHT_EXECUTE);
+	const char path[] = "/system/bin/echo";
+	const uint64_t required[] = {HYPER_NATIVE_RIGHT_READ, HYPER_NATIVE_RIGHT_EXECUTE,
+				     HYPER_NATIVE_RIGHT_PROTECT, HYPER_NATIVE_RIGHT_DUPLICATE,
+				     HYPER_NATIVE_RIGHT_TRANSFER};
+	const uint64_t executable_rights =
+		HYPER_NATIVE_RIGHT_READ | HYPER_NATIVE_RIGHT_EXECUTE | HYPER_NATIVE_RIGHT_PROTECT |
+		HYPER_NATIVE_RIGHT_DUPLICATE | HYPER_NATIVE_RIGHT_TRANSFER;
+	/* Caller-chosen loader must never upgrade a reduced executable capability. */
+	for (size_t i = 0; i < sizeof(required) / sizeof(required[0]); ++i) {
+		hyper_call_result_t restricted = hyper_directory_open_file(
+			handles[3], path, sizeof(path) - 1, executable_rights & ~required[i]);
+		if (restricted.status)
+			return 0;
+		hyper_call_result_t denied = hyper_process_builder_create(
+			handles[0], handles[1], handles[2], restricted.value0,
+			hyper_runtime_capability(HYPER_LAUNCH_CHILD_LOADER));
+		(void)hyper_handle_close(restricted.value0);
+		if (denied.status != HYPER_NATIVE_STATUS_ACCESS_DENIED) {
+			if (!denied.status)
+				(void)hyper_process_builder_abort(denied.value0);
+			return 0;
+		}
+	}
+	hyper_call_result_t file =
+		hyper_directory_open_file(handles[3], path, sizeof(path) - 1, executable_rights);
 	if (file.status)
 		return 0;
+	/* Loader selection cannot expose readable ELF segments from EXECUTE alone. */
+	hyper_call_result_t execute_only_loader = hyper_handle_duplicate(
+		hyper_runtime_capability(HYPER_LAUNCH_CHILD_LOADER), HYPER_NATIVE_RIGHT_EXECUTE);
+	if (execute_only_loader.status) {
+		(void)hyper_handle_close(file.value0);
+		return 0;
+	}
+	hyper_call_result_t denied_loader = hyper_process_builder_create(
+		handles[0], handles[1], handles[2], file.value0, execute_only_loader.value0);
+	(void)hyper_handle_close(execute_only_loader.value0);
+	if (denied_loader.status != HYPER_NATIVE_STATUS_ACCESS_DENIED) {
+		if (!denied_loader.status)
+			(void)hyper_process_builder_abort(denied_loader.value0);
+		(void)hyper_handle_close(file.value0);
+		return 0;
+	}
 	hyper_call_result_t builder =
-		hyper_process_builder_create(handles[0], handles[1], handles[2], file.value0);
+		hyper_process_builder_create(handles[0], handles[1], handles[2], file.value0,
+					     hyper_runtime_capability(HYPER_LAUNCH_CHILD_LOADER));
 	(void)hyper_handle_close(file.value0);
 	if (builder.status)
 		return 0;

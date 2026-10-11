@@ -49,8 +49,9 @@ def check_apps(root):
     workspace_manifest = read_manifest(app / 'Cargo.toml')
     members = {}
     for directory in sorted(member_directories(app / 'Cargo.toml')):
-        if not any(directory.is_relative_to(base) for base in (app, root / 'lib')):
-            raise ValueError(f'app workspace member escapes app/ or lib/: {directory}')
+        if not any(directory.is_relative_to(base)
+                   for base in (app, root / 'bootstrap/stage1', root / 'lib')):
+            raise ValueError(f'Native workspace member escapes app/, bootstrap/stage1/ or lib/: {directory}')
         members[directory] = read_manifest(directory / 'Cargo.toml')
     for directory, manifest in [(app, workspace_manifest), *members.items()]:
         for alias, spec in dependencies(manifest):

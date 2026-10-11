@@ -84,6 +84,7 @@ case "${1:-}" in
         make -o image -o native-initramfs test-apps ARCH=aarch64
         make -o image -o app test-fleet-config ARCH=aarch64
         make -o image -o app test-storage-failure ARCH=aarch64
+        make -o image test-filesystem-failure ARCH=aarch64 QEMU_CPU=max,cntfrq=54000000
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64
         cp target/app/aarch64/console.log target/app/aarch64/native-gicv3-console.log
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv3-runtime-crash.log
@@ -127,7 +128,7 @@ case "${1:-}" in
         # configured dormant and running CPU Threads in either case.
         make -o image -o native-initramfs test-runtime-crash ARCH=aarch64 \
             QEMU_MACHINE=virt,virtualization=on,gic-version=2 QEMU_CPUS=4 \
-            NATIVE_VM_CONFIG="$root/app/init/tests/config/vms-smp-4.json" \
+            NATIVE_VM_CONFIG="$root/bootstrap/stage1/init/tests/config/vms-smp-4.json" \
             NATIVE_GUEST_ITB="$root/kernel/target/guest/aarch64/alpine-smp.itb"
         cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-guest-smp-runtime-crash.log
         ;;
@@ -162,6 +163,8 @@ case "${1:-}" in
         package=$(python3 -B scripts/fetch-io-vm.py \
             --reference "${IO_VM_REFERENCE:-}" --platform qemu)
         make test-board-storage ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
+        make -o image -o app test-boot-system ARCH=aarch64 IO_VM_PACKAGE="$package" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
         make -o image -o app test-alpine-rootfs ARCH=aarch64 IO_VM_PACKAGE="$package" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'

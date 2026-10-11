@@ -44,6 +44,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--config', type=Path, default=ROOT / 'kernel/.config')
+    erofs_tool = ROOT / 'target/host-tools/erofs/bin/mkfs.erofs'
+    parser.add_argument('--mkfs-erofs', default=os.environ.get(
+        'EROFS_MKFS', str(erofs_tool) if erofs_tool.is_file() else 'mkfs.erofs'))
     parser.add_argument('--payload-only', action='store_true', help='use an existing installed SDK')
     parser.add_argument('--retirement-probe', action='store_true',
                         help='DESTRUCTIVE image: terminate the I/O runtime 60 seconds after readiness')
@@ -95,7 +98,8 @@ def main():
     artifacts = [*objects, out / 'storage-qual-linux', out / 'storage-qual-hyper']
     if not args.payload_only:
         board = json.loads((ROOT / 'boards/rpi5.json').read_text())
-        board['disk']['config-mib'] = 2048
+        next(part for part in board['disk']['partitions']
+             if part.get('content') == 'data')['size-mib'] = 2048
         (out / 'config.json').write_text(json.dumps(board, indent=2) + '\n')
         app_override = []
         if args.retirement_probe:
@@ -109,26 +113,30 @@ def main():
                  'APP_FEATURES=hyper-io-runtime/physical-retirement-probe'])
             app_override = [f'APP_OUTPUT={probe_apps}']
         run(['make', '-o', 'image', '-o', 'app', 'board-initramfs', 'board-guest-images', *app_override,
-             'ARCH=aarch64', 'BOARD=rpi5', f'BOARD_CONFIG={out}/config.json', f'BOARD_OUTPUT={out}',
+             'ARCH=aarch64', 'BOARD=rpi5', 'BOARD_SYSTEM_LAYOUT=split',
+             f'BOARD_CONFIG={out}/config.json', f'BOARD_OUTPUT={out}',
              f'CONFIG_FILE={out}/kernel.config', 'NATIVE_IMAGE_PROFILE=system',
              'IO_VM_PACKAGE=', 'IO_VM_REFERENCE=',
              f'BOARD_EXTRA_ENTRIES=0755 bin/storage-qual "{out}/storage-qual-hyper"'])
         guest_archive = out / 'alpine-storage-rootfs.tar'
         guest_rootfs(ROOT / 'kernel/target/guest/aarch64/rootfs.tar',
                      out / 'storage-qual-linux', guest_archive)
-        run(['python3', '-B', 'scripts/pack-guest-disk.py', '--board', out / 'config.json',
+        run(['python3', '-B', 'scripts/pack-guest-disk.py', '--board', out / 'deployment.json',
              '--rootfs', guest_archive, '--output', out / 'alpine.ext4'])
         shutil.copyfile(ROOT / 'kernel/target/aarch64-unknown-none/kernel/hyper.img', out / 'hyper.img')
-        run(['python3', '-B', 'scripts/rpi5-bringup.py', '--board', out / 'config.json',
+        run(['python3', '-B', 'scripts/rpi5-bringup.py', '--board', out / 'deployment.json',
              '--kernel', out / 'hyper.img', '--initramfs', out / 'bootstrap.cpio',
+             '--system-root', out / 'system-root', '--mkfs-erofs', args.mkfs_erofs,
              '--output', out / 'disk.img', '--artifact', f'alpine={out}/alpine.itb',
              '--artifact', f'alpine-rootfs={out}/alpine.ext4'])
         artifacts += [out / name for name in ('disk.img', 'hyper.img', 'bootstrap.cpio',
-                                             'config.json', 'kernel.config', 'io.itb',
+                                             'config.json', 'deployment.json', 'kernel.config', 'io.itb',
                                              'alpine.itb', 'alpine.ext4', 'alpine-storage-rootfs.tar')]
     manifest = {
         'format': 'hyper.storage-qualification.v1', 'payload_bytes': 1024 ** 3,
         'physical_retirement_probe': args.retirement_probe,
+        'system_payload': (None if args.payload_only else
+                           json.loads((out / 'disk.img.system.json').read_text())),
         'guest_program': None if args.payload_only else '/usr/bin/storage-qual',
         'revision': run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip(),
         'status': run(['git', 'status', '--porcelain'], capture_output=True, text=True).stdout,
@@ -139,9 +147,9 @@ def main():
                                  *sorted(SOURCE.glob('*.py')), SOURCE / 'README.md',
                                  PLATFORM / 'platform.h', PLATFORM / 'hyper.c', PLATFORM / 'linux.c',
                                  ROOT / 'scripts/io-vm.lock.json', ROOT / 'boards/rpi5.json',
-                                 ROOT / 'app/io-runtime/Cargo.toml',
-                                 ROOT / 'app/io-runtime/src/runtime/mod.rs',
-                                 ROOT / 'app/io-runtime/tests/fixtures/physical_retirement.rs']},
+                                 ROOT / 'bootstrap/stage1/io-runtime/Cargo.toml',
+                                 ROOT / 'bootstrap/stage1/io-runtime/src/runtime/mod.rs',
+                                 ROOT / 'bootstrap/stage1/io-runtime/tests/fixtures/physical_retirement.rs']},
     }
     for path in artifacts:
         with path.open('rb') as stream:

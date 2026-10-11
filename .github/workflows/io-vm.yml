@@ -73,7 +73,7 @@ jobs:
       - name: Install deployment and QEMU tools
         uses: ./.github/actions/tools
         with:
-          packages: clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools e2fsprogs squashfs-tools device-tree-compiler
+          packages: clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler
       - name: Verify guest network and shared backend lifecycle
         env:
           IO_VM_REFERENCE: ${{ inputs.reference }}

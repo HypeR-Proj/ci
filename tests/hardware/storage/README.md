@@ -47,7 +47,7 @@ Its ELF segments use 64 KiB alignment, supporting 4/16/64 KiB kernel pages,
 including the [Pi 5 default 16 KiB kernel](https://www.raspberrypi.com/documentation/computers/linux_kernel.html).
 Both executables link the exact same three workload objects. The HypeR image
 derives from `boards/rpi5.json`, uses the Native `system` profile, enlarges its
-configuration volume to 2 GiB, and adds Native `/bin/storage-qual` plus Alpine
+configuration volume to 2 GiB, and adds Native `/system/bin/storage-qual` plus Alpine
 `/usr/bin/storage-qual`.
 Alpine receives the exact `storage-qual-linux` executable used on Raspbian;
 its base rootfs cache, kernel and initramfs are unchanged. The network deployment
@@ -68,9 +68,9 @@ HypeR boot log, including HypeR and I/O VM versions, then run:
 
 ```text
 free --bytes
-/bin/storage-qual write /data/storage-qual.bin 101
-/bin/storage-qual overwrite /data/storage-qual.bin 102
-/bin/storage-qual sync4k /data/storage-qual.bin 102
+/system/bin/storage-qual write /data/storage-qual.bin 101
+/system/bin/storage-qual overwrite /data/storage-qual.bin 102
+/system/bin/storage-qual sync4k /data/storage-qual.bin 102
 free --bytes
 ```
 
@@ -193,8 +193,8 @@ under one ID. Commands below are for HypeR; use the Linux executable and its
 home-directory path for the same protocol on Raspbian.
 
 ```text
-/bin/storage-qual prepare /data/storage-qual.bin 201
-/bin/storage-qual durable /data/storage-qual.bin 201
+/system/bin/storage-qual prepare /data/storage-qual.bin 201
+/system/bin/storage-qual durable /data/storage-qual.bin 201
 ```
 
 `prepare` creates, syncs and verifies the full 1 GiB epoch-0 file. Wait for
@@ -216,7 +216,7 @@ python3 -B tests/hardware/storage/results.py oracle power-cut.log --run-id 201
 After a cold boot, run recovery with the returned `ack_mib`, for example:
 
 ```text
-/bin/storage-qual recover /data/storage-qual.bin 201 20
+/system/bin/storage-qual recover /data/storage-qual.bin 201 20
 ```
 
 Every byte in the externally acknowledged prefix must match. Unacknowledged
@@ -264,7 +264,7 @@ free --bytes
 ps
 handle
 vmm start alpine
-/bin/storage-qual stress /data/storage-qual.bin 301
+/system/bin/storage-qual stress /data/storage-qual.bin 301
 ```
 
 After the `DMA-QUAL` termination marker and the failed I/O command, collect:

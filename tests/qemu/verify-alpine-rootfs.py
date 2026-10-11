@@ -84,7 +84,7 @@ def run(args):
             expect(rb'~ # ')
 
         try:
-            expect(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n')
+            expect(rb'HypeR io-runtime: ready; Native volumes mounted\n')
             deadline = time.monotonic() + 60
             while not re.search(rb'\balpine\s+stopped\b', native('vmm list')):
                 if time.monotonic() >= deadline:

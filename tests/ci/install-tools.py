@@ -22,6 +22,7 @@ COMMANDS = {
     'binutils-aarch64-linux-gnu': ('aarch64-linux-gnu-nm',),
     'dosfstools': ('mkfs.fat',), 'mtools': ('mcopy',),
     'e2fsprogs': ('mke2fs',), 'squashfs-tools': ('mksquashfs', 'unsquashfs'),
+    'erofs-utils': ('mkfs.erofs',),
     'device-tree-compiler': ('dtc',), 'doxygen': ('doxygen',),
 }
 

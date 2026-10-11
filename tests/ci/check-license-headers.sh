@@ -40,11 +40,11 @@ git ls-files --cached --others --exclude-standard | sort -u | while IFS= read -r
             ;;
     esac
 
-    # Binary artwork keeps SPDX metadata in a text sidecar; do not parse image
-    # bytes as shell strings or exempt the artwork from attribution checks.
+    # Binary artwork and filesystem fixtures keep SPDX metadata in a sidecar;
+    # do not parse their bytes as shell strings or exempt attribution checks.
     metadata=$path
     case "$path" in
-        *.png | *.jpg | *.jpeg | *.gif | *.webp | *.ico)
+        *.png | *.jpg | *.jpeg | *.gif | *.webp | *.ico | *.erofs)
             metadata=$path.license
             if [ ! -f "$metadata" ]; then
                 printf '%s\n' "$path (missing .license sidecar)" >>"$missing"

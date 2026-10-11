@@ -25,7 +25,9 @@ int hyper_main(const hyper_startup_t *startup)
 	static const char marker[] = "READINESS-FIXTURE-RUNNING\n";
 	static const char invalid[] = "HYPER-IO-BAD/1\n";
 	static const char valid[] = "HYPER-IO-READY/1\n";
-	static const char oversized[] = "HYPER-IO-READY/1\nunexpected trailing data\n";
+	static const char oversized[] =
+		"HYPER-IO-READY/1\n"
+		"unexpected trailing data beyond the complete readiness receive buffer\n";
 
 	if (READINESS_TEST == 0)
 		return 1;
@@ -47,7 +49,7 @@ int hyper_main(const hyper_startup_t *startup)
 		return 5;
 
 	/* Keep the provider alive after EOF, malformed readiness or silence.
-	 * Init must cancel only this process and retain the Native service graph. */
+	 * Init must retain the live owner for recovery and preserve the Native graph. */
 	for (;;) {
 		hyper_call_result_t now = hyper_clock_get_monotonic();
 		if (now.status != HYPER_NATIVE_STATUS_OK ||

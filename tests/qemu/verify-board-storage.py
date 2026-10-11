@@ -16,6 +16,10 @@ import subprocess
 import sys
 import time
 
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'scripts'))
+from board_config import Board
+
 
 def boot(args, mode):
     launcher = Path(__file__).resolve().parents[2] / 'scripts/run-io-vm.py'
@@ -65,14 +69,14 @@ def boot(args, mode):
         try:
             if args.require_userspace_device:
                 await_text(rb'DEVICE-TEST: worker prepared\n')
-            boot = await_text(rb'HypeR io-runtime: configuration volume: [0-9]+ sectors\n')
+            boot = await_text(rb'HypeR io-runtime: ready; Native volumes mounted\n')
             if b'HypeR IO VM: ' not in boot:
                 raise RuntimeError('forwarded I/O VM log prefix missing')
-            child.stdin.write(f'/bin/storage-probe {mode}\n'.encode())
+            child.stdin.write(f'/system/bin/storage-probe {mode}\n'.encode())
             child.stdin.flush()
             await_text(b'BOARD-STORAGE: ' + mode.encode() + b' PASS\n', timeout=600)
             await_text(rb'hyper-sh\$ ')
-            child.stdin.write(b'cp /etc/hyper/vms.json /data/copied-vms.json\n')
+            child.stdin.write(b'cp /boot/etc/hyper/services.json /data/copied-services.json\n')
             child.stdin.flush()
             copied = await_text(rb'hyper-sh\$ ')
             if b'sh: command failed' in copied or b'cp:' in copied:
@@ -91,10 +95,12 @@ def boot(args, mode):
                 placement = re.search(fr'vCPU {vcpu}: pCPU ([0-9]+)\b'.encode(), observed)
                 if placement is None or int(placement[1]) not in affinity['cpus']:
                     raise RuntimeError(f'configured I/O VM affinity not applied: {observed!r}')
-            # The fixture admits 128 MiB RAM plus a 1 MiB initiator pool.
+            # Account for the GPT owner pool and one pool per Native volume.
             resident = re.search(rb'allocated VM backing: ([0-9]+) bytes', observed)
-            if resident is None or not 0 < int(resident[1]) <= 129 * 1024 * 1024:
-                raise RuntimeError(f'I/O VM allocated backing missing or invalid: {observed!r}')
+            if resident is None or not 0 < int(resident[1]) <= args.maximum_io_backing:
+                raise RuntimeError(
+                    f'I/O VM allocated backing missing or exceeds {args.maximum_io_backing} bytes: '
+                    f'{observed!r}')
             # Observation is granted by the broker; no management capability is
             # held for this target, including console and placement operations.
             commands = [f'vmm {action} {args.observed_name}' for action in
@@ -156,10 +162,14 @@ def main():
     for name in ('image', 'initramfs', 'disk', 'board', 'log'):
         parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
-    io_vm = json.loads(args.board.read_text())['io-vm']
+    board = Board.load(args.board)
+    io_vm = board.source['io-vm']
     args.observed_name = io_vm['name']
     args.observed_image = io_vm['image']
     args.io_configuration = io_vm['configuration']
+    # NativeBlock reserves a 1 MiB shared-memory pool for each client.
+    args.maximum_io_backing = (args.io_configuration['memory-bytes']
+                               + (1 + len(board.native_volumes())) * 1024 * 1024)
     conflict_config = {'format': 'hyper.vm-config', 'virtual-machines': [
         {field: io_vm[field] for field in ('name', 'image', 'configuration')}]}
     command = ('echo ' + shlex.quote(json.dumps(conflict_config, separators=(',', ':')))

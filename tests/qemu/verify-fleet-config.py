@@ -51,14 +51,14 @@ def main():
             # Provisioning errors must leave the console and manager responsive.
             session.send(b"echo FLEET-''RECOVERY-OK\n")
             session.await_text(rb'FLEET-RECOVERY-OK\n')
-            session.await_text(rb'hyper-sh\$ ')
+            session.await_text(rb'fallback-sh\$ ')
             session.send(b'vmm list\n')
-            listing = session.await_text(rb'hyper-sh\$ ')
+            listing = session.await_text(rb'fallback-sh\$ ')
             if re.search(rb'^\S+\s+(?:starting|running|stopping|stopped|failed)\s+',
                          listing, flags=re.M):
                 raise AssertionError('rejected fleet published definitions')
             session.send(b'vmm start alpine\n')
-            response = session.await_text(rb'hyper-sh\$ ')
+            response = session.await_text(rb'fallback-sh\$ ')
             if b'VM fleet unavailable: initial configuration is unavailable' not in response:
                 raise AssertionError(f'rejected fleet did not report unavailability: {response!r}')
         else:

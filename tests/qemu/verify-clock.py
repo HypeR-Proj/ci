@@ -35,8 +35,8 @@ def main():
                     else b'UTC clock initialized', timeout=60)
                 session.await_text(rb'hyper-sh\$ ', timeout=60)
                 session.send(
-                    b'/bin/std-test --uncalibrated-clock\n' if uncalibrated
-                    else b'/bin/std-test --name clock\n')
+                    b'/system/bin/std-test --uncalibrated-clock\n' if uncalibrated
+                    else b'/system/bin/std-test --name clock\n')
                 session.await_text(
                     b'HYPER_STD_UNCALIBRATED_CLOCK_OK' if uncalibrated
                     else b'HYPER_STD_OK hello clock', timeout=120)
