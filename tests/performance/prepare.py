@@ -40,7 +40,7 @@ def main():
     sdk = ROOT / 'target/sdk/aarch64'
     shutil.copyfile(args.config, out / 'kernel.config')
     run(['make', 'image', 'app', 'ARCH=aarch64', f'CONFIG_FILE={out}/kernel.config', 'CARGO_FEATURES='])
-    shutil.copyfile(ROOT / 'kernel/target/aarch64-unknown-none/kernel/hyper.img', out / 'hyper.img')
+    shutil.copyfile(ROOT / 'kernel/target/aarch64-unknown-none-softfloat/kernel/hyper.img', out / 'hyper.img')
     flags = ['--target=aarch64-none-elf', '-O2', '-march=armv8-a', '-ffreestanding', '-fno-builtin',
              '-fno-stack-protector', '-fPIC', '-Wall', '-Wextra', '-Werror']
     run([clang, *flags, '-c', SOURCE / 'workload.c', '-o', out / 'workload.o'])

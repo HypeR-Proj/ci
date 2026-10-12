@@ -158,7 +158,7 @@ each QEMU boot writes to a temporary disk overlay. For example:
 
   python3 -B tests/performance/app-start.py \
     --qemu /opt/homebrew/bin/qemu-system-aarch64 \
-    --image kernel/target/aarch64-unknown-none/kernel/hyper.img \
+    --image kernel/target/aarch64-unknown-none-softfloat/kernel/hyper.img \
     --initramfs target/board/qemu/bootstrap.cpio \
     --disk target/board/qemu/disk.img \
     --output target/app-start-before

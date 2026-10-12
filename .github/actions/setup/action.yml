@@ -32,6 +32,7 @@ runs:
           --component rust-src \
           --component rustfmt \
           --target aarch64-unknown-none \
+          --target aarch64-unknown-none-softfloat \
           --target riscv64imac-unknown-none-elf \
           --target riscv64gc-unknown-none-elf \
           --target x86_64-unknown-none

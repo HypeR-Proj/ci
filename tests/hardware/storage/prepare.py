@@ -123,7 +123,7 @@ def main():
                      out / 'storage-qual-linux', guest_archive)
         run(['python3', '-B', 'scripts/pack-guest-disk.py', '--board', out / 'deployment.json',
              '--rootfs', guest_archive, '--output', out / 'alpine.ext4'])
-        shutil.copyfile(ROOT / 'kernel/target/aarch64-unknown-none/kernel/hyper.img', out / 'hyper.img')
+        shutil.copyfile(ROOT / 'kernel/target/aarch64-unknown-none-softfloat/kernel/hyper.img', out / 'hyper.img')
         run(['python3', '-B', 'scripts/rpi5-bringup.py', '--board', out / 'deployment.json',
              '--kernel', out / 'hyper.img', '--initramfs', out / 'bootstrap.cpio',
              '--system-root', out / 'system-root', '--mkfs-erofs', args.mkfs_erofs,
