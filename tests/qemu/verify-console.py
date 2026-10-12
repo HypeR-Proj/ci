@@ -119,6 +119,10 @@ def main():
             send(b'vmm console alpine\n')
             await_text(rb'Connected to alpine\.', timeout=30)
             await_text(rb'~ # ', timeout=60)
+            if 'aarch64' in os.path.basename(qemu):
+                send(b'cat /proc/device-tree/uart@9000000/compatible\n')
+                await_text(rb'arm,sbsa-uart\x00')
+                await_text(rb'~ # ')
             # Each character must wake the sleeping runtime and echo without
             # a following key or periodic collection timeout to rescue it.
             for index in range(12):

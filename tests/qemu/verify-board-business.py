@@ -43,7 +43,7 @@ def prepare(args):
                                   'autostart': False, 'disk': {'source': 'PARTLABEL=business'},
                                   'configuration': {'vcpus': 1,
                                                     'memory-bytes': 128 * 1024 * 1024,
-                                                    'bootargs': 'console=ttyAMA0 earlycon=pl011,mmio32,0x09000000 rdinit=/init loglevel=4 hyper.role=business hyper.test=hold'}}]
+                                                    'bootargs': 'console=ttyAMA0 earlycon rdinit=/init loglevel=4 hyper.role=business hyper.test=hold'}}]
     config = args.output / 'config.json'
     config.write_text(json.dumps(board, indent=2) + '\n')
     Board.load(config)
