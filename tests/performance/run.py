@@ -91,7 +91,7 @@ def boot(args, system, number):
     samples = []
     with Session(command, folder / 'serial.log',
                  failures=(b'BENCH-FAIL', b'Kernel panic', b'HypeR: fatal', b'HypeR KERNEL PANIC')) as vm:
-        ready = (rb'HypeR io-runtime: ready; Native volumes mounted\n'
+        ready = (rb'hyper-sh\$ '
                  if system == 'hyper' else rb'BENCH-READY\n')
         vm.await_text(ready, timeout=240)
         vm.pump(3)

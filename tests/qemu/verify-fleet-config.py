@@ -21,6 +21,8 @@ KERNEL_FAILURES = (b'HypeR: fatal', b'kernel panic', b'HypeR crash monitor')
 
 
 def validate_log(case, output):
+    if b'HypeR fallback shell: recovery console ready' in output:
+        raise AssertionError('fleet failure reopened bootstrap recovery')
     if any(marker in output for marker in KERNEL_FAILURES):
         raise AssertionError('kernel failure during fleet provisioning')
     if case in ('malformed', 'missing-image'):
@@ -51,14 +53,14 @@ def main():
             # Provisioning errors must leave the console and manager responsive.
             session.send(b"echo FLEET-''RECOVERY-OK\n")
             session.await_text(rb'FLEET-RECOVERY-OK\n')
-            session.await_text(rb'fallback-sh\$ ')
+            session.await_text(rb'hyper-sh\$ ')
             session.send(b'vmm list\n')
-            listing = session.await_text(rb'fallback-sh\$ ')
+            listing = session.await_text(rb'hyper-sh\$ ')
             if re.search(rb'^\S+\s+(?:starting|running|stopping|stopped|failed)\s+',
                          listing, flags=re.M):
                 raise AssertionError('rejected fleet published definitions')
             session.send(b'vmm start alpine\n')
-            response = session.await_text(rb'fallback-sh\$ ')
+            response = session.await_text(rb'hyper-sh\$ ')
             if b'VM fleet unavailable: initial configuration is unavailable' not in response:
                 raise AssertionError(f'rejected fleet did not report unavailability: {response!r}')
         else:

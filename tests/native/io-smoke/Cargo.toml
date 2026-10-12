@@ -15,7 +15,7 @@ publish = false
 [dependencies]
 hyper-os = { version = "=0.0.0", features = ["std"] }
 hyper-rt = { version = "=0.0.0", features = ["std"] }
-hyper-vm-image = "=0.0.0"
+hyper-vm-image = { path = "../../../lib/vm-image" }
 hyper-vm-policy = { path = "../../../lib/vm-policy" }
 hyper-vm-support = { path = "../../../lib/vm-support" }
 

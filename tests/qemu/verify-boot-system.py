@@ -88,6 +88,8 @@ def nested_shell(session, parent_prompt, *, storage, virtual_machines):
     command(session, 'handle --summary --kind process', rb'\bprocess\s+[1-9]')
     command(session, 'free --bytes', rb'Mem:')
     # An identical tool at an ordinary path receives no diagnostic authority.
+    if not storage:
+        command(session, 'mkdir -p /tmp')
     untrusted = '/data/untrusted-handle' if storage else '/tmp/untrusted-handle'
     command(session, f'cp /system/bin/handle {untrusted}')
     command(session, f'{untrusted} --summary',
@@ -120,14 +122,17 @@ def main():
     parser.add_argument('--failed-handoff', action='store_true',
                         help='supplied archive selects an exiting system-init candidate (for example /system/bin/echo)')
     parser.add_argument('--missing-shell', action='store_true',
-                        help='supplied system payload omits bin/sh; require fallback after successful init')
+                        help='supplied system payload omits bin/sh; require retries without bootstrap fallback')
     parser.add_argument('--missing-worker', action='store_true',
                         help='boot a supplied archive with fs-erofs removed; keep controllers present')
+    parser.add_argument('--missing-data-worker', action='store_true',
+                        help='system payload omits fs-fat; require formal init and Native services to survive')
     parser.add_argument('--manager-case', choices=(
         'absent', 'missing', 'exit', 'closed-reply', 'invalid-reply', 'configured-exit', 'no-config'),
         help='verify storage with the corresponding supplied system service graph or fault fixture')
     args = parser.parse_args()
-    if sum((args.recovery, args.missing_worker, args.failed_handoff, args.missing_shell, bool(args.manager_case))) > 1:
+    if sum((args.recovery, args.missing_worker, args.missing_data_worker,
+            args.failed_handoff, args.missing_shell, bool(args.manager_case))) > 1:
         parser.error('select only one failure scenario')
     if args.recovery:
         launch = native_command(args.qemu, args.image, args.initramfs)
@@ -155,7 +160,7 @@ def main():
             session.await_text(rb'HypeR init-system: root namespace switched', 60)
             if args.manager_case in ('exit', 'closed-reply', 'invalid-reply', 'configured-exit'):
                 session.await_text(rb"HypeR init: service 'vm-manager' terminated", 180)
-            elif args.manager_case in ('missing', 'no-config'):
+            elif args.missing_data_worker or args.manager_case in ('missing', 'no-config'):
                 session.await_text(rb'VM fleet configuration unavailable', 180)
             elif args.manager_case == 'absent':
                 pass
@@ -163,10 +168,17 @@ def main():
                 session.await_text(rb'VM fleet configuration unavailable', 180)
             else:
                 session.await_text(rb'HypeR init: VM fleet configured', 240)
-        # A successful boot must never create the recovery shell. Error paths
-        # reach the small static shell without first requiring a system app.
-        recovery = (args.recovery or args.missing_worker or args.failed_handoff or args.missing_shell
-                    or args.manager_case in ('missing', 'exit', 'closed-reply', 'invalid-reply', 'no-config'))
+        # Only failures before supervision transfer belong to bootstrap.
+        # Formal mount/service failures keep the formal console.
+        recovery = ((args.recovery and not args.ramfs) or args.missing_worker
+                    or args.failed_handoff)
+        if args.missing_shell:
+            for _ in range(3):
+                session.await_text(rb'HypeR virtual console: shell launch failed', 30)
+            if b'HypeR fallback shell:' in args.log.read_bytes():
+                raise AssertionError('missing formal shell reopened bootstrap recovery')
+            print(f'Boot/system missing shell passed: {args.log}')
+            return
         prompt = rb'fallback-sh\$ ' if recovery else rb'hyper-sh\$ '
         session.await_text(prompt, 180)
         command(session, 'pwd', rb'\n/\n')
@@ -175,10 +187,9 @@ def main():
         else:
             command(session, 'pwd | sh --builtin pwd', rb'\n/\n')
         if not (args.missing_shell or args.missing_worker or (args.recovery and not args.ramfs)):
-            nested_shell(session, prompt, storage=not args.ramfs,
-                         virtual_machines=not recovery and not args.manager_case)
-        if args.missing_shell:
-            command(session, 'ps --name fallback-sh', rb'fallback-sh\s+running')
+            nested_shell(session, prompt,
+                         storage=not (args.ramfs or args.missing_data_worker or args.failed_handoff),
+                         virtual_machines=not (recovery or args.recovery or args.missing_data_worker or args.manager_case))
         switched = not ((args.recovery and not args.ramfs) or args.missing_worker or args.failed_handoff)
         if switched:
             root_entries = command(session, 'ls -1 /')
@@ -194,6 +205,15 @@ def main():
         if args.recovery and args.ramfs:
             command(session, 'ps --name init-system', rb'init-system\s+running')
             command(session, 'ls /system/bin', rb'(?i)\bhandle\b')
+        if args.missing_data_worker:
+            for name in ('init-system', 'io-runtime', 'fs-backend', 'vm-manager'):
+                command(session, f'ps --name {name}', name.encode() + rb'\s+running')
+            mounts = command(session, 'mount', rb' on /system type erofs')
+            if b' on /data type ' in mounts:
+                raise AssertionError('missing data worker unexpectedly mounted /data')
+            command(session, 'mount /data', rb'FAT recognized for /data, but filesystem worker is unavailable',
+                    fails=True)
+            command(session, 'vmm start alpine', rb'initial configuration is unavailable', fails=True)
         if args.failed_handoff:
             command(session, 'ps --name fs-backend', rb'fs-backend\s+running')
             command(session, 'ps --name io-runtime', rb'io-runtime\s+running')
@@ -201,6 +221,12 @@ def main():
             if re.search(rb'vm-manager\s+running', processes):
                 raise AssertionError('system services started without committed handoff')
             command(session, 'mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
+            # Formal mounts must not run before a successful handoff. Recovery
+            # can still load the FAT worker from the mounted system explicitly.
+            mounts = command(session, 'mount')
+            if b' on /data type ' in mounts:
+                raise AssertionError('data mounted before formal init took ownership')
+            command(session, 'mount /data')
             command(session, 'cp /data/vms.json /data/handoff-rollback.txt')
             command(session, 'cat /data/handoff-rollback.txt', rb'virtual-machines')
             command(session, 'rm /data/handoff-rollback.txt')
@@ -227,8 +253,11 @@ def main():
             command(session, 'mount /data')
             command(session, 'cat /data/manager-isolation.txt', rb'virtual-machines')
             command(session, 'rm /data/manager-isolation.txt')
-        if not recovery and not args.manager_case:
-            command(session, 'ls /boot/svc', rb'\bfallback-sh\b')
+        if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):
+            boot_services = command(session, 'ls /boot/svc', rb'\bfallback-sh\b')
+            if re.search(rb'\bfs-fat\b', boot_services):
+                raise AssertionError('default deployment kept the data worker in boot RAM')
+            command(session, 'ls /system/svc', rb'\bfs-fat\b')
             command(session, 'ls /system/bin', rb'(?i)\bhandle\b')
             command(session, 'ldd --loader /system/lib64/ld-hyper-aarch64.so '
                     '--library-dir /system/lib64/aarch64-hyper-hyper /system/bin/ls',
@@ -259,8 +288,24 @@ def main():
             command(session, 'rm /data/boot-system-test.txt')
     if not recovery and b'HypeR fallback shell: recovery console ready' in args.log.read_bytes():
         raise AssertionError('successful boot started the fallback shell')
+    if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):
+        evidence = args.log.read_bytes()
+        markers = ([b'EROFS mounted at /system'] if not args.ramfs else []) + [
+            b'HypeR init-system: core supervision adopted',
+            b'HypeR init-system: root namespace switched',
+            b'FAT mounted at /data', b'HypeR init: VM fleet configured',
+        ]
+        positions = [evidence.index(marker) for marker in markers]
+        if positions != sorted(positions):
+            raise AssertionError('filesystem mounts crossed the init handoff boundary')
     if args.manager_case:
         check_manager_evidence(args.manager_case, args.log.read_bytes())
+    if args.missing_data_worker:
+        evidence = args.log.read_bytes()
+        if b'HypeR init: formal mounts unavailable:' not in evidence:
+            raise AssertionError('missing FAT worker was not reported by formal init')
+        if evidence.index(b'core supervision adopted') > evidence.index(b'FAT recognized for /data'):
+            raise AssertionError('data failure occurred before formal handoff')
     mode = (f'manager {args.manager_case}' if args.manager_case else
             'handoff rollback' if args.failed_handoff else
             'recovery' if args.recovery or args.missing_worker else 'deployment')

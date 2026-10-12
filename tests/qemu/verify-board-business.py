@@ -148,7 +148,7 @@ def run(args):
             raise TimeoutError('ordinary VM did not reach stopped state')
 
         try:
-            await_text(rb'HypeR io-runtime: ready; Native volumes mounted\n')
+            await_text(rb'HypeR io-runtime: ready; bootstrap mounts complete\n')
             # READY precedes init provisioning. Wait for its stopped definition
             # before replacing it with the CLI-created test VM; both cannot own
             # the same volume concurrently.

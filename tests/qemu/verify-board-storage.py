@@ -69,9 +69,10 @@ def boot(args, mode):
         try:
             if args.require_userspace_device:
                 await_text(rb'DEVICE-TEST: worker prepared\n')
-            boot = await_text(rb'HypeR io-runtime: ready; Native volumes mounted\n')
+            boot = await_text(rb'HypeR io-runtime: ready; bootstrap mounts complete\n')
             if b'HypeR IO VM: ' not in boot:
                 raise RuntimeError('forwarded I/O VM log prefix missing')
+            await_text(rb'hyper-sh\$ ')
             child.stdin.write(f'/system/bin/storage-probe {mode}\n'.encode())
             child.stdin.flush()
             await_text(b'BOARD-STORAGE: ' + mode.encode() + b' PASS\n', timeout=600)

@@ -121,7 +121,7 @@ def prepare(args):
                 '--library-namespace', 'system', '--entries-from', str(incomplete),
             ], check=True)
         elif case == 'root-switch-failure':
-            config = composition / 'native-system/init.json'
+            config = composition / 'native-system/system-init.json'
             policy = json.loads(config.read_text())
             policy['root-switch']['mounts'].append({
                 'source': '/missing-root-volume', 'target': '/extra'})
@@ -178,7 +178,7 @@ def run_case(args, case):
             session.await_text(re.escape(ADOPTED), 180)
             session.await_text(rb'root switch failed', 60)
             session.send(b'\n')
-            session.await_text(rb'fallback-sh\$ ')
+            session.await_text(rb'hyper-sh\$ ')
             for name in ('console-input', 'console-output', 'session', 'io-runtime', 'init-system'):
                 processes = shell(session, f'ps --name {name}'.encode())
                 if not re.search(name.encode() + rb'\s+running\b', processes):
@@ -198,14 +198,14 @@ def run_case(args, case):
             session.await_text(rb"HypeR init: critical service 'vm-manager' terminated: "
                                rb'reason=process-exited status=1')
             session.await_text(rb'HypeR init: critical service terminated')
-            session.await_text(rb'fallback-sh\$ ', 60)
-            # This failed before the one-shot startup decision. Preserve core
-            # supervision and an interactive recovery terminal.
+            session.await_text(rb'hyper-sh\$ ', 60)
+            # Formal init already owns supervision, even before its shell
+            # decision. It preserves the core and opens the formal console.
             for name in ('session', 'console-input', 'console-output', 'init-system'):
                 processes = shell(session, f'ps --name {name}'.encode())
                 if not re.search(name.encode() + rb'\s+running\b', processes):
                     raise AssertionError(f'boot-critical recovery lost {name}: {processes!r}')
-            shell(session, b'echo BOOT_CRITICAL_RECOVERY_OK')
+            shell(session, b'echo FORMAL_CRITICAL_FAILURE_OK')
         elif case == 'critical-exit-after-ready':
             session.await_text(re.escape(ADOPTED), 180)
             session.await_text(rb'HypeR init: VM fleet configured', 60)
@@ -220,13 +220,8 @@ def run_case(args, case):
         elif case == 'missing-system-shell':
             session.await_text(re.escape(ADOPTED), 180)
             session.await_text(rb'HypeR init: VM fleet configured', 60)
-            session.await_text(rb'HypeR virtual console: system shell unavailable', 60)
-            session.await_text(rb'fallback-sh\$ ', 60)
-            shell(session, b'help')
-            processes = shell(session, b'ps --name fallback-sh')
-            if not re.search(rb'fallback-sh\s+running\b', processes):
-                raise AssertionError('missing system shell did not enter the static fallback')
-            shell(session, b'echo MISSING_SYSTEM_SHELL_RECOVERY_OK')
+            for _ in range(3):
+                session.await_text(rb'HypeR virtual console: shell launch failed', 30)
         else:
             if case == 'timeout':
                 session.await_text(rb'READINESS-FIXTURE-RUNNING')
@@ -238,7 +233,7 @@ def run_case(args, case):
             # Exercise the production 120 s deadline, not a test-only override.
             session.await_text(re.escape(ADOPTED), 240)
             session.await_text(re.escape(DEGRADED), 120)
-            session.await_text(rb'fallback-sh\$ ', 60)
+            session.await_text(rb'hyper-sh\$ ', 60)
             if case == 'root-change':
                 # The observer can finish before init logs the unavailable
                 # fleet. Check the complete capture, not only unread output.
@@ -284,8 +279,8 @@ def run_case(args, case):
     output = logfile.read_bytes()
     if case in ('critical-exit', 'critical-exit-after-ready') and DEGRADED in output:
         raise AssertionError('critical service failure was swallowed as optional storage failure')
-    if case == 'critical-exit-after-ready' and b'HypeR fallback shell: recovery console ready' in output:
-        raise AssertionError('steady-state critical failure reopened boot recovery')
+    if b'HypeR fallback shell: recovery console ready' in output:
+        raise AssertionError('a post-handoff failure reopened bootstrap recovery')
     evidence = {
         'provider-exit': b"'io-runtime' terminated: reason=process-exited status=1",
         'closed-ready': b'storage unavailable: readiness channel closed',

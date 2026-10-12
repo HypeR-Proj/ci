@@ -69,7 +69,7 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_sdk_path_cannot_bypass_installed_sdk(self):
         self.write('app/tool/Cargo.toml', '[package]\nname = "tool"\n[dependencies]\n'
-                   'os = {package = "hyper-os", path = "../../lib/rust/hyper-os"}\n')
+                   'os = {package = "hyper-os", path = "../../stdlib/rust/hyper-os"}\n')
         with self.assertRaisesRegex(ValueError, 'installed SDK'):
             workspace.check_apps(self.root)
 
@@ -79,7 +79,7 @@ class WorkspaceTests(unittest.TestCase):
         workspace.check_apps(self.root)
         self.write('app/tool/Cargo.toml', '[package]\nname = "tool"\n[dependencies]\n'
                    'shared = {package = "wrong", path = "../policy"}\n')
-        with self.assertRaisesRegex(ValueError, 'workspace member'):
+        with self.assertRaisesRegex(ValueError, 'own Native workspace'):
             workspace.check_apps(self.root)
 
     def test_member_cannot_escape_through_symlink(self):
@@ -91,8 +91,8 @@ class WorkspaceTests(unittest.TestCase):
             workspace.check_apps(self.root)
 
     def test_external_members_obey_the_same_sdk_boundary(self):
-        for member, sdk_path in [('lib/args', '../../lib/rust/hyper-os'),
-                                 ('bootstrap/stage1/init', '../../../lib/rust/hyper-os')]:
+        for member, sdk_path in [('lib/args', '../../stdlib/rust/hyper-os'),
+                                 ('stdlib/rust-std', '../rust/hyper-os')]:
             self.write('app/Cargo.toml', '[workspace]\n'
                        f'members = ["tool", "policy", "../{member}"]\n')
             self.write(f'{member}/Cargo.toml', '[package]\nname = "external"\n')
@@ -111,6 +111,61 @@ class WorkspaceTests(unittest.TestCase):
         self.write('app/Cargo.toml', '[workspace]\nmembers = ["../lib/args"]\n')
         with self.assertRaisesRegex(ValueError, 'escapes app'):
             workspace.check_apps(self.root)
+
+    def bootstrap(self):
+        self.write('bootstrap/stage1/Cargo.toml', '[workspace]\nmembers = ["init", "private"]\n'
+                   '[workspace.dependencies]\nservice = {package="boot-service", path="private"}\n')
+        self.write('bootstrap/stage1/init/Cargo.toml', '[package]\nname="boot-init"\n'
+                   '[dependencies]\nservice.workspace=true\nhyper-os="=0.0.0"\n')
+        self.write('bootstrap/stage1/private/Cargo.toml', '[package]\nname="boot-service"\n'
+                   '[dependencies]\nserde="1"\n')
+        self.write('lib/service/Cargo.toml', '[package]\nname="system-service"\n')
+
+    def test_bootstrap_can_share_substrate_and_third_party(self):
+        self.bootstrap()
+        workspace.check_bootstrap(self.root)
+
+    def test_bootstrap_rejects_transitive_system_dependencies_in_all_contexts(self):
+        self.bootstrap()
+        for section in ('dependencies', 'build-dependencies', 'dev-dependencies',
+                        'target.\'cfg(target_os="hyper")\'.dependencies'):
+            for spec in ('{package="system-service", path="../../../lib/service"}',
+                         '{package="system-service", version="0.0.0"}'):
+                with self.subTest(section=section, spec=spec):
+                    self.write('bootstrap/stage1/private/Cargo.toml',
+                               '[package]\nname="boot-service"\n'
+                               f'[{section}]\nindirect={spec}\n')
+                    with self.assertRaisesRegex(ValueError, 'system library'):
+                        workspace.check_bootstrap(self.root)
+
+    def test_bootstrap_rejects_path_escape_and_shared_delivery(self):
+        self.bootstrap()
+        self.write('bootstrap/stage1/private/Cargo.toml', '[package]\nname="boot-service"\n'
+                   '[dependencies]\nargs={path="../../../lib/args"}\n')
+        with self.assertRaisesRegex(ValueError, 'installed SDK'):
+            workspace.check_bootstrap(self.root)
+        self.write('app/Cargo.toml', '[workspace]\nmembers=["../bootstrap/stage1/init"]\n')
+        with self.assertRaisesRegex(ValueError, 'escapes app'):
+            workspace.check_apps(self.root)
+
+    def test_stdlib_cannot_smuggle_system_policy_into_bootstrap(self):
+        self.bootstrap()
+        self.write('stdlib/rust/Cargo.toml', '[workspace]\nmembers=["safe"]\n')
+        self.write('stdlib/rust/safe/Cargo.toml', '[package]\nname="safe"\n')
+        workspace.check_stdlib(self.root)
+        self.write('stdlib/rust/safe/Cargo.toml', '[package]\nname="safe"\n'
+                   '[dependencies]\nprivate={path="../../../bootstrap/stage1/private"}\n')
+        with self.assertRaisesRegex(ValueError, 'stdlib substrate'):
+            workspace.check_stdlib(self.root)
+
+    def test_vendored_dependency_is_not_a_boundary_bypass(self):
+        self.bootstrap()
+        self.write('bootstrap/stage1/private/Cargo.toml', '[package]\nname="boot-service"\n'
+                   '[dependencies]\nparser={path="../../../third_party/parser"}\n')
+        self.write('third_party/parser/Cargo.toml', '[package]\nname="parser"\n'
+                   '[build-dependencies]\nhelper={package="system-service", version="0"}\n')
+        with self.assertRaisesRegex(ValueError, 'system library'):
+            workspace.check_bootstrap(self.root)
 
     def test_kernel_cannot_use_published_or_foreign_abi(self):
         for declaration in ('"=0.0.0"', '{path = "../foreign"}'):

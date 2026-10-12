@@ -338,7 +338,7 @@ def run(args):
             command, args.log, failures=failures,
             output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
         scenario = Scenario(session, url, digest, args.expect_tx_offload)
-        session.await_text(rb'HypeR io-runtime: ready; Native volumes mounted\n', timeout=180)
+        session.await_text(rb'HypeR io-runtime: ready; bootstrap mounts complete\n', timeout=180)
         deadline = time.monotonic() + 90
         while True:
             listing = scenario.native('vmm list')

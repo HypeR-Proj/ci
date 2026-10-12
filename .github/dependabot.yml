@@ -23,7 +23,8 @@ updates:
       - /kernel
       - /kernel/tests/host
       - /kernel/tools/kallsyms
-      - /lib/rust
+      - /stdlib/rust
+      - /bootstrap/stage1
       - /tools/fit-pack
     schedule:
       interval: weekly

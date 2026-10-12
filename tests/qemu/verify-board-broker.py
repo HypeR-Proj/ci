@@ -107,7 +107,7 @@ def run(args):
             return output
 
         try:
-            await_text(rb'HypeR io-runtime: ready; Native volumes mounted\n')
+            await_text(rb'HypeR io-runtime: ready; bootstrap mounts complete\n')
             # Init's initial provisioning can complete after storage READY.
             limit = time.monotonic() + 60
             while True:
