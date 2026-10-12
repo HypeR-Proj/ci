@@ -3,25 +3,32 @@
  */
 
 #include <hyper/startup.h>
-#include <hyper/syscall.h>
+#include <hyper/std.h>
+#include <hyper/stream.h>
 #include <string.h>
 
-#define STANDARD_OUTPUT_PURPOSE UINT32_C(0x80030002)
+static int write_all(const char *bytes, size_t length)
+{
+	while (length) {
+		size_t actual = 0;
+		if (hyper_runtime_stdio_write(1, bytes, length, &actual) || !actual)
+			return 1;
+		bytes += actual;
+		length -= actual;
+	}
+	return 0;
+}
 
 /* Keep the static executable contract independent of ordinary tools' Rust
  * dependencies. The Rust static/std path has its own std-test-static fixture. */
 int hyper_main(const hyper_startup_t *startup)
 {
-	hyper_native_handle_t output = 0;
-	if (hyper_startup_find_handle(startup,
-			STANDARD_OUTPUT_PURPOSE, &output))
-		return 1;
 	for (size_t i = 1; i < startup->argument_count; ++i) {
-		if (i > 1 && hyper_byte_channel_write(output, " ", 1))
+		if (i > 1 && write_all(" ", 1))
 			return 1;
 		const char *argument = startup->arguments[i];
-		if (hyper_byte_channel_write(output, argument, strlen(argument)))
+		if (write_all(argument, strlen(argument)))
 			return 1;
 	}
-	return hyper_byte_channel_write(output, "\n", 1) ? 1 : 0;
+	return write_all("\n", 1) || hyper_runtime_stream_fence(1) ? 1 : 0;
 }

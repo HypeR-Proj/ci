@@ -21,7 +21,8 @@ from native_deployment import prepare as prepare_layout
 
 CASES = ('missing-controller', 'provider-exit', 'closed-ready', 'invalid-ready',
          'timeout', 'missing-config', 'oversized-ready', 'launch-failure', 'critical-exit',
-         'root-change', 'root-switch-failure', 'critical-exit-after-ready', 'missing-system-shell')
+         'root-change', 'root-switch-failure', 'critical-exit-after-ready', 'missing-system-shell',
+         'handoff-failure')
 DEGRADED = b'HypeR init: VM fleet configuration unavailable; Native services remain available'
 ADOPTED = b'HypeR init-system: core supervision adopted'
 LIVE_PROVIDERS = frozenset(('closed-ready', 'invalid-ready', 'oversized-ready',
@@ -59,7 +60,7 @@ def prepare(args):
     subprocess.run([str(args.sdk / 'bin/hyper-clang'), '-std=c17', '-Wall',
                     '-Wextra', '-Werror', '-static', str(ROOT / 'tests/native/root-switch.c'),
                     '-o', str(args.output / 'root-observer')], check=True)
-    for case in CASES:
+    for case in (args.case,) if args.case else CASES:
         manifest = args.output / f'{case}.json'
         graph = services(board, ROOT)
         if case in ('critical-exit', 'critical-exit-after-ready'):
@@ -76,7 +77,7 @@ def prepare(args):
             provider = args.output / f'provider-{providers.index(case)}'
         elif case == 'root-change':
             provider = args.output / 'root-observer'
-        elif case == 'root-switch-failure':
+        elif case in ('root-switch-failure', 'handoff-failure'):
             provider = args.output / 'provider-4'
         elif case == 'critical-exit':
             # Reach the committed system-init handoff without waiting for the
@@ -105,7 +106,15 @@ def prepare(args):
             *(['0644', 'etc/hyper/vms.json', str(empty_fleet)]
               if case in ('critical-exit-after-ready', 'missing-system-shell') else []),
         ], check=True)
-        if case == 'launch-failure':
+        if case == 'handoff-failure':
+            subprocess.run([
+                sys.executable, '-B', str(ROOT / 'tests/qemu/verify-boot-system.py'),
+                'prepare-handoff', '--entries',
+                str(composition / 'native-system/boot.entries.json'),
+                '--output', str(args.output / f'{case}.cpio'),
+                '--packer', args.packer, '--strip', args.strip,
+            ], check=True)
+        elif case == 'launch-failure':
             inject_invalid_provider(args, composition, invalid_image)
         elif case == 'missing-system-shell':
             entries = json.loads((composition / 'native-system/boot.entries.json').read_text())
@@ -171,21 +180,38 @@ def run_case(args, case):
     # uses the real io-runtime; the rest isolate readiness and launch failures.
     command = native_command(args.qemu, args.image, args.output / f'{case}.cpio')
     failures = KERNEL_FAILURES + (b'ROOT-SWITCH: FAIL',)
-    if case not in ('critical-exit', 'critical-exit-after-ready'):
+    if case not in ('critical-exit', 'critical-exit-after-ready', 'missing-system-shell'):
         failures += (BOOT_FAILED, CRITICAL)
+    if case == 'handoff-failure':
+        failures += (b'core supervision transferred', b'core supervision adopted')
     with Session(command, logfile, failures=failures) as session:
-        if case == 'root-switch-failure':
+        if case == 'handoff-failure':
+            session.await_text(rb'HypeR fallback shell: recovery console ready', 180)
+            session.await_text(rb'fallback-sh\$ ')
+            # A non-reading child must not steal subsequent pasted commands.
+            session.send(b'/system/bin/echo RECOVERY_ONE\r/system/bin/echo RECOVERY_TWO\r')
+            session.await_text(rb'(?m)^RECOVERY_ONE\n', 30)
+            session.await_text(rb'(?m)^RECOVERY_TWO\n', 30)
+            session.await_text(rb'fallback-sh\$ ')
+            session.send(b'exit\r')
+            session.await_text(rb'HypeR fallback shell: recovery console ready', 30)
+            session.await_text(rb'fallback-sh\$ ')
+            shell(session, b'/system/bin/echo RAW_RECOVERY_RESTARTED')
+        elif case == 'root-switch-failure':
             session.await_text(re.escape(ADOPTED), 180)
             session.await_text(rb'root switch failed', 60)
             session.send(b'\n')
             session.await_text(rb'hyper-sh\$ ')
-            for name in ('console-input', 'console-output', 'session', 'io-runtime', 'init-system'):
+            for name in ('console-raw', 'session-manager', 'terminal-service', 'io-runtime', 'init-system'):
                 processes = shell(session, f'ps --name {name}'.encode())
                 if not re.search(name.encode() + rb'\s+running\b', processes):
                     raise AssertionError(f'root switch failure lost {name}: {processes!r}')
             processes = shell(session, b'ps --name vm-manager')
-            if re.search(rb'vm-manager\s+running\b', processes):
-                raise AssertionError('formal services started after a failed root switch')
+            if not re.search(rb'vm-manager\s+running\b', processes):
+                raise AssertionError('formal graph did not retain its VM manager after root failure')
+            unavailable = shell(session, b'vmm start alpine', allow_failure=True)
+            if b'initial configuration is unavailable' not in unavailable:
+                raise AssertionError('root failure unexpectedly admitted a VM fleet')
             shell(session, b'cat /etc/hyper/board.json')
             shell(session, b'ls -d /init')
             missing = shell(session, b'ls -d /.newroot', allow_failure=True)
@@ -199,9 +225,9 @@ def run_case(args, case):
                                rb'reason=process-exited status=1')
             session.await_text(rb'HypeR init: critical service terminated')
             session.await_text(rb'hyper-sh\$ ', 60)
-            # Formal init already owns supervision, even before its shell
-            # decision. It preserves the core and opens the formal console.
-            for name in ('session', 'console-input', 'console-output', 'init-system'):
+            # Formal init already owns supervision. The formal session manager
+            # remains independent of the failed business service.
+            for name in ('session-manager', 'terminal-service', 'console-raw', 'init-system'):
                 processes = shell(session, f'ps --name {name}'.encode())
                 if not re.search(name.encode() + rb'\s+running\b', processes):
                     raise AssertionError(f'boot-critical recovery lost {name}: {processes!r}')
@@ -221,7 +247,7 @@ def run_case(args, case):
             session.await_text(re.escape(ADOPTED), 180)
             session.await_text(rb'HypeR init: VM fleet configured', 60)
             for _ in range(3):
-                session.await_text(rb'HypeR virtual console: shell launch failed', 30)
+                session.await_text(rb'HypeR session-manager: session ended:', 30)
         else:
             if case == 'timeout':
                 session.await_text(rb'READINESS-FIXTURE-RUNNING')
@@ -250,7 +276,7 @@ def run_case(args, case):
             if not re.search(rb'Owners:[^\n]*guest=0 B', memory):
                 raise AssertionError('failed bootstrap unexpectedly started a guest')
             processes = shell(session, b'ps')
-            for name in (b'console-input', b'console-output', b'session',
+            for name in (b'console-raw', b'session-manager', b'terminal-service',
                          b'init-system', b'vm-manager'):
                 if not re.search(rb'\s' + name + rb'\s+running\b', processes):
                     raise AssertionError(f'base service {name!r} did not survive: {processes!r}')
@@ -279,7 +305,7 @@ def run_case(args, case):
     output = logfile.read_bytes()
     if case in ('critical-exit', 'critical-exit-after-ready') and DEGRADED in output:
         raise AssertionError('critical service failure was swallowed as optional storage failure')
-    if b'HypeR fallback shell: recovery console ready' in output:
+    if case != 'handoff-failure' and b'HypeR fallback shell: recovery console ready' in output:
         raise AssertionError('a post-handoff failure reopened bootstrap recovery')
     evidence = {
         'provider-exit': b"'io-runtime' terminated: reason=process-exited status=1",
@@ -297,8 +323,11 @@ def run_case(args, case):
     # READY closes. Init's emergency diagnostics may interleave with the line.
     if case == 'missing-controller' and b'Status(Status(-16))' not in output:
         raise AssertionError('provider failure diagnostic lost its controller error cause')
-    if output.count(ADOPTED) != 1:
-        raise AssertionError('storage recovery did not perform exactly one system-init handoff')
+    expected_handoffs = 0 if case == 'handoff-failure' else 1
+    if output.count(ADOPTED) != expected_handoffs:
+        raise AssertionError(f'{case}: unexpected system-init handoff count')
+    if case == 'handoff-failure' and b'HypeR session: console ready' in output:
+        raise AssertionError('bootstrap recovery unexpectedly started the formal shell')
     if b'HypeR: vCPU 0 running as scheduler thread' in output:
         raise AssertionError('guest started after failed bootstrap')
     print(f'verified storage failure case: {case}', flush=True)
@@ -315,6 +344,7 @@ def main():
     for name in ('packer', 'strip'):
         prepare_parser.add_argument('--' + name, required=True)
     prepare_parser.add_argument('--output', type=Path, required=True)
+    prepare_parser.add_argument('--case', choices=CASES)
     run_parser = subparsers.add_parser('run')
     run_parser.add_argument('--qemu', required=True)
     run_parser.add_argument('--image', type=Path, required=True)

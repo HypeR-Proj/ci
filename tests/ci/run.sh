@@ -88,6 +88,7 @@ case "${1:-}" in
         QEMU_TEST_LOG=target/app/aarch64/native-init.log \
             make test-native ARCH=aarch64 QEMU_CPU=max QEMU_CPUS=4
         make -o image -o native-initramfs test-console ARCH=aarch64
+        make -o image -o native-initramfs test-terminal ARCH=aarch64
         make -o image -o native-initramfs test-apps ARCH=aarch64
         make -o image -o app test-fleet-config ARCH=aarch64
         make -o image -o app test-storage-failure ARCH=aarch64
@@ -222,6 +223,7 @@ case "${1:-}" in
         QEMU_TEST_LOG=target/app/riscv64/native-init-up.log \
             make -o image -o native-initramfs test-native ARCH=riscv64 QEMU_CPUS=1
         make -o image -o native-initramfs test-console ARCH=riscv64
+        make -o image -o native-initramfs test-terminal ARCH=riscv64
         make -o image -o native-initramfs test-apps ARCH=riscv64
         make -o image -o app test-fleet-config ARCH=riscv64
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=4

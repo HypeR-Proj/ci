@@ -85,6 +85,7 @@ def run(args):
 
         try:
             expect(rb'HypeR io-runtime: ready; bootstrap mounts complete\n')
+            expect(rb'hyper-sh\$ ')
             deadline = time.monotonic() + 60
             while not re.search(rb'\balpine\s+stopped\b', native('vmm list')):
                 if time.monotonic() >= deadline:

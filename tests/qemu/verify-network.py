@@ -87,7 +87,13 @@ def payload_server():
             if self.path != '/payload':
                 self.send_error(404)
                 return
-            if self.headers.get('Content-Length') != str(len(payload)):
+            length = self.headers.get('Content-Length', '')
+            if length != str(len(payload)):
+                # Drain bounded invalid uploads before closing: otherwise macOS
+                # can reset the socket while the client is still sending and
+                # hide the HTTP rejection behind a transport error.
+                if length.isdecimal() and int(length) <= len(payload):
+                    self.rfile.read(int(length))
                 self.send_error(400, 'unexpected payload length')
                 return
             received = self.rfile.read(len(payload))
@@ -339,6 +345,9 @@ def run(args):
             output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
         scenario = Scenario(session, url, digest, args.expect_tx_offload)
         session.await_text(rb'HypeR io-runtime: ready; bootstrap mounts complete\n', timeout=180)
+        # Storage readiness precedes formal terminal ownership. Commands sent
+        # before the shell prompt can be discarded by the session's input reset.
+        session.await_text(rb'hyper-sh\$ ', timeout=180)
         deadline = time.monotonic() + 90
         while True:
             listing = scenario.native('vmm list')

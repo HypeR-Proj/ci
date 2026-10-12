@@ -149,6 +149,7 @@ def run(args):
 
         try:
             await_text(rb'HypeR io-runtime: ready; bootstrap mounts complete\n')
+            await_text(rb'hyper-sh\$ ')
             # READY precedes init provisioning. Wait for its stopped definition
             # before replacing it with the CLI-created test VM; both cannot own
             # the same volume concurrently.

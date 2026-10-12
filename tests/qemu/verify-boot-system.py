@@ -96,8 +96,8 @@ def nested_shell(session, parent_prompt, *, storage, virtual_machines):
             rb'object-inspector capability unavailable', fails=True)
     command(session, f'rm {untrusted}')
     if storage:
-        # The nested shell must retain both bootstrap-loader selection and the
-        # delegated filesystem connector for the static recovery tools.
+        # The nested shell retains the boot image capability for static mount
+        # tools without sharing the formal terminal implementation with them.
         command(session, 'mount', rb' on /system type erofs')
     if virtual_machines:
         command(session, 'vmm list', rb'alpine\s+stopped')
@@ -126,7 +126,7 @@ def main():
     parser.add_argument('--missing-worker', action='store_true',
                         help='boot a supplied archive with fs-erofs removed; keep controllers present')
     parser.add_argument('--missing-data-worker', action='store_true',
-                        help='system payload omits fs-fat; require formal init and Native services to survive')
+                        help='boot and system payloads omit fs-fat; require formal init and Native services to survive')
     parser.add_argument('--manager-case', choices=(
         'absent', 'missing', 'exit', 'closed-reply', 'invalid-reply', 'configured-exit', 'no-config'),
         help='verify storage with the corresponding supplied system service graph or fault fixture')
@@ -174,7 +174,7 @@ def main():
                     or args.failed_handoff)
         if args.missing_shell:
             for _ in range(3):
-                session.await_text(rb'HypeR virtual console: shell launch failed', 30)
+                session.await_text(rb'HypeR session-manager: session ended:', 30)
             if b'HypeR fallback shell:' in args.log.read_bytes():
                 raise AssertionError('missing formal shell reopened bootstrap recovery')
             print(f'Boot/system missing shell passed: {args.log}')
@@ -222,7 +222,7 @@ def main():
                 raise AssertionError('system services started without committed handoff')
             command(session, 'mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
             # Formal mounts must not run before a successful handoff. Recovery
-            # can still load the FAT worker from the mounted system explicitly.
+            # can still load the boot-resident FAT worker on an explicit mount request.
             mounts = command(session, 'mount')
             if b' on /data type ' in mounts:
                 raise AssertionError('data mounted before formal init took ownership')
@@ -255,9 +255,11 @@ def main():
             command(session, 'rm /data/manager-isolation.txt')
         if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):
             boot_services = command(session, 'ls /boot/svc', rb'\bfallback-sh\b')
-            if re.search(rb'\bfs-fat\b', boot_services):
-                raise AssertionError('default deployment kept the data worker in boot RAM')
-            command(session, 'ls /system/svc', rb'\bfs-fat\b')
+            if not re.search(rb'\bfs-fat\b', boot_services):
+                raise AssertionError('default deployment is missing the FAT worker in boot RAM')
+            system_services = command(session, 'ls /system/svc', rb'\binit-system\b')
+            if re.search(rb'\bfs-fat\b', system_services):
+                raise AssertionError('default deployment duplicated the FAT worker in /system')
             command(session, 'ls /system/bin', rb'(?i)\bhandle\b')
             command(session, 'ldd --loader /system/lib64/ld-hyper-aarch64.so '
                     '--library-dir /system/lib64/aarch64-hyper-hyper /system/bin/ls',
