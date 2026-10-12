@@ -44,11 +44,12 @@ and the one-time Pages/required-check setup.
 | `native-smp-gicv2` | Guest SMP on GICv2 with four host CPUs and abrupt runtime-exit retirement |
 | `native-smp-overcommit` | Guest SMP with one host CPU |
 | `native-retirement-stack` | Power-crash retirement in dormant/pending/powered-off states and stack limits |
+| `native-stack-16k` | Production Native boot on one/four CPUs with 16 KiB kernel thread stacks, root/supervision handoff, shell commands, static/dynamic std and application startup |
 | `riscv64-native` | Serial aggregate of `riscv64-sdk` and `riscv64-runtime` |
 | `riscv64-sdk` | RISC-V SDK publication/consumer checks, app lint and host tests |
 | `riscv64-runtime` | Native static/dynamic std and application acceptance on one/four harts, file tools, paced shell input, userspace-managed guest boot, runtime-crash recovery and stack limits |
 | `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
-| `board-storage` | Configuration storage, split-root boot and disk-independent recovery, Alpine rootfs, business guest, broker and userspace-device acceptance with stack watermarks |
+| `board-storage` | Configuration storage, split-root boot and disk-independent recovery, Alpine rootfs, business guest, broker and userspace-device acceptance with 16 KiB kernel thread stacks and stack watermarks |
 | `aarch64-build` | Serial aggregate of the three AArch64 image build suites below |
 | `aarch64-production` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity and image ABI/instruction checks |
 | `aarch64-self-test` | Separate kernel-self-test image and image ABI/instruction checks |
@@ -57,7 +58,7 @@ and the one-time Pages/required-check setup.
 | `riscv64-qemu` | RISC-V kernel startup, SMP admission, and standalone mechanism self-tests |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
 
-GitHub Actions runs eight AArch64 Native shards and two RISC-V Native shards
+GitHub Actions runs nine AArch64 Native shards and two RISC-V Native shards
 on independent runners. Each shard
 builds its own prerequisites; no suite consumes mutable outputs from another.
 Use `sh tests/ci/run.sh native-gicv2`, for example, to reproduce one shard.
@@ -76,6 +77,12 @@ The architecture QEMU runtime suites deliberately build with
 Production images instead mount the firmware initramfs and start Native
 `/init`; the separate `native` suite assembles that initramfs from the in-tree
 SDK and application sources and verifies the complete boot contract.
+The independent `native-stack-16k` shard runs this acceptance with the minimum
+supported kernel thread stack on one and four CPUs. It requires the boot log to
+confirm 16 KiB stacks and the shell to finish the application probes; reaching
+kernel startup alone is insufficient. IRQ and emergency stacks retain their
+defaults. Run `sh tests/ci/run.sh native-stack-16k` locally; its generated config
+does not modify `kernel/.config`. CI retains the config and both serial logs.
 The RISC-V Native image includes userspace VM provisioning. Its Native suite
 checks Linux guest startup on one and four host harts and runtime-crash recovery;
 this does not imply multi-vCPU RISC-V guest support.

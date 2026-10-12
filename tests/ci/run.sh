@@ -18,6 +18,13 @@ run_kernel_suite() {
     (cd kernel && sh tests/ci/run.sh "$suite")
 }
 
+prepare_aarch64_stack16_config() {
+    mkdir -p target/ci
+    stack_config="$root/target/ci/aarch64-stack16.config"
+    sed 's/^CONFIG_KERNEL_STACK_SIZE_KB=.*/CONFIG_KERNEL_STACK_SIZE_KB=16/' \
+        kernel/configs/qemu_aarch64_defconfig >"$stack_config"
+}
+
 case "${1:-}" in
     quality)
         command -v rg >/dev/null 2>&1 || {
@@ -61,7 +68,7 @@ case "${1:-}" in
     native)
         # Separate processes keep dispatch state local to each suite. Local
         # runs remain serial because fixtures reuse the same output paths.
-        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack; do
+        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack native-stack-16k; do
             sh tests/ci/run.sh "$shard"
         done
         ;;
@@ -140,6 +147,20 @@ case "${1:-}" in
         make test-power-crash ARCH=aarch64 QEMU_CPUS=4
         make test-stack ARCH=aarch64
         ;;
+    native-stack-16k)
+        prepare_aarch64_stack16_config
+        make image native-initramfs ARCH=aarch64 CONFIG_FILE="$stack_config" CARGO_FEATURES=
+        for cpus in 1 4; do
+            log="target/app/aarch64/native-stack-16k-${cpus}.log"
+            QEMU_TEST_LOG="$log" make -o image -o native-initramfs test-native \
+                ARCH=aarch64 CONFIG_FILE="$stack_config" CARGO_FEATURES= \
+                QEMU_CPU=max QEMU_CPUS="$cpus"
+            if ! grep -Fq 'guarded kernel stacks: thread 16 KiB,' "$log"; then
+                echo "Native boot did not report 16 KiB kernel thread stacks: $log" >&2
+                exit 1
+            fi
+        done
+        ;;
     io-vm)
         package=$(python3 -B scripts/fetch-io-vm.py \
             --reference "${IO_VM_REFERENCE:-}" --platform qemu)
@@ -162,17 +183,27 @@ case "${1:-}" in
     board-storage)
         package=$(python3 -B scripts/fetch-io-vm.py \
             --reference "${IO_VM_REFERENCE:-}" --platform qemu)
+        # Device claims happen in long-lived services, outside the retired
+        # thread watermark samples. Boot the real storage path at the minimum
+        # supported thread-stack size as well as checking measured reserves.
+        prepare_aarch64_stack16_config
         make test-board-storage ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            CONFIG_FILE="$stack_config" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
         make -o image -o app test-boot-system ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            CONFIG_FILE="$stack_config" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
         make -o image -o app test-alpine-rootfs ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            CONFIG_FILE="$stack_config" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
         make -o image -o app test-board-business ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            CONFIG_FILE="$stack_config" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
         make -o image -o app test-board-broker ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            CONFIG_FILE="$stack_config" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
         make -o image -o app test-userspace-device ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            CONFIG_FILE="$stack_config" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
         ;;
     riscv64-native)

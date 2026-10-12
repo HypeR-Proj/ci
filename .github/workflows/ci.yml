@@ -82,6 +82,8 @@ jobs:
             name: Guest SMP / host overcommit
           - suite: native-retirement-stack
             name: Power retirement and stack limits
+          - suite: native-stack-16k
+            name: Native boot / 16 KiB kernel stacks
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
@@ -103,6 +105,7 @@ jobs:
             target/app/aarch64/*.log
             target/stack-audit/aarch64/*.json
             target/stack-audit/aarch64/*.log
+            target/ci/aarch64-stack16.config
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload the Native SDK
@@ -141,7 +144,9 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: aarch64-board-storage-logs
-          path: target/board-tests/**/*.log
+          path: |
+            target/board-tests/**/*.log
+            target/ci/aarch64-stack16.config
           if-no-files-found: ignore
           retention-days: 7
 
