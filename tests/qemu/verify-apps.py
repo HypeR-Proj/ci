@@ -11,6 +11,7 @@ import time
 from session import Session, native_command
 from handle_checks import verify_handles
 from command_checks import verify_command_options
+from shell_status import checked, status
 
 
 def main():
@@ -25,9 +26,9 @@ def main():
         send = session.send
 
         def run(text, expected=None, failed=False, timeout=60):
-            send(text.encode() + b'\n')
+            send(checked(text))
             output = await_text(rb'hyper-sh\$ ', timeout=timeout)
-            if (b'sh: command failed' in output) != failed:
+            if (status(output) != 0) != failed:
                 raise AssertionError(f'{text}: unexpected exit status: {output!r}')
             if expected is not None and not re.search(expected, output):
                 raise AssertionError(f'{text}: missing {expected!r}: {output!r}')
@@ -89,9 +90,9 @@ def main():
         if not original or not copied or original[2] != copied[2]:
             raise AssertionError(f'pipeline copy truncated: {sizes!r}')
         # Malformed commands and failed preparation must leave a usable shell.
-        run('echo SHOULD_NOT_RUN|/missing', rb'command not found')
-        run('echo ignored |', rb'invalid command syntax')
-        run('cat </missing', rb'I/O failed')
+        run('echo upstream|/missing', rb'command not found', failed=True)
+        run("sh -n -c 'echo ignored |'", rb'expected a command', failed=True)
+        run('cat </missing', rb'/missing:', failed=True)
         run('mkdir /pipe-dir')
         run('cd /pipe-dir')
         run('echo relative>data')
@@ -213,7 +214,7 @@ def main():
             state('alpine', 'running')
             run('vmm restart alpine --wait --timeout 60', rb'alpine: running', timeout=65)
             state('alpine', 'running')
-        run('echo HYPER_APPS_OK', rb'\nHYPER_APPS_OK\nhyper-sh\$ ')
+        run('echo HYPER_APPS_OK', rb'\nHYPER_APPS_OK\n')
         print('verified Native file tools' +
               (', named VM isolation, and create/delete/restart' if verify_vm else ''))
 

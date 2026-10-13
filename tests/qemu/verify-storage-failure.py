@@ -12,6 +12,7 @@ import sys
 import time
 
 from session import Session, native_command
+from shell_status import checked, status
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -162,14 +163,17 @@ def inject_invalid_provider(args, composition, invalid_image):
     ], check=True)
 
 
-def shell(session, command, *, allow_failure=False):
-    # A fence distinct from input echo also tolerates asynchronous service logs.
-    session.send(command + b"\necho STORAGE-''COMMAND-DONE\n")
-    output = session.await_text(rb'STORAGE-COMMAND-DONE\n')
-    session.await_text(rb'(?:hyper|fallback)-sh\$ ')
-    if not allow_failure and any(marker in output for marker in (
-            b'sh: command failed', b'sh: command launch failed',
-            b'sh: Native operation failed')):
+def shell(session, command, *, allow_failure=False, recovery=False):
+    if recovery:
+        session.send(command + b"\necho STORAGE-''COMMAND-DONE\n")
+        output = session.await_text(rb'STORAGE-COMMAND-DONE\n')
+        session.await_text(rb'fallback-sh\$ ')
+        failed = b'sh: ' in output
+    else:
+        session.send(checked(command))
+        output = session.await_text(rb'hyper-sh\$ ')
+        failed = status(output) != 0
+    if not allow_failure and failed:
         raise AssertionError(f'Native command failed: {output!r}')
     return output
 
@@ -196,7 +200,7 @@ def run_case(args, case):
             session.send(b'exit\r')
             session.await_text(rb'HypeR fallback shell: recovery console ready', 30)
             session.await_text(rb'fallback-sh\$ ')
-            shell(session, b'/system/bin/echo RAW_RECOVERY_RESTARTED')
+            shell(session, b'/system/bin/echo RAW_RECOVERY_RESTARTED', recovery=True)
         elif case == 'root-switch-failure':
             session.await_text(re.escape(ADOPTED), 180)
             session.await_text(rb'root switch failed', 60)
@@ -215,7 +219,7 @@ def run_case(args, case):
             shell(session, b'cat /etc/hyper/board.json')
             shell(session, b'ls -d /init')
             missing = shell(session, b'ls -d /.newroot', allow_failure=True)
-            if b'sh: command failed' not in missing:
+            if status(missing) == 0:
                 raise AssertionError('failed switch left its staging mount behind')
             if b'root namespace switched' in logfile.read_bytes():
                 raise AssertionError('failed root preparation published a new root')

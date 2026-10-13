@@ -9,6 +9,7 @@ import sys
 import time
 
 from session import Session, native_command
+from shell_status import checked, status
 
 
 CONFIGURED = b'HypeR init: VM fleet configured'
@@ -69,9 +70,9 @@ def main():
             session.await_text(rb'hyper-sh\$ ')
 
             def run(command, timeout=60):
-                session.send(command + b'\n')
+                session.send(checked(command))
                 output = session.await_text(rb'hyper-sh\$ ', timeout)
-                if b'sh: command failed' in output:
+                if status(output) != 0:
                     raise AssertionError(f'{command!r} failed: {output!r}')
                 return output
 

@@ -18,6 +18,8 @@ import subprocess
 import sys
 import time
 
+from shell_status import checked, status as command_status
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from board_config import Board
@@ -96,23 +98,11 @@ def run(args):
         def send(line):
             child.stdin.write(line); child.stdin.flush()
 
-        command_number = 0
-
         def shell(line):
-            nonlocal command_number
-            command_number += 1
-            marker = f'BOARD-COMMAND-{command_number}'.encode()
-            # Terminal input remains in the original queue until a child reads.
-            # vmm never reads stdin, so this result fence survives foreground
-            # execution. Input echo is not a boundary: guest/kernel output may
-            # interleave in the middle of the echoed command.
-            # Quoted concatenation keeps the complete result marker out of
-            # input echo; unrelated logs may prefix the actual output line.
-            quoted = marker.replace(b'-COMMAND-', b"-''COMMAND-", 1)
-            send(line.encode() + b'\necho ' + quoted + b'\n')
-            result = await_text(re.escape(marker) + rb'\n')
+            send(checked(line))
+            result = await_text(rb'(?m)^HYPER-COMMAND-STATUS=[0-9]+\n')
             await_text(rb'hyper-sh\$ ')
-            if b'vmm:' in result or b'sh: command' in result:
+            if command_status(result) != 0:
                 raise RuntimeError(f'command failed: {result!r}')
             return result
 

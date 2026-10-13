@@ -17,6 +17,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'qemu'))
 from session import Session, native_command
+from shell_status import checked, status
 
 
 DEFAULT_COMMANDS = (
@@ -102,10 +103,11 @@ def main():
                     session.send(text.encode() + b'\n')
                     output = session.await_text(rb'hyper-sh\$ ', timeout=120)
                     samples.append((time.monotonic_ns() - started) / 1_000_000)
-                    if any(marker in output for marker in (
-                        b'sh: command failed', b'sh: command launch failed',
-                        b'sh: command not found', b'sh: Native operation failed',
-                    )):
+                    # Check the exit status after stopping the timer, so the
+                    # result probe does not inflate the command-latency sample.
+                    session.send(checked('test $? -eq 0'))
+                    result = session.await_text(rb'hyper-sh\$ ', timeout=120)
+                    if status(result) != 0:
                         raise RuntimeError(f'{text}: command failed: {output!r}')
                 row = {'boot': boot + 1, 'command': text, 'first_ms': samples[0],
                        'repeated_ms': samples[1:],

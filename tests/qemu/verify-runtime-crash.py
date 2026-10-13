@@ -8,6 +8,7 @@ import re
 import time
 
 from session import Session, native_command
+from shell_status import checked, status
 
 
 def main():
@@ -27,9 +28,9 @@ def main():
             session.send(command + b'\n')
 
         def run(command, timeout=60):
-            send(command)
+            session.send(checked(command))
             output = await_text(rb'hyper-sh\$ ', timeout)
-            if b'sh: command failed' in output:
+            if status(output) != 0:
                 raise AssertionError(f'{command!r} failed: {output!r}')
             return output
 

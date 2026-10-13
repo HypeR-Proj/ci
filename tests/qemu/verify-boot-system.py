@@ -12,6 +12,7 @@ import subprocess
 import sys
 
 from session import Session, native_command
+from shell_status import checked, status
 
 
 def prepare_handoff(argv):
@@ -44,11 +45,14 @@ def prepare_handoff(argv):
     ], check=True)
 
 
-def command(session, text, expected=None, *, fails=False, timeout=180):
-    session.send(text.encode() + b'\n')
+def command(session, text, expected=None, *, fails=False, timeout=180, recovery=False):
+    session.send(text.encode() + b'\n' if recovery or text == 'exit' else checked(text))
     output = session.await_text(rb'(?:hyper|fallback)-sh\$ ', timeout=timeout)
-    failed = any(marker in output for marker in (
-        b'sh: command failed', b'sh: command launch failed', b'sh: Native operation failed'))
+    if recovery:
+        failed = any(marker in output for marker in (
+            b'sh: command failed', b'sh: command launch failed', b'sh: Native operation failed'))
+    else:
+        failed = text != 'exit' and status(output) != 0
     if failed != fails:
         raise AssertionError(f'{text}: expected failure={fails}: {output!r}')
     if expected is not None and not re.search(expected, output):
@@ -79,9 +83,9 @@ def check_manager_evidence(case, output):
 
 
 def nested_shell(session, parent_prompt, *, storage, virtual_machines):
-    """Exercise real shell startup; --builtin bypasses its capability adoption."""
+    """Exercise real shell startup and capability adoption, including raw recovery."""
     for image in ('/system/bin/sh', 'sh'):
-        session.send(image.encode() + b'\n')
+        session.send(image.encode() + b' -i\n')
         session.await_text(rb'HypeR session: console ready', 180)
         session.await_text(rb'hyper-sh\$ ', 30)
     command(session, 'ps', rb'NAME')
@@ -181,113 +185,117 @@ def main():
             return
         prompt = rb'fallback-sh\$ ' if recovery else rb'hyper-sh\$ '
         session.await_text(prompt, 180)
-        command(session, 'pwd', rb'\n/\n')
+
+        def run(text, expected=None, **kwargs):
+            return command(session, text, expected, recovery=recovery, **kwargs)
+
+        run('pwd', rb'\n/\n')
         if recovery:
-            command(session, 'help', rb'Recovery shell:')
+            run('help', rb'Recovery shell:')
         else:
-            command(session, 'pwd | sh --builtin pwd', rb'\n/\n')
+            run('pwd | sh -c pwd', rb'\n/\n')
         if not (args.missing_shell or args.missing_worker or (args.recovery and not args.ramfs)):
             nested_shell(session, prompt,
                          storage=not (args.ramfs or args.missing_data_worker or args.failed_handoff),
                          virtual_machines=not (recovery or args.recovery or args.missing_data_worker or args.manager_case))
         switched = not ((args.recovery and not args.ramfs) or args.missing_worker or args.failed_handoff)
         if switched:
-            root_entries = command(session, 'ls -1 /')
+            root_entries = run('ls -1 /')
             names = re.findall(rb'^([a-z][a-z0-9-]*[/@]?)\r?$', root_entries, re.MULTILINE)
             if set(names) != {b'boot/', b'system/', b'data/', b'tmp/'}:
                 raise AssertionError(f'unexpected formal root layout: {root_entries!r}')
-            boot_entries = command(session, 'ls -1a /boot')
+            boot_entries = run('ls -1a /boot')
             for name in (b'data/', b'system/', b'.newroot/'):
                 if re.search(rb'^' + re.escape(name) + rb'\r?$', boot_entries, re.MULTILINE):
                     raise AssertionError(f'stale boot mountpoint {name!r}: {boot_entries!r}')
-            command(session, 'exit')
-            command(session, 'pwd' if recovery else 'pwd | sh --builtin pwd', rb'\n/\n')
+            run('exit')
+            run('pwd' if recovery else 'pwd | sh -c pwd', rb'\n/\n')
         if args.recovery and args.ramfs:
-            command(session, 'ps --name init-system', rb'init-system\s+running')
-            command(session, 'ls /system/bin', rb'(?i)\bhandle\b')
+            run('ps --name init-system', rb'init-system\s+running')
+            run('ls /system/bin', rb'(?i)\bhandle\b')
         if args.missing_data_worker:
             for name in ('init-system', 'io-runtime', 'fs-backend', 'vm-manager'):
-                command(session, f'ps --name {name}', name.encode() + rb'\s+running')
-            mounts = command(session, 'mount', rb' on /system type erofs')
+                run(f'ps --name {name}', name.encode() + rb'\s+running')
+            mounts = run('mount', rb' on /system type erofs')
             if b' on /data type ' in mounts:
                 raise AssertionError('missing data worker unexpectedly mounted /data')
-            command(session, 'mount /data', rb'FAT recognized for /data, but filesystem worker is unavailable',
+            run('mount /data', rb'FAT recognized for /data, but filesystem worker is unavailable',
                     fails=True)
-            command(session, 'vmm start alpine', rb'initial configuration is unavailable', fails=True)
+            run('vmm start alpine', rb'initial configuration is unavailable', fails=True)
         if args.failed_handoff:
-            command(session, 'ps --name fs-backend', rb'fs-backend\s+running')
-            command(session, 'ps --name io-runtime', rb'io-runtime\s+running')
-            processes = command(session, 'ps --name vm-manager')
+            run('ps --name fs-backend', rb'fs-backend\s+running')
+            run('ps --name io-runtime', rb'io-runtime\s+running')
+            processes = run('ps --name vm-manager')
             if re.search(rb'vm-manager\s+running', processes):
                 raise AssertionError('system services started without committed handoff')
-            command(session, 'mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
+            run('mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
             # Formal mounts must not run before a successful handoff. Recovery
             # can still load the boot-resident FAT worker on an explicit mount request.
-            mounts = command(session, 'mount')
+            mounts = run('mount')
             if b' on /data type ' in mounts:
                 raise AssertionError('data mounted before formal init took ownership')
-            command(session, 'mount /data')
-            command(session, 'cp /data/vms.json /data/handoff-rollback.txt')
-            command(session, 'cat /data/handoff-rollback.txt', rb'virtual-machines')
-            command(session, 'rm /data/handoff-rollback.txt')
+            run('mount /data')
+            run('cp /data/vms.json /data/handoff-rollback.txt')
+            run('cat /data/handoff-rollback.txt', rb'virtual-machines')
+            run('rm /data/handoff-rollback.txt')
             session.pump(2)
         if args.manager_case:
             # Real Native storage and core service processes must survive all
             # business-manager failure boundaries, before and after handoff.
             for name in ('io-runtime', 'fs-backend', 'init-system'):
-                command(session, f'ps --name {name}', name.encode() + rb'\s+running')
-            processes = command(session, 'ps --name vm-manager')
+                run(f'ps --name {name}', name.encode() + rb'\s+running')
+            processes = run('ps --name vm-manager')
             if args.manager_case == 'no-config':
                 if not re.search(rb'vm-manager\s+running', processes):
                     raise AssertionError('manager without initial fleet config did not survive')
-                command(session, 'vmm start alpine', rb'initial configuration is unavailable', fails=True)
+                run('vmm start alpine', rb'initial configuration is unavailable', fails=True)
             else:
                 if re.search(rb'vm-manager\s+running', processes):
                     raise AssertionError('unexpected live business VM manager')
                 # The usual command timeout is 30 s. Closure must beat it, so a
                 # reserved but unserved endpoint cannot masquerade as recovery.
-                command(session, 'vmm list', rb'Status\(Status\(-15\)\)', fails=True, timeout=10)
-            command(session, 'cp /data/vms.json /data/manager-isolation.txt')
-            command(session, 'cat /data/manager-isolation.txt', rb'virtual-machines')
-            command(session, 'umount /data')
-            command(session, 'mount /data')
-            command(session, 'cat /data/manager-isolation.txt', rb'virtual-machines')
-            command(session, 'rm /data/manager-isolation.txt')
+                run('vmm list', rb'Status\(Status\(-15\)\)', fails=True, timeout=10)
+            run('cp /data/vms.json /data/manager-isolation.txt')
+            run('cat /data/manager-isolation.txt', rb'virtual-machines')
+            run('umount /data')
+            run('mount /data')
+            run('cat /data/manager-isolation.txt', rb'virtual-machines')
+            run('rm /data/manager-isolation.txt')
         if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):
-            boot_services = command(session, 'ls /boot/svc', rb'\bfallback-sh\b')
+            boot_services = run('ls /boot/svc', rb'\bfallback-sh\b')
             if not re.search(rb'\bfs-fat\b', boot_services):
                 raise AssertionError('default deployment is missing the FAT worker in boot RAM')
-            system_services = command(session, 'ls /system/svc', rb'\binit-system\b')
+            system_services = run('ls /system/svc', rb'\binit-system\b')
             if re.search(rb'\bfs-fat\b', system_services):
                 raise AssertionError('default deployment duplicated the FAT worker in /system')
-            command(session, 'ls /system/bin', rb'(?i)\bhandle\b')
-            command(session, 'ldd --loader /system/lib64/ld-hyper-aarch64.so '
+            run('ls /system/bin', rb'(?i)\bhandle\b')
+            run('ldd --loader /system/lib64/ld-hyper-aarch64.so '
                     '--library-dir /system/lib64/aarch64-hyper-hyper /system/bin/ls',
                     rb'libhyper.* => /system/lib64/')
-            command(session, 'ps --name vm-manager', rb'vm-manager\s+running')
-            command(session, 'handle --summary --kind process', rb'\bprocess\s+[1-9]')
-            command(session, 'free --bytes', rb'Mem:')
-            command(session, 'echo SPLIT-SYSTEM-IO > /data/boot-system-test.txt')
-            command(session, 'cat /data/boot-system-test.txt', rb'\nSPLIT-SYSTEM-IO\n')
+            run('ps --name vm-manager', rb'vm-manager\s+running')
+            run('handle --summary --kind process', rb'\bprocess\s+[1-9]')
+            run('free --bytes', rb'Mem:')
+            run('echo SPLIT-SYSTEM-IO > /data/boot-system-test.txt')
+            run('cat /data/boot-system-test.txt', rb'\nSPLIT-SYSTEM-IO\n')
             if args.ramfs:
-                command(session, 'mount', rb'PARTUUID=[0-9a-f-]+ on /data type fat')
+                run('mount', rb'PARTUUID=[0-9a-f-]+ on /data type fat')
             else:
-                command(session, 'mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
-                command(session, 'touch /system/must-not-write', fails=True)
-                command(session, 'umount /system', fails=True)
+                run('mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
+                run('touch /system/must-not-write', fails=True)
+                run('umount /system', fails=True)
             # VM definitions retain their image file even while stopped.
-            command(session, 'umount /data', fails=True)
-            command(session, 'vmm list', rb'alpine\s+stopped')
-            command(session, 'vmm start alpine --wait --timeout 60', rb'alpine: running')
-            command(session, 'vmm stop alpine --wait --timeout 60', rb'alpine: stopped')
-            command(session, 'vmm delete alpine')
-            command(session, 'umount /data')
-            command(session, 'mount -o ro PARTLABEL=hyper-data /data')
-            command(session, 'cat /data/boot-system-test.txt', rb'\nSPLIT-SYSTEM-IO\n')
-            command(session, 'touch /data/must-not-write', fails=True)
-            command(session, 'umount /data')
-            command(session, 'mount /data')
-            command(session, 'rm /data/boot-system-test.txt')
+            run('umount /data', fails=True)
+            run('vmm list', rb'alpine\s+stopped')
+            run('vmm start alpine --wait --timeout 60', rb'alpine: running')
+            run('vmm stop alpine --wait --timeout 60', rb'alpine: stopped')
+            run('vmm delete alpine')
+            run('umount /data')
+            run('mount -o ro PARTLABEL=hyper-data /data')
+            run('cat /data/boot-system-test.txt', rb'\nSPLIT-SYSTEM-IO\n')
+            run('touch /data/must-not-write', fails=True)
+            run('umount /data')
+            run('mount /data')
+            run('rm /data/boot-system-test.txt')
     if not recovery and b'HypeR fallback shell: recovery console ready' in args.log.read_bytes():
         raise AssertionError('successful boot started the fallback shell')
     if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):

@@ -36,7 +36,7 @@ and the one-time Pages/required-check setup.
 | `native` | Serial local aggregate of all AArch64 Native suites below |
 | `native-sdk` | SDK publication/consumer checks, portable runtime and app tests, and service-manifest validation |
 | `native-gicv3` | Serial aggregate of `native-console` and `native-vm` |
-| `native-console` | GICv3 Native boot, console, apps, fleet/storage failure and runtime-crash recovery |
+| `native-console` | GICv3 Native boot, console/terminal, shell language and editing, apps, fleet/storage failure and runtime-crash recovery |
 | `native-vm` | VM smoke on both GIC backends and forced GICv3 common-register traps |
 | `native-gicv2` | GICv2 Native boot on one/four CPUs, console and runtime-crash recovery |
 | `native-smp-stack` | Serial aggregate of the three SMP suites and `native-retirement-stack` |

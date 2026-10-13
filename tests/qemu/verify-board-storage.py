@@ -19,6 +19,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from board_config import Board
+from shell_status import checked, status
 
 
 def boot(args, mode):
@@ -77,10 +78,10 @@ def boot(args, mode):
             child.stdin.flush()
             await_text(b'BOARD-STORAGE: ' + mode.encode() + b' PASS\n', timeout=600)
             await_text(rb'hyper-sh\$ ')
-            child.stdin.write(b'cp /boot/etc/hyper/services.json /data/copied-services.json\n')
+            child.stdin.write(checked('cp /boot/etc/hyper/services.json /data/copied-services.json'))
             child.stdin.flush()
             copied = await_text(rb'hyper-sh\$ ')
-            if b'sh: command failed' in copied or b'cp:' in copied:
+            if status(copied) != 0:
                 raise RuntimeError(f'copy across ramfs/FAT failed: {copied!r}')
             child.stdin.write(f'vmm status {args.observed_name}\n'.encode())
             child.stdin.flush()
@@ -108,11 +109,11 @@ def boot(args, mode):
                         ('start', 'stop', 'restart', 'delete', 'console')]
             commands.append(f'vmm affinity {args.observed_name} 0 0')
             for command in commands:
-                child.stdin.write(command.encode() + b'\n')
+                child.stdin.write(checked(command))
                 child.stdin.flush()
                 refused = await_text(rb'hyper-sh\$ ')
                 if (f"VM '{args.observed_name}' is read-only: vm-manager has no management capability".encode() not in refused
-                        or b'sh: command failed' not in refused):
+                        or status(refused) == 0):
                     raise RuntimeError(f'{command}: missing capability rejection: {refused!r}')
             child.stdin.write(f'vmm status {args.observed_name}\n'.encode())
             child.stdin.flush()
@@ -127,11 +128,11 @@ def boot(args, mode):
             if b'sh: ' in prepared or b'echo:' in prepared:
                 raise RuntimeError(f'cannot prepare name-conflict configuration: {prepared!r}')
             child.stdin.write(
-                f'vmm create {args.observed_name} --config /data/observed-name-conflict.json\n'.encode())
+                checked(f'vmm create {args.observed_name} --config /data/observed-name-conflict.json'))
             child.stdin.flush()
             refused = await_text(rb'hyper-sh\$ ')
             if (f"VM '{args.observed_name}' already exists (observed through broker)".encode() not in refused
-                    or b'sh: command failed' not in refused):
+                    or status(refused) == 0):
                 raise RuntimeError(f'observed VM name was not protected from shadowing: {refused!r}')
             # Keep the real human-paced console path in coverage too.
             for character in b'echo BOARD-SHELL-RESPONSIVE\n':

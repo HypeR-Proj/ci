@@ -90,6 +90,7 @@ case "${1:-}" in
         make -o image -o native-initramfs test-console ARCH=aarch64
         make -o image -o native-initramfs test-terminal ARCH=aarch64
         make -o image -o native-initramfs test-apps ARCH=aarch64
+        make -o image -o native-initramfs test-shell ARCH=aarch64
         make -o image -o app test-fleet-config ARCH=aarch64
         make -o image -o app test-storage-failure ARCH=aarch64
         make -o image test-filesystem-failure ARCH=aarch64 QEMU_CPU=max,cntfrq=54000000
@@ -225,6 +226,7 @@ case "${1:-}" in
         make -o image -o native-initramfs test-console ARCH=riscv64
         make -o image -o native-initramfs test-terminal ARCH=riscv64
         make -o image -o native-initramfs test-apps ARCH=riscv64
+        make -o image -o native-initramfs test-shell ARCH=riscv64
         make -o image -o app test-fleet-config ARCH=riscv64
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=4
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=1

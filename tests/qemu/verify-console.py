@@ -48,7 +48,7 @@ def main():
         def run(text, expected, timeout=30):
             send(text.encode() + b'\n')
             output = await_text(rb'hyper-sh\$ ', timeout=timeout)
-            if not re.search(expected, output) or b'sh: command failed' in output:
+            if not re.search(expected, output) or b'\nsh: ' in output:
                 raise AssertionError(f'{text}: {output!r}')
 
         # Independently scheduled services can log between session readiness
