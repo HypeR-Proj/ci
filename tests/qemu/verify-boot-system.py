@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import time
 
 from session import Session, native_command
 from shell_status import checked, status
@@ -58,6 +59,43 @@ def command(session, text, expected=None, *, fails=False, timeout=180, recovery=
     if expected is not None and not re.search(expected, output):
         raise AssertionError(f'{text}: missing {expected!r}: {output!r}')
     return output
+
+
+def memory_accounting(run):
+    """Check arithmetic and disjoint ownership from the real Native inspector."""
+    output = run('free --bytes', rb'Mem:')
+    mem = re.search(rb'^Mem:([^\n]+)', output, re.MULTILINE)
+    totals = re.search(rb'^Reserved: (\d+) B  Managed: (\d+) B  Allocated: (\d+) B',
+                       output, re.MULTILINE)
+    owners = re.search(rb'^Owners:([^\n]+)', output, re.MULTILINE)
+    if not mem or not totals or not owners:
+        raise AssertionError(f'incomplete memory report: {output!r}')
+    values = [None if value == '—' else int(value[:-2])
+              for value in re.findall(r'\d+ B|—', mem[1].decode())]
+    if len(values) != 5:
+        raise AssertionError(f'invalid main memory row: {output!r}')
+    total, used, free, reclaimable, available = values
+    reserved, managed, allocated = map(int, totals.groups())
+    ownership = {name: None if value == '—' else int(value[:-2]) for name, value in
+                 re.findall(r'([a-z/-]+)=(\d+ B|—)', owners[1].decode())}
+    if set(ownership) != {'kernel', 'user', 'guest', 'buffered/cached', 'other'}:
+        raise AssertionError(f'incomplete owner partition: {output!r}')
+    if total != reserved + managed or managed != free + allocated:
+        raise AssertionError(f'physical memory does not balance: {output!r}')
+    if any(ownership[key] is None for key in ('user', 'guest', 'other')):
+        raise AssertionError(f'missing physical owner counters: {output!r}')
+    if (ownership['kernel'] is None) != (ownership['buffered/cached'] is None):
+        raise AssertionError(f'inconsistent slab census validity: {output!r}')
+    if ownership['kernel'] is not None and sum(ownership.values()) != allocated:
+        raise AssertionError(f'owners double count or omit backing: {output!r}')
+    if ownership['kernel'] is None and reclaimable is not None:
+        raise AssertionError(f'unknown slab census presented as reclaimable: {output!r}')
+    if reclaimable is None:
+        if used is not None or available is not None:
+            raise AssertionError(f'partial census presented as complete: {output!r}')
+    elif available != free + reclaimable or total != used + free + reclaimable:
+        raise AssertionError(f'derived memory does not balance: {output!r}')
+    return ownership
 
 
 def check_manager_evidence(case, output):
@@ -274,7 +312,9 @@ def main():
                     rb'libhyper.* => /system/lib64/')
             run('ps --name vm-manager', rb'vm-manager\s+running')
             run('handle --summary --kind process', rb'\bprocess\s+[1-9]')
-            run('free --bytes', rb'Mem:')
+            baseline_memory = memory_accounting(run)
+            if baseline_memory['guest'] == 0:
+                raise AssertionError('live I/O VM backing was not accounted as guest memory')
             run('echo SPLIT-SYSTEM-IO > /data/boot-system-test.txt')
             run('cat /data/boot-system-test.txt', rb'\nSPLIT-SYSTEM-IO\n')
             if args.ramfs:
@@ -287,7 +327,16 @@ def main():
             run('umount /data', fails=True)
             run('vmm list', rb'alpine\s+stopped')
             run('vmm start alpine --wait --timeout 60', rb'alpine: running')
+            running_memory = memory_accounting(run)
+            if running_memory['guest'] <= baseline_memory['guest']:
+                raise AssertionError('Alpine backing was not added to guest memory')
             run('vmm stop alpine --wait --timeout 60', rb'alpine: stopped')
+            # Lifecycle completion precedes asynchronous backend/VMO retirement.
+            deadline = time.monotonic() + 60
+            while memory_accounting(run)['guest'] != baseline_memory['guest']:
+                if time.monotonic() >= deadline:
+                    raise AssertionError('guest backing accounting did not retire')
+                session.pump(0.1)
             run('vmm delete alpine')
             run('umount /data')
             run('mount -o ro PARTLABEL=hyper-data /data')

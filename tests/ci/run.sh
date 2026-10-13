@@ -38,6 +38,7 @@ case "${1:-}" in
         run_kernel_suite quality
         ;;
     scripts)
+        python3 -B lib/terminal/tests/linux-formatting.py
         python3 -B tests/ci/test-install-tools.py
         python3 -B tests/build/kernel-version.py
         python3 -B tests/build/developer-entrypoints.py
@@ -47,6 +48,7 @@ case "${1:-}" in
         python3 -B tests/build/io-vm-run.py
         python3 -B tests/build/io-vm-package.py
         python3 -B tests/build/board-image.py
+        python3 -B tests/build/board-image-update.py
         python3 -B tests/build/fetch-rpi5-boot.py
         python3 -B tests/build/rpi5-bringup.py
         python3 -B tests/build/guest-rootfs.py

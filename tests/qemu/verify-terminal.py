@@ -4,6 +4,7 @@
 
 """Exercise Native terminal behavior through real standard streams and leases."""
 
+import re
 import sys
 
 from guest_console import append_console_output
@@ -26,6 +27,19 @@ def main():
         command('timing', rb'TERMINAL_TIMING_OK\n')
         command('backpressure', rb'TERMINAL_BACKPRESSURE_OK\n')
         command('lease-tree', rb'TERMINAL_LEASE_TREE_OK\n')
+        session.send(b'terminal-probe formatting\r')
+        session.await_text(rb'TERMINAL_EDIT_READY\n', timeout=30)
+        session.send(b'foo/bar! \x17\x16\n\x12X\r')
+        session.await_text(re.escape(b'foo/bar! ' + b'\x08 \x08' * 5 +
+                                     b'^\x08^J^R\nfoo/^JX\n'), timeout=30)
+        session.await_text(rb'TERMINAL_ERASE_ECHO_READY\n', timeout=30)
+        session.send(b'ab\x7f\x15z\r')
+        session.await_text(re.escape(b'ab^?^U\nz\n'), timeout=30)
+        session.await_text(rb'TERMINAL_HARDCOPY_READY\n', timeout=30)
+        session.send(b'ab\x7fc\r')
+        session.await_text(re.escape(b'ab\\b/c\n'), timeout=30)
+        session.await_text(rb'TERMINAL_FORMATTING_OK\n', timeout=30)
+        session.await_text(rb'hyper-sh\$ ', timeout=30)
         session.send(b'terminal-probe canonical\r')
         session.await_text(rb'TERMINAL_CANONICAL_READY\n', timeout=30)
         # EOF closes a record, not the terminal itself. Typeahead remains in

@@ -89,6 +89,17 @@ def main():
         session.await_text(rb'\nCOMPLETED\nhyper-sh\$ ')
         session.send(b'echo edtor\x1b[D\x1b[D\x1b[Di\x1b[F\r')
         session.await_text(rb'\neditor\nhyper-sh\$ ')
+        for backspace in (b'\x08', b'\x7f'):
+            session.send(b'echo BACKSPACE_OKx')
+            session.await_text(rb'echo BACKSPACE_OKx')
+            session.send(backspace)
+            erased = session.await_text(rb'\x08 \x08')
+            if b'\x1b[J' in erased or b'hyper-sh$ ' in erased:
+                raise AssertionError('tail backspace redrew the whole command line')
+            session.send(b'\r')
+            session.await_text(rb'\nBACKSPACE_OK\nhyper-sh\$ ')
+        session.send(b'echo edxitor\x1b[D\x1b[D\x1b[D\x1b[D\x7f\x1b[F\r')
+        session.await_text(rb'\neditor\nhyper-sh\$ ')
         run("printf 'SPACE_FILE\\n' > '/tmp/review spaced'", rb'hyper-sh')
         session.send(b'cat /tmp/review\t\r')
         session.await_text(rb'\nSPACE_FILE\nhyper-sh\$ ')
