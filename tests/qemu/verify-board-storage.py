@@ -103,6 +103,25 @@ def boot(args, mode):
                 raise RuntimeError(
                     f'I/O VM allocated backing missing or exceeds {args.maximum_io_backing} bytes: '
                     f'{observed!r}')
+            # The real appliance agent appears only after system takeover.
+            # Wait for two samples, independently of storage-test duration.
+            sample_deadline = time.monotonic() + 45
+            while b'guest CPU:' not in observed or b'% busy;' not in observed:
+                if time.monotonic() >= sample_deadline:
+                    raise RuntimeError(f'I/O VM guest agent did not become ready: {observed!r}')
+                time.sleep(1)
+                child.stdin.write(f'vmm status {args.observed_name}\n'.encode())
+                child.stdin.flush()
+                observed = await_text(rb'hyper-sh\$ ')
+            cpu = re.search(rb'guest CPU: ([0-9]+\.[0-9]+)% busy; ([0-9]+\.[0-9]+)% I/O wait', observed)
+            memory = re.search(rb'guest memory: ([0-9]+) KiB used / ([0-9]+) KiB total; ([0-9]+) KiB available; ([0-9]+) KiB free', observed)
+            if cpu is None or not 0 <= sum(map(float, cpu.groups())) <= 100:
+                raise RuntimeError(f'invalid guest CPU sample: {observed!r}')
+            if memory is None:
+                raise RuntimeError(f'missing guest memory sample: {observed!r}')
+            used, total, available, free = map(int, memory.groups())
+            if not 0 < total <= 128 * 1024 or used + available != total or not 0 <= free <= total:
+                raise RuntimeError(f'invalid guest memory sample: {observed!r}')
             # Observation is granted by the broker; no management capability is
             # held for this target, including console and placement operations.
             commands = [f'vmm {action} {args.observed_name}' for action in

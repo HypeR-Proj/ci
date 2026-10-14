@@ -140,7 +140,11 @@ def prepare(args):
     spec.loader.exec_module(images)
     kernel, ramfs = images.package_payloads(args.package)
     original = gzip.decompress(ramfs.read_bytes())
-    expanded = original + overlay({'init': init_script(original), 'console-hotplug': probe})
+    # The binary echo probe owns the named port exclusively in this fixture.
+    expanded = original + overlay({
+        'init': init_script(original), 'console-hotplug': probe,
+        'usr/bin/hyper-guest-agent': b'#!/bin/sh\nexit 0\n',
+    })
     compressed = gzip.compress(expanded, mtime=0)
     kernel_name = 'Image-' + hashlib.sha256(kernel.read_bytes()).hexdigest()
     ramfs_name = 'initramfs-' + hashlib.sha256(compressed).hexdigest() + '.cpio.gz'
