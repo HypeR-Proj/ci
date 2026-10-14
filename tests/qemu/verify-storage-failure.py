@@ -25,19 +25,25 @@ CASES = ('missing-controller', 'provider-exit', 'closed-ready', 'invalid-ready',
          'root-change', 'root-switch-failure', 'critical-exit-after-ready', 'missing-system-shell',
          'handoff-failure')
 DEGRADED = b'HypeR init: VM fleet configuration unavailable; Native services remain available'
-ADOPTED = b'HypeR init-system: core supervision adopted'
+ADOPTED = b'HypeR init: core supervision adopted'
 LIVE_PROVIDERS = frozenset(('closed-ready', 'invalid-ready', 'oversized-ready',
                             'timeout', 'missing-config', 'root-change'))
-BOOT_FAILED = b'HypeR init: bootstrap failed'
-CRITICAL = b'HypeR init: critical service '
+BOOT_FAILED = b'HypeR bootstrap-stage1-init: bootstrap failed'
+INIT_FAILURES = (BOOT_FAILED, b'HypeR init: bootstrap failed',
+                 b'HypeR bootstrap-stage1-init: critical service ',
+                 b'HypeR init: critical service ')
 KERNEL_FAILURES = (b'HypeR: fatal', b'kernel panic', b'HypeR crash monitor')
+# Successful readiness fixtures keep the private migration endpoint open but
+# do not implement adoption. Formal init first exhausts its 60 s descriptor
+# deadline, then starts the independently backed system services.
+FORMAL_STARTUP_TIMEOUT = 120
 
 
 def prepare(args):
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=True)
     board = Board.parse(prepare_layout(
-        json.loads((ROOT / 'boards/qemu.json').read_text()), 'ramfs'))
+        json.loads((ROOT / 'boards/qemu.json').read_text())))
     board_path = args.output / 'board.json'
     board_path.write_text(json.dumps(board.source, indent=2) + '\n')
     clients = args.output / 'io-clients.conf'
@@ -49,6 +55,11 @@ def prepare(args):
                         '-Wextra', '-Werror', '-static', f'-DREADINESS_TEST={mode}',
                         str(ROOT / 'tests/native/storage-readiness.c'),
                         '-o', str(args.output / f'provider-{mode}')], check=True)
+    static_echo = args.output / 'recovery-echo'
+    subprocess.run([str(args.sdk / 'bin/hyper-clang'), '-std=c17', '-Wall',
+                    '-Wextra', '-Werror', '-static',
+                    str(ROOT / 'tests/native/static-echo.c'),
+                    '-o', str(static_echo)], check=True)
     late_manager = args.output / 'late-critical-manager'
     subprocess.run([str(args.sdk / 'bin/hyper-clang'), '-std=c17', '-Wall',
                     '-Wextra', '-Werror', '-static', '-DVM_PROVISION_TEST=4',
@@ -68,7 +79,7 @@ def prepare(args):
             next(item for item in graph['services']
                  if item['name'] == 'vm-manager')['critical'] = True
         if case in ('critical-exit-after-ready', 'missing-system-shell'):
-            graph['virtual-machines']['config'] = '/boot/etc/hyper/vms.json'
+            graph['virtual-machines']['config'] = '/etc/hyper/vms.json'
         manifest.write_text(json.dumps(graph, indent=2) + '\n')
         provider = (args.boot_apps or args.apps) / 'io-runtime'
         replacements = []
@@ -98,74 +109,58 @@ def prepare(args):
             '--deployment', str(ROOT / 'mk/components.mk'), '--profile', 'system',
             '--apps', str(args.apps), '--boot-apps', str(args.boot_apps or args.apps),
             '--sdk', str(args.sdk), '--std', str(args.output),
-            '--arch', 'aarch64', *replacements,
+            '--arch', 'aarch64', '--replace', f'init={args.fixture_init}', *replacements,
             '--boot-components', *args.boot_components, '--',
-            '0755', 'svc/io-runtime', str(provider.resolve()),
+            '0755', 'boot:svc/io-runtime', str(provider.resolve()),
+            '0755', 'boot:bin/recovery-echo', str(static_echo),
             '0644', 'etc/hyper/board.json', str(board_path),
             '0644', 'etc/hyper/io-clients.conf', str(clients),
             '0644', 'etc/hyper/storage.json', str(storage),
-            *(['0644', 'etc/hyper/vms.json', str(empty_fleet)]
+            *(['0644', 'system:etc/hyper/vms.json', str(empty_fleet)]
               if case in ('critical-exit-after-ready', 'missing-system-shell') else []),
         ], check=True)
-        if case == 'handoff-failure':
-            subprocess.run([
-                sys.executable, '-B', str(ROOT / 'tests/qemu/verify-boot-system.py'),
-                'prepare-handoff', '--entries',
-                str(composition / 'native-system/boot.entries.json'),
-                '--output', str(args.output / f'{case}.cpio'),
-                '--packer', args.packer, '--strip', args.strip,
-            ], check=True)
+        # Product composition keeps the trees separate. Only this test-only
+        # init copies the formal payload to an independent RAMFS before stage1.
+        # No fake storage provider is asked to supply an actual root filesystem.
+        (composition / 'system-root/etc/fstab').write_text('')
+        if case in ('handoff-failure', 'root-switch-failure'):
+            boot_entries = composition / 'native-system/boot.entries.json'
+            entries = json.loads(boot_entries.read_text())
+            record, = (entry for entry in entries if entry[1] == 'etc/hyper/init.json')
+            policy = json.loads(Path(record[2]).read_text())
+            if case == 'handoff-failure':
+                policy['system-init'] = '/bin/echo'
+            else:
+                policy['put-old'] = '/missing-root-mountpoint'
+            changed = composition / 'failure-init.json'
+            changed.write_text(json.dumps(policy, indent=2) + '\n')
+            record[2] = str(changed.resolve())
+            boot_entries.write_text(json.dumps(entries, indent=2) + '\n')
         elif case == 'launch-failure':
-            inject_invalid_provider(args, composition, invalid_image)
+            inject_invalid_provider(composition, invalid_image)
         elif case == 'missing-system-shell':
-            entries = json.loads((composition / 'native-system/boot.entries.json').read_text())
-            selected = [entry for entry in entries if entry[1] != 'system/bin/sh']
-            if len(selected) != len(entries) - 1:
-                raise AssertionError('expected exactly one formal shell image')
-            incomplete = composition / 'missing-shell.entries.json'
-            incomplete.write_text(json.dumps(selected, indent=2) + '\n')
-            subprocess.run([
-                sys.executable, '-B', str(ROOT / 'scripts/pack-native-initramfs.py'),
-                '--packer', args.packer, '--strip', args.strip,
-                '--output', str(args.output / f'{case}.cpio'),
-                '--library-namespace', 'system', '--entries-from', str(incomplete),
-            ], check=True)
-        elif case == 'root-switch-failure':
-            config = composition / 'native-system/system-init.json'
-            policy = json.loads(config.read_text())
-            policy['root-switch']['mounts'].append({
-                'source': '/missing-root-volume', 'target': '/extra'})
-            config.write_text(json.dumps(policy) + '\n')
-            subprocess.run([
-                sys.executable, '-B', str(ROOT / 'scripts/pack-native-initramfs.py'),
-                '--packer', args.packer, '--strip', args.strip,
-                '--output', str(args.output / f'{case}.cpio'),
-                '--library-namespace', 'system',
-                '--entries-from', str(composition / 'native-system/boot.entries.json'),
-            ], check=True)
+            (composition / 'system-root/bin/sh').unlink()
+        subprocess.run([
+            sys.executable, '-B', str(ROOT / 'tests/qemu/prepare-native-fixture.py'),
+            '--composition', str(composition), '--output', str(args.output / f'{case}.cpio'),
+            '--packer', args.packer, '--strip', args.strip,
+        ], check=True)
 
 
-def inject_invalid_provider(args, composition, invalid_image):
-    # Normal composition must enforce the static bootstrap ELF contract. Inject
-    # the broken test image only after both real service graphs were validated.
-    entries = json.loads((composition / 'native-system/boot.entries.json').read_text())
+def inject_invalid_provider(composition, invalid_image):
+    # Inject only after normal composition enforces the bootstrap ELF contract.
+    manifest = composition / 'native-system/boot.entries.json'
+    entries = json.loads(manifest.read_text())
     selected = [entry for entry in entries if entry[1] == 'svc/io-runtime']
     if len(selected) != 1 or selected[0][0] != '0755':
         raise AssertionError('expected one executable bootstrap I/O provider')
     selected[0][2] = str(invalid_image)
-    injected = composition / 'invalid-provider.entries.json'
-    injected.write_text(json.dumps(entries, indent=2) + '\n')
-    subprocess.run([
-        sys.executable, '-B', str(ROOT / 'scripts/pack-native-initramfs.py'),
-        '--packer', args.packer, '--strip', args.strip,
-        '--output', str(args.output / 'launch-failure.cpio'),
-        '--library-namespace', 'system', '--entries-from', str(injected),
-    ], check=True)
+    manifest.write_text(json.dumps(entries, indent=2) + '\n')
 
 
 def shell(session, command, *, allow_failure=False, recovery=False):
     if recovery:
-        session.send(command + b"\necho STORAGE-''COMMAND-DONE\n")
+        session.send(command + b"\n/bin/recovery-echo STORAGE-''COMMAND-DONE\n")
         output = session.await_text(rb'STORAGE-COMMAND-DONE\n')
         session.await_text(rb'fallback-sh\$ ')
         failed = b'sh: ' in output
@@ -185,60 +180,55 @@ def run_case(args, case):
     command = native_command(args.qemu, args.image, args.output / f'{case}.cpio')
     failures = KERNEL_FAILURES + (b'ROOT-SWITCH: FAIL',)
     if case not in ('critical-exit', 'critical-exit-after-ready', 'missing-system-shell'):
-        failures += (BOOT_FAILED, CRITICAL)
-    if case == 'handoff-failure':
+        failures += INIT_FAILURES
+    if case in ('handoff-failure', 'root-switch-failure'):
         failures += (b'core supervision transferred', b'core supervision adopted')
     with Session(command, logfile, failures=failures) as session:
         if case == 'handoff-failure':
-            session.await_text(rb'HypeR fallback shell: recovery console ready', 180)
+            session.await_text(rb'HypeR bootstrap-stage1-fallback-sh: recovery console ready', 180)
             session.await_text(rb'fallback-sh\$ ')
             # A non-reading child must not steal subsequent pasted commands.
-            session.send(b'/system/bin/echo RECOVERY_ONE\r/system/bin/echo RECOVERY_TWO\r')
+            session.send(b'/bin/recovery-echo RECOVERY_ONE\r/bin/recovery-echo RECOVERY_TWO\r')
             session.await_text(rb'(?m)^RECOVERY_ONE\n', 30)
             session.await_text(rb'(?m)^RECOVERY_TWO\n', 30)
             session.await_text(rb'fallback-sh\$ ')
             session.send(b'exit\r')
-            session.await_text(rb'HypeR fallback shell: recovery console ready', 30)
+            session.await_text(rb'HypeR bootstrap-stage1-fallback-sh: recovery console ready', 30)
             session.await_text(rb'fallback-sh\$ ')
-            shell(session, b'/system/bin/echo RAW_RECOVERY_RESTARTED', recovery=True)
+            shell(session, b'/bin/recovery-echo RAW_RECOVERY_RESTARTED', recovery=True)
+            evidence = logfile.read_bytes()
+            markers = (b'provisional system root active', b'bootstrap root restored',
+                       b'HypeR bootstrap-stage1-fallback-sh: recovery console ready')
+            positions = [evidence.index(marker) for marker in markers]
+            if positions != sorted(positions):
+                raise AssertionError('fallback began before precommit root rollback')
         elif case == 'root-switch-failure':
-            session.await_text(re.escape(ADOPTED), 180)
-            session.await_text(rb'root switch failed', 60)
-            session.send(b'\n')
-            session.await_text(rb'hyper-sh\$ ')
-            for name in ('console-raw', 'session-manager', 'terminal-service', 'io-runtime', 'init-system'):
-                processes = shell(session, f'ps --name {name}'.encode())
-                if not re.search(name.encode() + rb'\s+running\b', processes):
-                    raise AssertionError(f'root switch failure lost {name}: {processes!r}')
-            processes = shell(session, b'ps --name vm-manager')
-            if not re.search(rb'vm-manager\s+running\b', processes):
-                raise AssertionError('formal graph did not retain its VM manager after root failure')
-            unavailable = shell(session, b'vmm start alpine', allow_failure=True)
-            if b'initial configuration is unavailable' not in unavailable:
-                raise AssertionError('root failure unexpectedly admitted a VM fleet')
-            shell(session, b'cat /etc/hyper/board.json')
-            shell(session, b'ls -d /init')
-            missing = shell(session, b'ls -d /.newroot', allow_failure=True)
-            if status(missing) == 0:
-                raise AssertionError('failed switch left its staging mount behind')
-            if b'root namespace switched' in logfile.read_bytes():
+            session.await_text(rb'HypeR bootstrap-stage1-init: cannot prepare system root:', 180)
+            session.await_text(rb'HypeR bootstrap-stage1-fallback-sh: recovery console ready', 60)
+            session.await_text(rb'fallback-sh\$ ')
+            shell(session, b'/bin/recovery-echo ROOT_PREPARATION_RECOVERED', recovery=True)
+            shell(session, b'cd /etc/hyper', recovery=True)
+            directory = shell(session, b'pwd', recovery=True)
+            if b'\n/etc/hyper\n' not in directory:
+                raise AssertionError('failed root preparation lost the original namespace')
+            if b'provisional system root active' in logfile.read_bytes():
                 raise AssertionError('failed root preparation published a new root')
         elif case == 'critical-exit':
             session.await_text(re.escape(ADOPTED), 180)
             session.await_text(rb"HypeR init: critical service 'vm-manager' terminated: "
-                               rb'reason=process-exited status=1')
+                               rb'reason=process-exited status=1', FORMAL_STARTUP_TIMEOUT)
             session.await_text(rb'HypeR init: critical service terminated')
             session.await_text(rb'hyper-sh\$ ', 60)
             # Formal init already owns supervision. The formal session manager
             # remains independent of the failed business service.
-            for name in ('session-manager', 'terminal-service', 'console-raw', 'init-system'):
+            for name in ('session-manager', 'terminal-service', 'console-raw', 'init'):
                 processes = shell(session, f'ps --name {name}'.encode())
                 if not re.search(name.encode() + rb'\s+running\b', processes):
                     raise AssertionError(f'boot-critical recovery lost {name}: {processes!r}')
             shell(session, b'echo FORMAL_CRITICAL_FAILURE_OK')
         elif case == 'critical-exit-after-ready':
             session.await_text(re.escape(ADOPTED), 180)
-            session.await_text(rb'HypeR init: VM fleet configured', 60)
+            session.await_text(rb'HypeR init: VM fleet configured', FORMAL_STARTUP_TIMEOUT)
             session.await_text(rb'hyper-sh\$ ', 60)
             shell(session, b'echo FORMAL_STARTUP_COMMITTED')
             # The fixture waits for this explicit trigger, so failure cannot
@@ -249,7 +239,7 @@ def run_case(args, case):
             session.await_text(rb'HypeR init: critical service terminated', 60)
         elif case == 'missing-system-shell':
             session.await_text(re.escape(ADOPTED), 180)
-            session.await_text(rb'HypeR init: VM fleet configured', 60)
+            session.await_text(rb'HypeR init: VM fleet configured', FORMAL_STARTUP_TIMEOUT)
             for _ in range(3):
                 session.await_text(rb'HypeR session-manager: session ended:', 30)
         else:
@@ -281,7 +271,7 @@ def run_case(args, case):
                 raise AssertionError('failed bootstrap unexpectedly started a guest')
             processes = shell(session, b'ps')
             for name in (b'console-raw', b'session-manager', b'terminal-service',
-                         b'init-system', b'vm-manager'):
+                         b'init', b'vm-manager'):
                 if not re.search(rb'\s' + name + rb'\s+running\b', processes):
                     raise AssertionError(f'base service {name!r} did not survive: {processes!r}')
             listing = shell(session, b'vmm list')
@@ -309,7 +299,7 @@ def run_case(args, case):
     output = logfile.read_bytes()
     if case in ('critical-exit', 'critical-exit-after-ready') and DEGRADED in output:
         raise AssertionError('critical service failure was swallowed as optional storage failure')
-    if case != 'handoff-failure' and b'HypeR fallback shell: recovery console ready' in output:
+    if case not in ('handoff-failure', 'root-switch-failure') and b'HypeR bootstrap-stage1-fallback-sh: recovery console ready' in output:
         raise AssertionError('a post-handoff failure reopened bootstrap recovery')
     evidence = {
         'provider-exit': b"'io-runtime' terminated: reason=process-exited status=1",
@@ -327,7 +317,7 @@ def run_case(args, case):
     # READY closes. Init's emergency diagnostics may interleave with the line.
     if case == 'missing-controller' and b'Status(Status(-16))' not in output:
         raise AssertionError('provider failure diagnostic lost its controller error cause')
-    expected_handoffs = 0 if case == 'handoff-failure' else 1
+    expected_handoffs = 0 if case in ('handoff-failure', 'root-switch-failure') else 1
     if output.count(ADOPTED) != expected_handoffs:
         raise AssertionError(f'{case}: unexpected system-init handoff count')
     if case == 'handoff-failure' and b'HypeR session: console ready' in output:
@@ -344,6 +334,7 @@ def main():
     for name in ('sdk', 'apps'):
         prepare_parser.add_argument('--' + name, type=Path, required=True)
     prepare_parser.add_argument('--boot-apps', type=Path)
+    prepare_parser.add_argument('--fixture-init', type=Path, required=True)
     prepare_parser.add_argument('--boot-components', nargs='+', required=True)
     for name in ('packer', 'strip'):
         prepare_parser.add_argument('--' + name, required=True)

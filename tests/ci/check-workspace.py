@@ -87,7 +87,7 @@ def check_native_workspace(root, relative, allowed, forbidden=()):
 
 
 def check_apps(root):
-    check_native_workspace(root, 'app', ('app', 'lib', 'stdlib/rust-std'))
+    check_native_workspace(root, 'app', ('app', 'tests/app', 'lib', 'stdlib/rust-std'))
 
 
 def check_bootstrap(root):

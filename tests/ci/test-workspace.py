@@ -92,7 +92,8 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_external_members_obey_the_same_sdk_boundary(self):
         for member, sdk_path in [('lib/args', '../../stdlib/rust/hyper-os'),
-                                 ('stdlib/rust-std', '../rust/hyper-os')]:
+                                 ('stdlib/rust-std', '../rust/hyper-os'),
+                                 ('tests/app/probe', '../../../stdlib/rust/hyper-os')]:
             self.write('app/Cargo.toml', '[workspace]\n'
                        f'members = ["tool", "policy", "../{member}"]\n')
             self.write(f'{member}/Cargo.toml', '[package]\nname = "external"\n')

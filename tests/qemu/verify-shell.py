@@ -49,10 +49,10 @@ def main():
         run('exec 3>/tmp/shell-extra; echo EXTRA >&3 | cat; exec 3>&-; cat /tmp/shell-extra', rb'\nEXTRA\n')
         run('exec 3</tmp/shell-input; read -u 3 a; read -u 3 b; exec 3<&-; echo "$a:$b"', rb'\nfirst:second\n')
         # An external program that never reads stdin must not advance fd 3.
-        run('exec 3</tmp/shell-input; /system/bin/echo NO_READ <&3; read -u 3 a; exec 3<&-; echo PRESERVED=$a',
+        run('exec 3</tmp/shell-input; /bin/echo NO_READ <&3; read -u 3 a; exec 3<&-; echo PRESERVED=$a',
             rb'\nNO_READ\nPRESERVED=first\n')
         # The same property holds across a nested shell pipeline worker.
-        run('exec 3</tmp/shell-input; { /system/bin/echo WORKER <&3; } | cat; read -u 3 a; exec 3<&-; echo PRESERVED=$a',
+        run('exec 3</tmp/shell-input; { /bin/echo WORKER <&3; } | cat; read -u 3 a; exec 3<&-; echo PRESERVED=$a',
             rb'\nWORKER\nPRESERVED=first\n')
         run("sh -c 'read -r line; echo READ=$line' < /tmp/shell-input", rb'\nREAD=first\n')
         run("sh -c 'echo MERGED >&2' |& cat", rb'\nMERGED\n')

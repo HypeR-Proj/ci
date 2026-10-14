@@ -59,12 +59,14 @@ def main():
                     log.flush()
                     output.extend(data)
                 if any(marker in output for marker in (
-                        b'HypeR io-runtime: failed:', b'Kernel panic', b'HypeR KERNEL PANIC',
+                        b'HypeR bootstrap-stage1-io-runtime: failed:', b'HypeR io-runtime: failed:',
+                        b'Kernel panic', b'HypeR KERNEL PANIC',
                         b'HypeR: fatal', b'bootstrap failed', b'IO-VM-SMOKE:',
                         b'HypeR business disk:')):
                     raise RuntimeError('boot failed or unexpectedly ran the destructive fixture')
                 now = time.monotonic()
-                if next_key is None and b'HypeR io-runtime: ready;' in output and b'hyper-sh$' in output:
+                if (next_key is None and b'HypeR bootstrap-stage1-io-runtime: ready;' in output
+                        and b'hyper-sh$' in output):
                     next_key = now
                 if next_key is not None and sent < len(command_bytes) and now >= next_key:
                     if sent == len(command_bytes) - 1:

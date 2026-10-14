@@ -22,9 +22,9 @@ from shell_status import checked, status
 
 DEFAULT_COMMANDS = (
     'pwd',
-    'ls -d /system/bin/ls',
+    'ls -d /bin/ls',
     'free --bytes',
-    'ls -1 /system/bin',
+    'ls -1 /bin',
 )
 
 

@@ -8,12 +8,36 @@ import argparse
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import time
 
 from session import Session, native_command
 from shell_status import checked, status
+
+PROVIDER_REJECTIONS = {'missing-io-runtime': 'io-runtime', 'missing-fs-erofs': 'fs-erofs'}
+
+
+def prepare_provider_rejection(argv):
+    """Remove one successor executable from a copied system tree and new disk."""
+    parser = argparse.ArgumentParser(description=prepare_provider_rejection.__doc__)
+    parser.add_argument('--case', choices=PROVIDER_REJECTIONS, required=True)
+    for name in ('system-root', 'board', 'output', 'mkfs-erofs'):
+        parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--artifact', action='append', default=[], metavar='NAME=PATH')
+    args = parser.parse_args(argv)
+    args.output.mkdir(parents=True, exist_ok=False)
+    system = args.output / 'system-root'
+    shutil.copytree(args.system_root, system, symlinks=True)
+    (system / 'svc' / PROVIDER_REJECTIONS[args.case]).unlink()
+    pack = [sys.executable, '-B', str(Path(__file__).resolve().parents[2]
+                                    / 'scripts/pack-board-image.py'),
+            '--board', str(args.board), '--output', str(args.output / 'disk.img'),
+            '--system-root', str(system), '--mkfs-erofs', str(args.mkfs_erofs)]
+    for artifact in args.artifact:
+        pack.extend(['--artifact', artifact])
+    subprocess.run(pack, check=True)
 
 
 def prepare_handoff(argv):
@@ -30,7 +54,7 @@ def prepare_handoff(argv):
         parser.error('boot entry manifest must contain exactly one init policy')
     record = candidates[0]
     policy = json.loads(Path(record[2]).read_text())
-    policy['system-init'] = '/system/bin/echo'
+    policy['system-init'] = '/bin/echo'
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     policy_path = output.parent / 'handoff-init.json'
@@ -98,6 +122,131 @@ def memory_accounting(run):
     return ownership
 
 
+def retired_bootstrap(session, run, logfile):
+    """Require resource takeover and archive detachment before ordinary work."""
+    marker = b'HypeR init: bootstrap retired; boot archive detached'
+    deadline = time.monotonic() + 120
+    while marker not in logfile.read_bytes():
+        if time.monotonic() >= deadline:
+            raise AssertionError('formal init did not retire bootstrap resources')
+        session.pump(0.1)
+    run('ls /boot/init', fails=True)
+    listing = run('ls -1 /boot')
+    if re.search(rb'^[a-zA-Z0-9_.-]+[/@]?\r?$', listing, re.MULTILINE):
+        raise AssertionError(f'bootstrap archive remains reachable: {listing!r}')
+    processes = run('ps --no-headers')
+    running = re.findall(rb'^process\s+0x[0-9a-f]+\s+-\s+(\S+)\s+running\b',
+                         processes, re.MULTILINE)
+    for name in (b'fallback-sh',):
+        if name in running:
+            raise AssertionError(f'bootstrap process remains live: {name!r}')
+    for name in (b'console-raw', b'io-runtime', b'fs-backend', b'init'):
+        if running.count(name) != 1:
+            raise AssertionError(f'expected one adopted {name!r}: {processes!r}')
+    initial = re.search(rb'memory \(kernel initialized\): \d+ MiB RAM, (\d+) reserved pages',
+                        logfile.read_bytes())
+    # Namespace detachment can precede the final retired process's image
+    # release. Require actual reclamation, allowing that cleanup to finish.
+    deadline = time.monotonic() + 30
+    while True:
+        report = run('free --bytes', rb'Reserved:')
+        reserved = re.search(rb'^Reserved: (\d+) B', report, re.MULTILINE)
+        if not initial or not reserved:
+            raise AssertionError(f'missing archive reservation evidence: {report!r}')
+        if int(reserved[1]) < int(initial[1]) * 4096:
+            break
+        if time.monotonic() >= deadline:
+            raise AssertionError(f'initial archive reservation did not shrink: {report!r}')
+        session.pump(0.1)
+
+
+def check_root_layout(listing):
+    names = set(re.findall(rb'^([a-z][a-z0-9-]*[/@]?)\r?$', listing, re.MULTILINE))
+    required = {b'bin/', b'etc/', b'lib@', b'lib64/', b'svc/', b'boot/', b'data/', b'tmp/'}
+    if not required <= names or b'system/' in names:
+        raise AssertionError(f'unexpected formal root layout: {listing!r}')
+
+
+def require_order(evidence, markers):
+    missing = [marker for marker in markers if marker not in evidence]
+    if missing:
+        raise AssertionError(f'missing handoff evidence: {missing!r}')
+    positions = [evidence.index(marker) for marker in markers]
+    if positions != sorted(positions):
+        raise AssertionError('filesystem mounts crossed the init handoff boundary')
+
+
+def check_handoff_order(evidence):
+    require_order(evidence, (
+        b'EROFS mounted at /system',
+        b'HypeR bootstrap-stage1-init: provisional system root active; preparing successor',
+        b'HypeR init: core supervision adopted',
+        b'FAT mounted at /data', b'HypeR init: VM fleet configured',
+        b'HypeR init: bootstrap retired; boot archive detached',
+    ))
+
+
+def check_rollback_order(evidence):
+    require_order(evidence, (
+        b'HypeR bootstrap-stage1-init: provisional system root active; preparing successor',
+        b'HypeR bootstrap-stage1-init: system handoff rejected; bootstrap root restored',
+        b'HypeR bootstrap-stage1-fallback-sh: recovery console ready',
+    ))
+    if b'core supervision transferred' in evidence or b'core supervision adopted' in evidence:
+        raise AssertionError('candidate failure crossed the ownership commit boundary')
+
+
+def check_provider_rejection(case, evidence):
+    """A rejected real replacement must leave the original mount serving."""
+    require_order(evidence, (
+        b'HypeR init: core supervision adopted',
+        b'HypeR init: provider adoption failed:',
+        b'HypeR session: console ready',
+    ))
+    if b'bootstrap retirement disabled' not in evidence:
+        raise AssertionError('failed provider preparation did not disable retirement')
+    for forbidden in (b'bootstrap retired; boot archive detached',
+                      b'bootstrap-stage1-fallback-sh: recovery console ready',
+                      b'HypeR fs-backend: filesystem ownership adopted'):
+        if forbidden in evidence:
+            raise AssertionError(f'rejected provider crossed its boundary: {forbidden!r}')
+    if b'bootstrap-stage1-fs-backend: adoption preparation failed; bootstrap mounts retained:' not in evidence:
+        raise AssertionError('original filesystem manager did not resume administration')
+    if case == 'missing-fs-erofs':
+        if b'EROFS recognized for /, but filesystem worker is unavailable' not in evidence:
+            raise AssertionError('replacement failed outside worker preparation')
+        if b'HypeR io-runtime: running backend adopted' not in evidence:
+            raise AssertionError('filesystem rejection fixture never adopted the I/O owner')
+    elif case == 'missing-io-runtime':
+        if b'replacement preparation failed; bootstrap provider retained' not in evidence:
+            raise AssertionError('I/O candidate unexpectedly passed construction')
+        if b'HypeR io-runtime: running backend adopted' in evidence:
+            raise AssertionError('missing I/O candidate somehow adopted the live VM')
+    else:
+        raise AssertionError(f'unknown provider rejection: {case}')
+
+
+def retained_provider_io(run):
+    """Exercise old live providers after formal init abandoned preparation."""
+    run('ls /boot/init', rb'\binit\b')
+    for name in ('init', 'io-runtime', 'fs-backend', 'fs-erofs'):
+        run(f'ps --name {name}', name.encode() + rb'\s+running')
+    run('cat /etc/hyper/init.json', rb'services')
+    mounts = run('mount', rb' on / type erofs')
+    if b' on /system type ' in mounts:
+        raise AssertionError('retained manager reported the provisional root path')
+    # Automatic mounts stop after failed adoption. Explicitly exercise the
+    # predecessor's administration endpoint, write path and returned block owner.
+    run('mount /data')
+    run('echo PROVIDER-REJECTION-IO > /data/provider-rejection.txt')
+    run('cat /data/provider-rejection.txt', rb'\nPROVIDER-REJECTION-IO\n')
+    run('umount /data')
+    run('mount /data')
+    run('cat /data/provider-rejection.txt', rb'\nPROVIDER-REJECTION-IO\n')
+    run('rm /data/provider-rejection.txt')
+    run('umount /data')
+
+
 def check_manager_evidence(case, output):
     """Require the intended failure boundary, not an unrelated fixture exit."""
     markers = {
@@ -121,8 +270,8 @@ def check_manager_evidence(case, output):
 
 
 def nested_shell(session, parent_prompt, *, storage, virtual_machines):
-    """Exercise real shell startup and capability adoption, including raw recovery."""
-    for image in ('/system/bin/sh', 'sh'):
+    """Exercise nested formal shells with only system-side capabilities."""
+    for image in ('/bin/sh', 'sh'):
         session.send(image.encode() + b' -i\n')
         session.await_text(rb'HypeR session: console ready', 180)
         session.await_text(rb'hyper-sh\$ ', 30)
@@ -133,14 +282,14 @@ def nested_shell(session, parent_prompt, *, storage, virtual_machines):
     if not storage:
         command(session, 'mkdir -p /tmp')
     untrusted = '/data/untrusted-handle' if storage else '/tmp/untrusted-handle'
-    command(session, f'cp /system/bin/handle {untrusted}')
+    command(session, f'cp /bin/handle {untrusted}')
     command(session, f'{untrusted} --summary',
             rb'object-inspector capability unavailable', fails=True)
     command(session, f'rm {untrusted}')
     if storage:
-        # The nested shell retains the boot image capability for static mount
-        # tools without sharing the formal terminal implementation with them.
-        command(session, 'mount', rb' on /system type erofs')
+        # Nested shells use formal mount tools without retaining bootstrap
+        # image or loader capabilities.
+        command(session, 'mount', rb' on / type erofs')
     if virtual_machines:
         command(session, 'vmm list', rb'alpine\s+stopped')
     command(session, 'echo NESTED-SHELL-OK', rb'\nNESTED-SHELL-OK\n')
@@ -157,24 +306,25 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--disk', type=Path)
     parser.add_argument('--board', type=Path)
-    parser.add_argument('--ramfs', action='store_true',
-                        help='system programs are resident in the RAM archive')
     parser.add_argument('--recovery', action='store_true',
                         help='omit controllers and require the bootstrap shell to survive')
     parser.add_argument('--failed-handoff', action='store_true',
-                        help='supplied archive selects an exiting system-init candidate (for example /system/bin/echo)')
+                        help='supplied archive selects an exiting system-init candidate (for example /bin/echo)')
     parser.add_argument('--missing-shell', action='store_true',
                         help='supplied system payload omits bin/sh; require retries without bootstrap fallback')
     parser.add_argument('--missing-worker', action='store_true',
                         help='boot a supplied archive with fs-erofs removed; keep controllers present')
     parser.add_argument('--missing-data-worker', action='store_true',
                         help='boot and system payloads omit fs-fat; require formal init and Native services to survive')
+    parser.add_argument('--provider-case', choices=PROVIDER_REJECTIONS,
+                        help='reject the real replacement before resource transfer; retain bootstrap providers')
     parser.add_argument('--manager-case', choices=(
         'absent', 'missing', 'exit', 'closed-reply', 'invalid-reply', 'configured-exit', 'no-config'),
         help='verify storage with the corresponding supplied system service graph or fault fixture')
     args = parser.parse_args()
     if sum((args.recovery, args.missing_worker, args.missing_data_worker,
-            args.failed_handoff, args.missing_shell, bool(args.manager_case))) > 1:
+            args.failed_handoff, args.missing_shell, bool(args.manager_case),
+            bool(args.provider_case))) > 1:
         parser.error('select only one failure scenario')
     if args.recovery:
         launch = native_command(args.qemu, args.image, args.initramfs)
@@ -187,7 +337,12 @@ def main():
                   '--disk', str(args.disk), '--board', str(args.board)]
     args.log.parent.mkdir(parents=True, exist_ok=True)
     failures = (b'HypeR: fatal', b'HypeR KERNEL PANIC', b'Kernel panic',
-                b'HypeR init: bootstrap failed')
+                b'HypeR init: bootstrap failed',
+                b'HypeR bootstrap-stage1-init: bootstrap failed')
+    if not any((args.recovery, args.missing_worker, args.missing_data_worker,
+                args.failed_handoff, args.missing_shell, args.manager_case, args.provider_case)):
+        failures += (b'provider adoption failed', b'I/O adoption unconfirmed',
+                     b'bootstrap retirement deferred')
     if args.failed_handoff:
         # These are irreversible ownership markers: neither may appear during
         # recovery, even after the candidate exits and I/O is exercised.
@@ -195,14 +350,13 @@ def main():
     with Session(launch, args.log, failures=failures) as session:
         if args.missing_worker:
             session.await_text(rb'EROFS recognized for /system, but filesystem worker is unavailable', 240)
-        if (args.recovery and not args.ramfs) or args.missing_worker or args.failed_handoff:
+        if args.recovery or args.missing_worker or args.failed_handoff:
             session.await_text(rb'system init unavailable; retaining core supervision and recovery shell', 180)
         else:
-            session.await_text(rb'HypeR init-system: core supervision adopted', 240)
-            session.await_text(rb'HypeR init-system: root namespace switched', 60)
+            session.await_text(rb'HypeR init: core supervision adopted', 240)
             if args.manager_case in ('exit', 'closed-reply', 'invalid-reply', 'configured-exit'):
                 session.await_text(rb"HypeR init: service 'vm-manager' terminated", 180)
-            elif args.missing_data_worker or args.manager_case in ('missing', 'no-config'):
+            elif args.provider_case or args.missing_data_worker or args.manager_case in ('missing', 'no-config'):
                 session.await_text(rb'VM fleet configuration unavailable', 180)
             elif args.manager_case == 'absent':
                 pass
@@ -212,12 +366,12 @@ def main():
                 session.await_text(rb'HypeR init: VM fleet configured', 240)
         # Only failures before supervision transfer belong to bootstrap.
         # Formal mount/service failures keep the formal console.
-        recovery = ((args.recovery and not args.ramfs) or args.missing_worker
+        recovery = (args.recovery or args.missing_worker
                     or args.failed_handoff)
         if args.missing_shell:
             for _ in range(3):
                 session.await_text(rb'HypeR session-manager: session ended:', 30)
-            if b'HypeR fallback shell:' in args.log.read_bytes():
+            if b'HypeR bootstrap-stage1-fallback-sh:' in args.log.read_bytes():
                 raise AssertionError('missing formal shell reopened bootstrap recovery')
             print(f'Boot/system missing shell passed: {args.log}')
             return
@@ -227,60 +381,58 @@ def main():
         def run(text, expected=None, **kwargs):
             return command(session, text, expected, recovery=recovery, **kwargs)
 
+        if args.provider_case:
+            retained_provider_io(run)
+            check_provider_rejection(args.provider_case, args.log.read_bytes())
+            print(f'Boot/system provider {args.provider_case} passed: {args.log}')
+            return
+
+        normal = not (recovery or args.recovery or args.missing_data_worker or args.manager_case)
+        if normal:
+            retired_bootstrap(session, run, args.log)
         run('pwd', rb'\n/\n')
         if recovery:
             run('help', rb'Recovery shell:')
         else:
             run('pwd | sh -c pwd', rb'\n/\n')
-        if not (args.missing_shell or args.missing_worker or (args.recovery and not args.ramfs)):
+        if not recovery:
             nested_shell(session, prompt,
-                         storage=not (args.ramfs or args.missing_data_worker or args.failed_handoff),
+                         storage=not args.missing_data_worker,
                          virtual_machines=not (recovery or args.recovery or args.missing_data_worker or args.manager_case))
-        switched = not ((args.recovery and not args.ramfs) or args.missing_worker or args.failed_handoff)
+        switched = not (args.recovery or args.missing_worker or args.failed_handoff)
         if switched:
-            root_entries = run('ls -1 /')
-            names = re.findall(rb'^([a-z][a-z0-9-]*[/@]?)\r?$', root_entries, re.MULTILINE)
-            if set(names) != {b'boot/', b'system/', b'data/', b'tmp/'}:
-                raise AssertionError(f'unexpected formal root layout: {root_entries!r}')
-            boot_entries = run('ls -1a /boot')
-            for name in (b'data/', b'system/', b'.newroot/'):
-                if re.search(rb'^' + re.escape(name) + rb'\r?$', boot_entries, re.MULTILINE):
-                    raise AssertionError(f'stale boot mountpoint {name!r}: {boot_entries!r}')
+            check_root_layout(run('ls -1 /'))
             run('exit')
-            run('pwd' if recovery else 'pwd | sh -c pwd', rb'\n/\n')
-        if args.recovery and args.ramfs:
-            run('ps --name init-system', rb'init-system\s+running')
-            run('ls /system/bin', rb'(?i)\bhandle\b')
+            run('pwd | sh -c pwd', rb'\n/\n')
         if args.missing_data_worker:
-            for name in ('init-system', 'io-runtime', 'fs-backend', 'vm-manager'):
+            for name in ('init', 'io-runtime', 'fs-backend', 'vm-manager'):
                 run(f'ps --name {name}', name.encode() + rb'\s+running')
-            mounts = run('mount', rb' on /system type erofs')
+            mounts = run('mount', rb' on / type erofs')
             if b' on /data type ' in mounts:
                 raise AssertionError('missing data worker unexpectedly mounted /data')
             run('mount /data', rb'FAT recognized for /data, but filesystem worker is unavailable',
                     fails=True)
             run('vmm start alpine', rb'initial configuration is unavailable', fails=True)
         if args.failed_handoff:
-            run('ps --name fs-backend', rb'fs-backend\s+running')
-            run('ps --name io-runtime', rb'io-runtime\s+running')
-            processes = run('ps --name vm-manager')
-            if re.search(rb'vm-manager\s+running', processes):
-                raise AssertionError('system services started without committed handoff')
-            run('mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
-            # Formal mounts must not run before a successful handoff. Recovery
-            # can still load the boot-resident FAT worker on an explicit mount request.
-            mounts = run('mount')
+            # The candidate ran against the real provisional root. Its exit
+            # must restore the same bootstrap mounts before recovery starts.
+            evidence = args.log.read_bytes()
+            check_rollback_order(evidence)
+            mounts = run('mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
             if b' on /data type ' in mounts:
                 raise AssertionError('data mounted before formal init took ownership')
-            run('mount /data')
-            run('cp /data/vms.json /data/handoff-rollback.txt')
-            run('cat /data/handoff-rollback.txt', rb'virtual-machines')
-            run('rm /data/handoff-rollback.txt')
+            # The fallback has only static bootstrap clients. Exercise the old
+            # manager after its migration endpoint closed and topology rolled back.
+            run('mount -T /system/etc/fstab /data')
+            run('mount', rb'PARTUUID=[0-9a-f-]+ on /data type fat')
+            run('umount /data')
+            run('mount -T /system/etc/fstab /data')
+            run('umount /data')
             session.pump(2)
         if args.manager_case:
             # Real Native storage and core service processes must survive all
             # business-manager failure boundaries, before and after handoff.
-            for name in ('io-runtime', 'fs-backend', 'init-system'):
+            for name in ('io-runtime', 'fs-backend', 'init'):
                 run(f'ps --name {name}', name.encode() + rb'\s+running')
             processes = run('ps --name vm-manager')
             if args.manager_case == 'no-config':
@@ -300,16 +452,14 @@ def main():
             run('cat /data/manager-isolation.txt', rb'virtual-machines')
             run('rm /data/manager-isolation.txt')
         if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):
-            boot_services = run('ls /boot/svc', rb'\bfallback-sh\b')
-            if not re.search(rb'\bfs-fat\b', boot_services):
-                raise AssertionError('default deployment is missing the FAT worker in boot RAM')
-            system_services = run('ls /system/svc', rb'\binit-system\b')
-            if re.search(rb'\bfs-fat\b', system_services):
-                raise AssertionError('default deployment duplicated the FAT worker in /system')
-            run('ls /system/bin', rb'(?i)\bhandle\b')
-            run('ldd --loader /system/lib64/ld-hyper-aarch64.so '
-                    '--library-dir /system/lib64/aarch64-hyper-hyper /system/bin/ls',
-                    rb'libhyper.* => /system/lib64/')
+            system_services = run('ls /svc', rb'\binit\b')
+            for provider in (b'fs-fat', b'fs-erofs', b'fs-backend', b'io-runtime', b'console-raw'):
+                if not re.search(rb'\b' + provider + rb'\b', system_services):
+                    raise AssertionError(f'missing formal provider {provider!r}')
+            run('ls /bin', rb'(?i)\bhandle\b')
+            run('ldd --loader /lib64/ld-hyper-aarch64.so '
+                    '--library-dir /lib64/aarch64-hyper-hyper /bin/ls',
+                    rb'libhyper.* => /lib64/')
             run('ps --name vm-manager', rb'vm-manager\s+running')
             run('handle --summary --kind process', rb'\bprocess\s+[1-9]')
             baseline_memory = memory_accounting(run)
@@ -317,12 +467,16 @@ def main():
                 raise AssertionError('live I/O VM backing was not accounted as guest memory')
             run('echo SPLIT-SYSTEM-IO > /data/boot-system-test.txt')
             run('cat /data/boot-system-test.txt', rb'\nSPLIT-SYSTEM-IO\n')
-            if args.ramfs:
-                run('mount', rb'PARTUUID=[0-9a-f-]+ on /data type fat')
-            else:
-                run('mount', rb'PARTUUID=[0-9a-f-]+ on /system type erofs \(ro\)')
-                run('touch /system/must-not-write', fails=True)
-                run('umount /system', fails=True)
+            run('mkdir /data/boot-system-dir')
+            run('cp /data/boot-system-test.txt /data/boot-system-dir/original')
+            run('mv /data/boot-system-dir/original /data/boot-system-dir/renamed')
+            run('ls -1 /data/boot-system-dir', rb'\nrenamed\n')
+            run('cat /data/boot-system-dir/renamed', rb'\nSPLIT-SYSTEM-IO\n')
+            run('rm /data/boot-system-dir/renamed')
+            run('rmdir /data/boot-system-dir')
+            run('mount', rb'PARTUUID=[0-9a-f-]+ on / type erofs \(ro\)')
+            run('touch /must-not-write', fails=True)
+            run('umount /', fails=True)
             # VM definitions retain their image file even while stopped.
             run('umount /data', fails=True)
             run('vmm list', rb'alpine\s+stopped')
@@ -337,6 +491,10 @@ def main():
                 if time.monotonic() >= deadline:
                     raise AssertionError('guest backing accounting did not retire')
                 session.pump(0.1)
+            # Reopen the image and allocate a fresh guest after the first
+            # adopted runtime has retired all backend resources.
+            run('vmm start alpine --wait --timeout 60', rb'alpine: running')
+            run('vmm stop alpine --wait --timeout 60', rb'alpine: stopped')
             run('vmm delete alpine')
             run('umount /data')
             run('mount -o ro PARTLABEL=hyper-data /data')
@@ -345,18 +503,11 @@ def main():
             run('umount /data')
             run('mount /data')
             run('rm /data/boot-system-test.txt')
-    if not recovery and b'HypeR fallback shell: recovery console ready' in args.log.read_bytes():
+    if not recovery and b'HypeR bootstrap-stage1-fallback-sh: recovery console ready' in args.log.read_bytes():
         raise AssertionError('successful boot started the fallback shell')
     if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):
         evidence = args.log.read_bytes()
-        markers = ([b'EROFS mounted at /system'] if not args.ramfs else []) + [
-            b'HypeR init-system: core supervision adopted',
-            b'HypeR init-system: root namespace switched',
-            b'FAT mounted at /data', b'HypeR init: VM fleet configured',
-        ]
-        positions = [evidence.index(marker) for marker in markers]
-        if positions != sorted(positions):
-            raise AssertionError('filesystem mounts crossed the init handoff boundary')
+        check_handoff_order(evidence)
     if args.manager_case:
         check_manager_evidence(args.manager_case, args.log.read_bytes())
     if args.missing_data_worker:
@@ -374,5 +525,7 @@ def main():
 if __name__ == '__main__':
     if sys.argv[1:2] == ['prepare-handoff']:
         prepare_handoff(sys.argv[2:])
+    elif sys.argv[1:2] == ['prepare-provider-rejection']:
+        prepare_provider_rejection(sys.argv[2:])
     else:
         main()

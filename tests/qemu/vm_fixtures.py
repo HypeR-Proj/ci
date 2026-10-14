@@ -21,7 +21,7 @@ def prepare(source, directory):
     dormant = copy.deepcopy(alpine)
     dormant['autostart'] = False
     missing = copy.deepcopy(survivor)
-    missing['image'] = '/boot/vm/missing.itb'
+    missing['image'] = '/vm/missing.itb'
     failed = copy.deepcopy(alpine)
     # CPU 255 is valid configuration syntax but unavailable on test QEMU hosts.
     # Admission must succeed; only this guest's runtime startup should fail.

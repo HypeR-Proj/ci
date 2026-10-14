@@ -8,21 +8,21 @@ import re
 
 def verify_command_options(run):
     run('ldd --help', rb'Inspect Native ELF')
-    dependencies = run('ldd /system/bin/vmm', rb'libhyper_vm_policy_shared.so => /system/lib64/')
+    dependencies = run('ldd /bin/vmm', rb'libhyper_vm_policy_shared.so => /lib64/')
     if dependencies.count(b'libhyper_rust_std.so =>') != 1:
         raise AssertionError(f'ldd did not deduplicate transitive dependencies: {dependencies!r}')
-    run('ldd --tree /system/svc/vm-runtime', rb'libhyper_vm_support_shared.so =>')
-    direct = run('ldd --direct /system/bin/vmm', rb'\(loader\)')
+    run('ldd --tree /svc/vm-runtime', rb'libhyper_vm_support_shared.so =>')
+    direct = run('ldd --direct /bin/vmm', rb'\(loader\)')
     names = re.findall(rb'\n    (lib\S+) =>', direct)
     if names != [b'libhyper_vm_policy_shared.so', b'libhyper_clap_shared.so',
                  b'libhyper_rust_std.so', b'libhyper.so']:
         raise AssertionError(f'ldd --direct did not report the ELF dependency list: {direct!r}')
-    run('ldd /system/bin/echo', rb'libhyper_clap_shared.so => /system/lib64/')
-    run('ldd -v /system/bin/vmm', rb'ELF64 (aarch64|riscv64), OS ABI 0x3f')
-    run('ldd /system/bin/echo-static', rb'statically linked')
-    run('ldd /boot/etc/hyper/vms.json /system/bin/echo-static', rb'statically linked', failed=True)
+    run('ldd /bin/echo', rb'libhyper_clap_shared.so => /lib64/')
+    run('ldd -v /bin/vmm', rb'ELF64 (aarch64|riscv64), OS ABI 0x3f')
+    run('ldd /bin/echo-static', rb'statically linked')
+    run('ldd /etc/hyper/vms.json /bin/echo-static', rb'statically linked', failed=True)
     run('mkdir /missing-libraries')
-    run('ldd --library-dir /missing-libraries /system/bin/vmm', rb'libhyper.so => not found', failed=True)
+    run('ldd --library-dir /missing-libraries /bin/vmm', rb'libhyper.so => not found', failed=True)
     run('rmdir /missing-libraries')
     run('mkdir -v /tool-options', rb'created directory /tool-options')
     run("echo -e 'one\\n\\ntwo\\n\\n\\nthree' > /tool-options/text")

@@ -113,7 +113,7 @@ def main():
                  'APP_FEATURES=hyper-io-runtime/physical-retirement-probe'])
             app_override = [f'APP_OUTPUT={probe_apps}']
         run(['make', '-o', 'image', '-o', 'app', 'board-initramfs', 'board-guest-images', *app_override,
-             'ARCH=aarch64', 'BOARD=rpi5', 'BOARD_SYSTEM_LAYOUT=split',
+             'ARCH=aarch64', 'BOARD=rpi5',
              f'BOARD_CONFIG={out}/config.json', f'BOARD_OUTPUT={out}',
              f'CONFIG_FILE={out}/kernel.config', 'NATIVE_IMAGE_PROFILE=system',
              'IO_VM_PACKAGE=', 'IO_VM_REFERENCE=',

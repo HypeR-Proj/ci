@@ -42,6 +42,7 @@ def prepare(args):
         raise ValueError('prepare requires a QEMU board with one disk+network guest')
     if args.output.resolve() == args.board.resolve():
         raise ValueError('the network fixture must not replace the input board')
+    guests[0]['configuration']['virtio-transport'] = args.virtio_transport
     guests[0]['autostart'] = False
     peer = copy.deepcopy(guests[0])
     peer['name'] = 'alpine-net'
@@ -219,8 +220,14 @@ class Scenario:
                    'done; test -n "$netif" && test "$netif" != lo')
 
     def configure(self, vm):
-        self.guest('modprobe virtio_mmio && modprobe virtio_net')
+        self.guest('modprobe virtio_mmio && modprobe virtio_pci && modprobe virtio_net')
         self.interface(vm)
+        if vm['configuration'].get('virtio-transport', 'mmio') == 'pci':
+            self.guest('test "$(cat "/sys/class/net/$netif/device/../vendor")" = 0x1af4 && '
+                       'test "$(cat "/sys/class/net/$netif/device/../device")" = 0x1041')
+            if 'disk' in vm:
+                self.guest('test "$(cat /sys/bus/pci/devices/0000:00:01.0/device)" = 0x1048')
+
         self.guest('ip link set dev "$netif" up && '
                    'udhcpc -n -q -t 10 -T 3 -i "$netif"')
 
@@ -344,7 +351,7 @@ def run(args):
             command, args.log, failures=failures,
             output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
         scenario = Scenario(session, url, digest, args.expect_tx_offload)
-        session.await_text(rb'HypeR io-runtime: ready; bootstrap mounts complete\n', timeout=180)
+        session.await_text(rb'HypeR bootstrap-stage1-io-runtime: ready; bootstrap mounts complete\n', timeout=180)
         # Storage readiness precedes formal terminal ownership. Commands sent
         # before the shell prompt can be discarded by the session's input reset.
         session.await_text(rb'hyper-sh\$ ', timeout=180)
@@ -357,13 +364,9 @@ def run(args):
             if time.monotonic() >= deadline:
                 raise TimeoutError('init did not provision both network guests')
             session.pump(0.2)
-        clients = scenario.native('cat /boot/etc/hyper/io-clients.conf')
-        if board.bootstrap_clients().encode() not in clients:
-            raise RuntimeError(f'boot client policy does not match board: {clients!r}')
-        # Owner 0 has management only. FDT and backend-plan tests independently
-        # ensure it does not instantiate a data notification or TAP.
-        if not re.search(rb'^0 - - -$', clients, re.MULTILINE):
-            raise RuntimeError('block owner unexpectedly has a data assignment')
+        # Configuration/FDT tests check owner 0's management-only assignment.
+        # Runtime forwarding and later client reset exercise the adopted policy
+        # without keeping bootstrap configuration files alive for inspection.
 
         for vm in guests:
             scenario.native(f'vmm start {vm["name"]}')
@@ -401,6 +404,7 @@ def main():
     fixture = actions.add_parser('prepare', help='derive the two-guest acceptance configuration')
     fixture.add_argument('--board', type=Path, required=True)
     fixture.add_argument('--output', type=Path, required=True)
+    fixture.add_argument('--virtio-transport', choices=('mmio', 'pci'), default='mmio')
     fixture.set_defaults(handler=prepare)
     execute = actions.add_parser('run', help='verify a built acceptance fixture')
     execute.add_argument('--qemu', default='qemu-system-aarch64')

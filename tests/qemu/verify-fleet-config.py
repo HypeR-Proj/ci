@@ -14,7 +14,10 @@ from shell_status import checked, status
 
 CONFIGURED = b'HypeR init: VM fleet configured'
 REJECTED = b'HypeR vm-manager: fleet configuration rejected:'
-BOOT_FAILED = b'HypeR init: bootstrap failed'
+BOOT_FAILED = b'HypeR bootstrap-stage1-init: bootstrap failed'
+INIT_FAILURES = (BOOT_FAILED, b'HypeR init: bootstrap failed',
+                 b'HypeR bootstrap-stage1-init: critical service ',
+                 b'HypeR init: critical service ')
 DEGRADED = b'HypeR init: VM fleet configuration unavailable; Native services remain available'
 GUEST_RUNNING = b'HypeR: vCPU 0 running as scheduler thread'
 CASES = ('empty', 'no-autostart', 'malformed', 'missing-image', 'start-failure')
@@ -22,17 +25,17 @@ KERNEL_FAILURES = (b'HypeR: fatal', b'kernel panic', b'HypeR crash monitor')
 
 
 def validate_log(case, output):
-    if b'HypeR fallback shell: recovery console ready' in output:
+    if b'HypeR bootstrap-stage1-fallback-sh: recovery console ready' in output:
         raise AssertionError('fleet failure reopened bootstrap recovery')
     if any(marker in output for marker in KERNEL_FAILURES):
         raise AssertionError('kernel failure during fleet provisioning')
     if case in ('malformed', 'missing-image'):
-        if REJECTED not in output or DEGRADED not in output or BOOT_FAILED in output:
+        if REJECTED not in output or DEGRADED not in output or any(marker in output for marker in INIT_FAILURES):
             raise AssertionError('configuration rejection did not retain Native services')
         if CONFIGURED in output or GUEST_RUNNING in output:
             raise AssertionError('rejected fleet was acknowledged or partially started')
     else:
-        if CONFIGURED not in output or REJECTED in output or BOOT_FAILED in output:
+        if CONFIGURED not in output or REJECTED in output or any(marker in output for marker in INIT_FAILURES):
             raise AssertionError('admitted fleet did not complete init provisioning')
         if case in ('empty', 'no-autostart') and GUEST_RUNNING in output:
             raise AssertionError('idle fleet unexpectedly started a guest')
@@ -44,7 +47,7 @@ def main():
         raise ValueError('unknown fleet configuration case')
     command = native_command(qemu, image, initramfs)
     rejected = case in ('malformed', 'missing-image')
-    failures = KERNEL_FAILURES + (BOOT_FAILED, b'HypeR init: critical service ')
+    failures = KERNEL_FAILURES + INIT_FAILURES
     if not rejected:
         failures += (REJECTED,)
     with Session(command, logfile, failures=failures) as session:

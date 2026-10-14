@@ -121,7 +121,7 @@ def main():
             await_text(rb'\[vmm\] detached')
             await_text(rb'hyper-sh\$ ')
             for iteration in range(args.repetitions):
-                send(b'/system/bin/ps --stack-workload ' + args.stage.encode('ascii'))
+                send(b'/bin/ps --stack-workload ' + args.stage.encode('ascii'))
                 for stage in (b'inspect', b'memory', b'process'):
                     if args.stage != 'all' and stage.decode('ascii') != args.stage:
                         continue

@@ -77,11 +77,11 @@ def main():
         send(b'terminal-cat\r\x04echo AFTER_TERMINAL_EOF\r')
         await_text(rb'(?m)^terminal-cat\n')
         await_text(console_lines(b'AFTER_TERMINAL_EOF', b'hyper-sh$ '))
-        send(b'/system/bin/std-test --child terminal-line\rterminal-line\r')
+        send(b'/bin/std-test --child terminal-line\rterminal-line\r')
         await_text(console_lines(b'TERMINAL_LINE_OK', b'hyper-sh$ '))
-        send(b'/system/bin/std-test --child terminal-inherit\rinherit-data\r\x04')
+        send(b'/bin/std-test --child terminal-inherit\rinherit-data\r\x04')
         await_text(console_lines(b'inherit-data', b'TERMINAL_INHERIT_OK', b'hyper-sh$ '))
-        run('/system/bin/std-test --child binary-eof-byte', rb'BINARY_EOF_BYTE_OK')
+        run('/bin/std-test --child binary-eof-byte', rb'BINARY_EOF_BYTE_OK')
         # The console service survives both a requested shell exit and EOF.
         for exit_input in (b'exit\n', b'\x04'):
             send(exit_input)
@@ -118,10 +118,10 @@ def main():
         pump(1)
         send(b'q')
         await_text(rb'hyper-sh\$ ')
-        run('cat /boot/etc/hyper/vms.json', rb'"hyper.vm-config"')
+        run('cat /etc/hyper/vms.json', rb'"hyper.vm-config"')
         # A surviving descendant may retain stdout; command termination
         # must drain available output without waiting for that child's EOF.
-        run('/system/bin/std-test --child detached-output', rb'OUTPUT_OWNER_EXITED', timeout=5)
+        run('/bin/std-test --child detached-output', rb'OUTPUT_OWNER_EXITED', timeout=5)
         if verify_vm:
             send(b'vmm console alpine\n')
             await_text(rb'Connected to alpine\.', timeout=30)

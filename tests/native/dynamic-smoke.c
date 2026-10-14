@@ -73,7 +73,7 @@ static int check_opaque_startup_data(const hyper_startup_t *startup)
 	for (size_t i = 0; i < 4; ++i)
 		if (hyper_startup_find_handle(startup, purposes[i], &handles[i]))
 			return 0;
-	const char path[] = "/system/bin/echo";
+	const char path[] = "/bin/echo";
 	const uint64_t required[] = {HYPER_NATIVE_RIGHT_READ, HYPER_NATIVE_RIGHT_EXECUTE,
 				     HYPER_NATIVE_RIGHT_PROTECT, HYPER_NATIVE_RIGHT_DUPLICATE,
 				     HYPER_NATIVE_RIGHT_TRANSFER};

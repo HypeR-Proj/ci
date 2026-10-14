@@ -44,7 +44,7 @@ and the one-time Pages/required-check setup.
 | `native-smp-gicv2` | Guest SMP on GICv2 with four host CPUs and abrupt runtime-exit retirement |
 | `native-smp-overcommit` | Guest SMP with one host CPU |
 | `native-retirement-stack` | Power-crash retirement in dormant/pending/powered-off states and stack limits |
-| `native-stack-16k` | Production Native boot on one/four CPUs with 16 KiB kernel thread stacks, root/supervision handoff, shell commands, static/dynamic std and application startup |
+| `native-stack-16k` | Native userspace boot on one/four CPUs with 16 KiB kernel thread stacks, independent RAMFS test root, root/supervision handoff, shell commands, static/dynamic std and application startup |
 | `riscv64-native` | Serial aggregate of `riscv64-sdk` and `riscv64-runtime` |
 | `riscv64-sdk` | RISC-V SDK publication/consumer checks, app lint and host tests |
 | `riscv64-runtime` | Native static/dynamic std and application acceptance on one/four harts, file tools, paced shell input, userspace-managed guest boot, runtime-crash recovery and stack limits |
@@ -75,8 +75,17 @@ previous commit, and the independent builds can increase total runner minutes.
 The architecture QEMU runtime suites deliberately build with
 `kernel-self-test` and use an empty initramfs. They do not select a guest.
 Production images instead mount the firmware initramfs and start Native
-`/init`; the separate `native` suite assembles that initramfs from the in-tree
-SDK and application sources and verifies the complete boot contract.
+`/init`, then mount an independent system volume before the root and supervision
+handoff. The separate `native` suite assembles a synthetic no-device fixture
+from the in-tree SDK and application sources. Its test-only init copies a formal
+payload into a distinct RAMFS mount and enters the ordinary stage-1 supervisor;
+formal executables are not mapped from the original archive. This exercises the
+root transition, service handoff and application contracts without requiring a
+physical block provider on every architecture. It does not validate GPT, EROFS,
+storage-provider replacement, or product boot latency and memory consumption.
+The separate `board-storage` suite verifies the real independent disk root and
+bootstrap retirement. The synthetic fixture is not a supported product layout;
+ordinary board archives contain static stage-1 programs only.
 The independent `native-stack-16k` shard runs this acceptance with the minimum
 supported kernel thread stack on one and four CPUs. It requires the boot log to
 confirm 16 KiB stacks and the shell to finish the application probes; reaching
@@ -132,7 +141,15 @@ the final namespace, shell/tool capabilities, VM start/stop and writable/read-on
 unmount/remount behavior, then boots the same archive without storage controllers
 and requires the static recovery shell to remain usable. A third boot uses
 a copied bootstrap policy selecting an exiting init candidate; it verifies
-rollback, live storage services, and formal shells launched from recovery.
+namespace rollback, live storage services, and static recovery mount operations.
+Two further boots use separate system-image copies missing the formal I/O runtime
+or EROFS worker. They require failed replacement preparation to retain the original
+providers and `/boot`, keep the formal shell available, and serve mount, write,
+unmount and remount requests through the retained filesystem manager.
+The fallback shell does not receive a formal loader or formal shell delegation;
+the recovery cases do not launch a system shell through it. Separate synthetic
+storage-failure acceptance includes formal-shell failure after handoff, which
+must not reopen bootstrap recovery.
 The disk and all serial logs stay under `target/board-tests/boot-system.*/`;
 this test never modifies the developer's deployment disk.
 

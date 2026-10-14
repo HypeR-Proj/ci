@@ -17,8 +17,9 @@ class FleetLogTests(unittest.TestCase):
     def test_configuration_rejection_requires_surviving_native_services(self):
         output = fleet.REJECTED + b' missing image\n' + fleet.DEGRADED
         fleet.validate_log('missing-image', output)
-        with self.assertRaises(AssertionError):
-            fleet.validate_log('missing-image', output + b'\n' + fleet.BOOT_FAILED)
+        for marker in fleet.INIT_FAILURES:
+            with self.subTest(marker=marker), self.assertRaises(AssertionError):
+                fleet.validate_log('missing-image', output + b'\n' + marker)
 
     def test_guest_or_unrelated_service_failure_is_not_configuration_rejection(self):
         for output in (

@@ -323,6 +323,7 @@ fn suite(startup: &Startup<'_>) -> Result<()> {
             sdhci: None,
             network: None,
             pci: None,
+            virtual_pci: None,
             virtio: Some(MmioDevice {
                 base: PHYSICAL_MMIO,
                 size: physical_info.mmio_size,

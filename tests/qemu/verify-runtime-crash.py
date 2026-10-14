@@ -19,8 +19,10 @@ def main():
     args = parser.parse_args()
     command = native_command(args.qemu, args.image, args.initramfs)
     failures = (b'HypeR: fatal', b'kernel panic', b'HypeR init: critical service ',
+                b'HypeR bootstrap-stage1-init: critical service ',
                 b'HypeR init: VM fleet configuration rejected',
-                b'HypeR init: bootstrap failed')
+                b'HypeR init: bootstrap failed',
+                b'HypeR bootstrap-stage1-init: bootstrap failed')
     with Session(command, args.logfile, failures=failures) as session:
         await_text = session.await_text
 

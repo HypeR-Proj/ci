@@ -53,7 +53,7 @@ def boot(args, mode):
                     if any(marker in pending for marker in (
                             b'Kernel panic', b'HypeR: fatal', b'HypeR KERNEL PANIC',
                             b'bootstrap failed', b'BOARD-STORAGE: ' + mode.encode() + b' FAIL',
-                            b'HypeR io-runtime: failed:')):
+                            b'HypeR bootstrap-stage1-io-runtime: failed:', b'HypeR io-runtime: failed:')):
                         # Preserve the complete crash report before terminating
                         # QEMU; its banner often arrives in a separate read.
                         drain_until = time.monotonic() + 3
@@ -70,19 +70,19 @@ def boot(args, mode):
         try:
             if args.require_userspace_device:
                 await_text(rb'DEVICE-TEST: worker prepared\n')
-            boot = await_text(rb'HypeR io-runtime: ready; bootstrap mounts complete\n')
-            if b'HypeR IO VM: ' not in boot:
+            boot = await_text(rb'HypeR bootstrap-stage1-io-runtime: ready; bootstrap mounts complete\n')
+            if b'HypeR bootstrap-stage1-io-runtime: IO VM: ' not in boot:
                 raise RuntimeError('forwarded I/O VM log prefix missing')
             await_text(rb'hyper-sh\$ ')
-            child.stdin.write(f'/system/bin/storage-probe {mode}\n'.encode())
+            child.stdin.write(f'/bin/storage-probe {mode}\n'.encode())
             child.stdin.flush()
             await_text(b'BOARD-STORAGE: ' + mode.encode() + b' PASS\n', timeout=600)
             await_text(rb'hyper-sh\$ ')
-            child.stdin.write(checked('cp /boot/etc/hyper/services.json /data/copied-services.json'))
+            child.stdin.write(checked('cp /etc/hyper/services.json /data/copied-services.json'))
             child.stdin.flush()
             copied = await_text(rb'hyper-sh\$ ')
             if status(copied) != 0:
-                raise RuntimeError(f'copy across ramfs/FAT failed: {copied!r}')
+                raise RuntimeError(f'copy across system/FAT failed: {copied!r}')
             child.stdin.write(f'vmm status {args.observed_name}\n'.encode())
             child.stdin.flush()
             observed = await_text(rb'hyper-sh\$ ')
