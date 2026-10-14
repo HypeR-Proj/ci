@@ -58,6 +58,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-boot-system.py
         python3 -B tests/qemu/test-session.py
         python3 -B tests/qemu/test-console.py
+        python3 -B tests/qemu/test-console-hotplug.py
         python3 -B tests/qemu/test-fleet-config.py
         python3 -B tests/qemu/test-network.py
         command -v shellcheck >/dev/null 2>&1 || {
