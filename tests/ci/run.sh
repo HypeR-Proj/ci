@@ -25,6 +25,23 @@ prepare_aarch64_stack16_config() {
         kernel/configs/qemu_aarch64_defconfig >"$stack_config"
 }
 
+# Only the ordinary boot/interactive probes share immutable images. Feature,
+# topology and failure fixtures keep their own builds and mutable disks.
+run_native_probe() {
+    arch=${CI_ARCH:-aarch64}
+    case "$arch" in aarch64|riscv64) ;; *) usage ;; esac
+    if [ -n "${CI_NATIVE_FIXTURE:-}" ]; then
+        python3 -B tests/ci/native-fixture.py check --arch "$arch" \
+            --directory "$CI_NATIVE_FIXTURE"
+        mkdir -p "target/app/$arch"
+        make -o image -o native-initramfs "$@" ARCH="$arch" \
+            KERNEL_IMAGE="$CI_NATIVE_FIXTURE/hyper.img" \
+            NATIVE_INITRAMFS="$CI_NATIVE_FIXTURE/initramfs.cpio"
+    else
+        make "$@" ARCH="$arch"
+    fi
+}
+
 case "${1:-}" in
     quality)
         command -v rg >/dev/null 2>&1 || {
@@ -40,6 +57,8 @@ case "${1:-}" in
     scripts)
         python3 -B lib/terminal/tests/linux-formatting.py
         python3 -B tests/ci/test-install-tools.py
+        python3 -B tests/ci/test-native-fixture.py
+        python3 -B tests/ci/test-suites.py
         python3 -B tests/build/kernel-version.py
         python3 -B tests/build/developer-entrypoints.py
         python3 tests/build/incremental.py
@@ -84,23 +103,42 @@ case "${1:-}" in
         python3 -B tests/build/service-manifest.py
         make app-sdk-test
         ;;
-    native-gicv3)
-        sh tests/ci/run.sh native-console
-        sh tests/ci/run.sh native-vm
+    native-fixture)
+        arch=${CI_ARCH:-aarch64}
+        case "$arch" in aarch64|riscv64) ;; *) usage ;; esac
+        make image native-initramfs ARCH="$arch"
+        python3 -B tests/ci/native-fixture.py pack --arch "$arch" \
+            --directory "target/ci/native-$arch"
         ;;
-    native-console)
-        QEMU_TEST_LOG=target/app/aarch64/native-init.log \
-            make test-native ARCH=aarch64 QEMU_CPU=max QEMU_CPUS=4
-        make -o image -o native-initramfs test-console ARCH=aarch64
-        make -o image -o native-initramfs test-terminal ARCH=aarch64
-        make -o image -o native-initramfs test-apps ARCH=aarch64
-        make -o image -o native-initramfs test-shell ARCH=aarch64
+    native-gicv3)
+        for shard in native-boot native-console native-terminal native-apps native-shell \
+            native-fleet native-storage-recovery native-filesystem native-runtime-crash native-vm; do
+            sh tests/ci/run.sh "$shard"
+        done
+        ;;
+    native-boot)
+        arch=${CI_ARCH:-aarch64}
+        for cpus in 4 1; do
+            QEMU_TEST_LOG="target/app/$arch/native-init-$cpus.log" \
+                run_native_probe test-native QEMU_CPUS="$cpus"
+        done
+        ;;
+    native-console|native-terminal|native-apps|native-shell)
+        run_native_probe "test-${1#native-}"
+        ;;
+    native-fleet)
+        make image native-initramfs ARCH=aarch64
         make -o image -o app test-fleet-config ARCH=aarch64
+        ;;
+    native-storage-recovery)
+        make image native-initramfs ARCH=aarch64
         make -o image -o app test-storage-failure ARCH=aarch64
-        make -o image test-filesystem-failure ARCH=aarch64 QEMU_CPU=max,cntfrq=54000000
-        make -o image -o native-initramfs test-runtime-crash ARCH=aarch64
-        cp target/app/aarch64/console.log target/app/aarch64/native-gicv3-console.log
-        cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv3-runtime-crash.log
+        ;;
+    native-filesystem)
+        make test-filesystem-failure ARCH=aarch64 QEMU_CPU=max,cntfrq=54000000
+        ;;
+    native-runtime-crash)
+        make test-runtime-crash ARCH=aarch64
         ;;
     native-vm)
         make test-vm-smoke ARCH=aarch64 QEMU_CPUS=4
@@ -113,15 +151,10 @@ case "${1:-}" in
         cp target/app/aarch64/vm-smoke-4.log target/app/aarch64/native-gicv3-tc.log
         ;;
     native-gicv2)
-        QEMU_TEST_LOG=target/app/aarch64/native-gicv2-smp.log \
-            make test-native-gicv2 QEMU_CPUS=4
-        make -o image -o native-initramfs test-console test-runtime-crash ARCH=aarch64 \
-            QEMU_MACHINE=virt,virtualization=on,gic-version=2 QEMU_CPUS=4 \
-            NATIVE_INITRAMFS="$root/target/app/aarch64/initramfs-gicv2.cpio"
-        cp target/app/aarch64/console.log target/app/aarch64/native-gicv2-console.log
-        cp target/app/aarch64/runtime-crash.log target/app/aarch64/native-gicv2-runtime-crash.log
-        QEMU_TEST_LOG=target/app/aarch64/native-gicv2-up.log \
-            make -o image -o native-initramfs test-native-gicv2 QEMU_CPUS=1
+        for shard in native-boot native-console native-runtime-crash; do
+            QEMU_MACHINE=virt,virtualization=on,gic-version=2,dtb-randomness=on \
+                sh tests/ci/run.sh "$shard"
+        done
         ;;
     native-smp-stack)
         for shard in native-smp-gicv3 native-smp-gicv2 native-smp-overcommit native-retirement-stack; do
@@ -133,9 +166,16 @@ case "${1:-}" in
         cp target/app/aarch64/guest-smp.log target/app/aarch64/native-gicv3-guest-smp.log
         ;;
     native-smp-gicv2)
+        sh tests/ci/run.sh native-smp-gicv2-guest
+        sh tests/ci/run.sh native-smp-gicv2-retirement
+        ;;
+    native-smp-gicv2-guest)
         make test-guest-smp ARCH=aarch64 \
             QEMU_MACHINE=virt,virtualization=on,gic-version=2 QEMU_CPUS=4
         cp target/app/aarch64/guest-smp.log target/app/aarch64/native-gicv2-guest-smp.log
+        ;;
+    native-smp-gicv2-retirement)
+        make image guest-smp-initramfs ARCH=aarch64
         # Reuse the abrupt runtime-exit fixture with the SMP topology. It may
         # exit before every secondary has booted; retirement must include all
         # configured dormant and running CPU Threads in either case.
@@ -187,28 +227,26 @@ case "${1:-}" in
         make test-board-network ARCH=aarch64 IO_VM_PACKAGE="$package"
         ;;
     board-storage)
+        for shard in board-storage-media board-boot-system board-alpine-rootfs \
+            board-business board-broker board-userspace-device; do
+            sh tests/ci/run.sh "$shard"
+        done
+        ;;
+    board-storage-media|board-boot-system|board-alpine-rootfs|board-business|board-broker|board-userspace-device)
         package=$(python3 -B scripts/fetch-io-vm.py \
             --reference "${IO_VM_REFERENCE:-}" --platform qemu)
-        # Device claims happen in long-lived services, outside the retired
-        # thread watermark samples. Boot the real storage path at the minimum
-        # supported thread-stack size as well as checking measured reserves.
+        case "$1" in
+            board-storage-media) target=test-board-storage ;;
+            board-boot-system) target=test-boot-system ;;
+            board-alpine-rootfs) target=test-alpine-rootfs ;;
+            board-business) target=test-board-business ;;
+            board-broker) target=test-board-broker ;;
+            board-userspace-device) target=test-userspace-device ;;
+        esac
+        # Keep the real storage path at the minimum supported thread-stack
+        # size, with stack watermark checks, on every independent runner.
         prepare_aarch64_stack16_config
-        make test-board-storage ARCH=aarch64 IO_VM_PACKAGE="$package" \
-            CONFIG_FILE="$stack_config" \
-            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
-        make -o image -o app test-boot-system ARCH=aarch64 IO_VM_PACKAGE="$package" \
-            CONFIG_FILE="$stack_config" \
-            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
-        make -o image -o app test-alpine-rootfs ARCH=aarch64 IO_VM_PACKAGE="$package" \
-            CONFIG_FILE="$stack_config" \
-            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
-        make -o image -o app test-board-business ARCH=aarch64 IO_VM_PACKAGE="$package" \
-            CONFIG_FILE="$stack_config" \
-            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
-        make -o image -o app test-board-broker ARCH=aarch64 IO_VM_PACKAGE="$package" \
-            CONFIG_FILE="$stack_config" \
-            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
-        make -o image -o app test-userspace-device ARCH=aarch64 IO_VM_PACKAGE="$package" \
+        make "$target" ARCH=aarch64 IO_VM_PACKAGE="$package" \
             CONFIG_FILE="$stack_config" \
             STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
         ;;
@@ -223,14 +261,13 @@ case "${1:-}" in
         make app-sdk-test ARCH=riscv64
         ;;
     riscv64-runtime)
-        QEMU_TEST_LOG=target/app/riscv64/native-init-smp.log \
-            make test-native ARCH=riscv64 QEMU_CPUS=4
-        QEMU_TEST_LOG=target/app/riscv64/native-init-up.log \
-            make -o image -o native-initramfs test-native ARCH=riscv64 QEMU_CPUS=1
-        make -o image -o native-initramfs test-console ARCH=riscv64
-        make -o image -o native-initramfs test-terminal ARCH=riscv64
-        make -o image -o native-initramfs test-apps ARCH=riscv64
-        make -o image -o native-initramfs test-shell ARCH=riscv64
+        for shard in native-boot native-console native-terminal native-apps native-shell; do
+            CI_ARCH=riscv64 sh tests/ci/run.sh "$shard"
+        done
+        sh tests/ci/run.sh riscv64-vm
+        ;;
+    riscv64-vm)
+        make image native-initramfs ARCH=riscv64
         make -o image -o app test-fleet-config ARCH=riscv64
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=4
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=1

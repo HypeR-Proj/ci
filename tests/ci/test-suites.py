@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+"""Exercise CI dispatch without compiling or booting; retain acceptance coverage."""
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+class SuiteTests(unittest.TestCase):
+    def run_suite(self, suite, **environment):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            log = directory / 'commands.jsonl'
+            for name in ('make', 'python3', 'cp'):
+                program = directory / name
+                program.write_text(f'#!{sys.executable}\n' + '''import json, os, sys
+with open(os.environ['COMMAND_LOG'], 'a') as log:
+    log.write(json.dumps([os.path.basename(sys.argv[0]), *sys.argv[1:]]) + '\\n')
+if 'scripts/fetch-io-vm.py' in sys.argv:
+    print('/fixture/io-vm')
+''')
+                program.chmod(0o755)
+            env = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ['PATH'],
+                       COMMAND_LOG=str(log), **environment)
+            env.pop('CI_NATIVE_FIXTURE', None)
+            if 'CI_NATIVE_FIXTURE' in environment:
+                env['CI_NATIVE_FIXTURE'] = environment['CI_NATIVE_FIXTURE']
+            subprocess.run(['sh', 'tests/ci/run.sh', suite], cwd=ROOT, env=env, check=True)
+            return [json.loads(line) for line in log.read_text().splitlines()]
+
+    def test_gicv3_aggregate_retains_all_runtime_contracts(self):
+        commands = self.run_suite('native-gicv3')
+        targets = {arg for call in commands if call[0] == 'make'
+                   for arg in call[1:] if arg.startswith('test-')}
+        self.assertEqual(targets, {
+            'test-native', 'test-console', 'test-terminal', 'test-apps', 'test-shell',
+            'test-fleet-config', 'test-storage-failure', 'test-filesystem-failure',
+            'test-runtime-crash', 'test-vm-smoke',
+        })
+
+    def test_board_shards_keep_minimum_stacks_and_instrumentation(self):
+        calls = [call for call in self.run_suite('board-storage') if call[0] == 'make']
+        self.assertEqual({call[1] for call in calls}, {
+            'test-board-storage', 'test-boot-system', 'test-alpine-rootfs',
+            'test-board-business', 'test-board-broker', 'test-userspace-device',
+        })
+        for call in calls:
+            self.assertIn('STACK_AUDIT=1', call)
+            self.assertIn('CARGO_FEATURES=--features kernel-stack-audit', call)
+            self.assertIn('IO_VM_PACKAGE=/fixture/io-vm', call)
+            config = next(arg.split('=', 1)[1] for arg in call if arg.startswith('CONFIG_FILE='))
+            self.assertIn('CONFIG_KERNEL_STACK_SIZE_KB=16', Path(config).read_text().splitlines())
+
+    def test_image_consumer_checks_artifact_and_skips_only_build_prerequisites(self):
+        calls = self.run_suite('native-console', CI_NATIVE_FIXTURE='/fixture/native', CI_ARCH='riscv64')
+        self.assertEqual(calls[0][1:4], ['-B', 'tests/ci/native-fixture.py', 'check'])
+        make, = [call for call in calls if call[0] == 'make']
+        self.assertEqual(make[1:6], ['-o', 'image', '-o', 'native-initramfs', 'test-console'])
+        self.assertIn('ARCH=riscv64', make)
+        self.assertIn('KERNEL_IMAGE=/fixture/native/hyper.img', make)
+        self.assertIn('NATIVE_INITRAMFS=/fixture/native/initramfs.cpio', make)
+
+    def test_local_probe_builds_its_own_images(self):
+        calls = self.run_suite('native-shell')
+        self.assertEqual(calls, [['make', 'test-shell', 'ARCH=aarch64']])
+
+    def test_gicv2_smp_keeps_topology_and_retirement_coverage(self):
+        calls = [call for call in self.run_suite('native-smp-gicv2') if call[0] == 'make']
+        self.assertEqual(len(calls), 3)
+        self.assertIn('test-guest-smp', calls[0])
+        self.assertIn('guest-smp-initramfs', calls[1])
+        self.assertIn('test-runtime-crash', calls[2])
+        self.assertIn('QEMU_CPUS=4', calls[2])
+        self.assertTrue(any(arg.endswith('/vms-smp-4.json') for arg in calls[2]))
+
+
+if __name__ == '__main__':
+    unittest.main()

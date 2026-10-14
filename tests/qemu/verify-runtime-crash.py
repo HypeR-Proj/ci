@@ -60,7 +60,11 @@ def main():
 
         def crash_alpine():
             send(b'vmm console alpine')
-            await_text(rb'\[vmm\] virtual machine disconnected')
+            await_text(rb'Connected to alpine\. Press Ctrl-\] for the control menu\.')
+            session.send(b'\x1e\n')
+            # Exit can race either the input write or the output read; both
+            # report a closed attached session. Retirement is checked below.
+            await_text(rb'\[vmm\] (?:virtual machine disconnected|console write failed: disconnected)')
             await_text(rb'hyper-sh\$ ')
             wait_state(b'alpine', b'failed')
 
@@ -70,8 +74,8 @@ def main():
         await_text(rb'hyper-sh\$ ')
         wait_state(b'alpine', b'running')
         wait_state(b'survivor', b'running')
-        # Both definitions autostart. Attaching only alpine trips its runtime's
-        # console-forwarding fault hook while survivor keeps its own runtime.
+        # Both definitions autostart. Only alpine receives the fault trigger
+        # after attachment; survivor keeps its own runtime.
         crash_alpine()
         wait_state(b'survivor', b'running')
         output = run(b'echo HYPER_AUTOSTART_ISOLATION_OK')

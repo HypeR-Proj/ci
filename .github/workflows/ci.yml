@@ -58,6 +58,76 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  native-fixture:
+    name: ${{ matrix.arch }} / Native fixture build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, riscv64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/tools
+        with:
+          packages: clang cmake cpio lld llvm make squashfs-tools
+      - name: Build the immutable Native fixture
+        env:
+          CI_ARCH: ${{ matrix.arch }}
+        run: sh tests/ci/run.sh native-fixture
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-fixture-${{ matrix.arch }}
+          path: target/ci/native-${{ matrix.arch }}
+          if-no-files-found: error
+          retention-days: 7
+
+  native-interactive:
+    name: ${{ matrix.arch }} / ${{ matrix.suite }}${{ matrix.arch == 'aarch64' && format(' / GICv{0}', matrix.gic) || '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    needs: native-fixture
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, riscv64]
+        suite: [native-boot, native-console, native-terminal, native-apps, native-shell]
+        gic: [3]
+        include:
+          - arch: aarch64
+            suite: native-boot
+            gic: 2
+          - arch: aarch64
+            suite: native-console
+            gic: 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: native-fixture-${{ matrix.arch }}
+          path: target/ci/native-${{ matrix.arch }}
+      - uses: ./.github/actions/tools
+        with:
+          packages: ${{ matrix.arch == 'aarch64' && 'qemu-system-arm' || 'qemu-system-misc' }}
+      - name: Run Native probe using this run's images
+        env:
+          CI_ARCH: ${{ matrix.arch }}
+          CI_NATIVE_FIXTURE: target/ci/native-${{ matrix.arch }}
+          QEMU_MACHINE: ${{ matrix.arch == 'aarch64' && format('virt,virtualization=on,gic-version={0},dtb-randomness=on', matrix.gic) || 'virt' }}
+        run: sh tests/ci/run.sh "${{ matrix.suite }}"
+      - name: Clean up QEMU
+        if: always()
+        run: sh tests/ci/cleanup-qemu.sh "${{ matrix.arch }}"
+      - name: Upload Native runtime diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ matrix.arch }}-${{ matrix.suite }}-${{ matrix.gic || 'none' }}-logs
+          path: target/app/${{ matrix.arch }}/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
   native:
     name: AArch64 / ${{ matrix.name }}
     runs-on: ubuntu-24.04
@@ -68,16 +138,26 @@ jobs:
         include:
           - suite: native-sdk
             name: SDK and app contracts
-          - suite: native-console
-            name: GICv3 apps and guest VMs
+          - suite: native-fleet
+            name: Fleet configuration
+          - suite: native-storage-recovery
+            name: Storage and handoff failure recovery
+          - suite: native-filesystem
+            name: Filesystem failure
+          - suite: native-runtime-crash
+            name: Runtime crash / GICv3
+            gic: 3
+          - suite: native-runtime-crash
+            name: Runtime crash / GICv2
+            gic: 2
           - suite: native-vm
             name: VM authority and GICv3 traps
-          - suite: native-gicv2
-            name: GICv2 apps and guest VMs
           - suite: native-smp-gicv3
             name: Guest SMP / GICv3
-          - suite: native-smp-gicv2
-            name: Guest SMP and retirement / GICv2
+          - suite: native-smp-gicv2-guest
+            name: Guest SMP / GICv2
+          - suite: native-smp-gicv2-retirement
+            name: SMP runtime retirement / GICv2
           - suite: native-smp-overcommit
             name: Guest SMP / host overcommit
           - suite: native-retirement-stack
@@ -92,6 +172,8 @@ jobs:
         with:
           packages: clang cmake cpio lld llvm make shellcheck ${{ matrix.suite != 'native-sdk' && 'qemu-system-arm squashfs-tools' || '' }}
       - name: Run Native validation shard
+        env:
+          QEMU_MACHINE: virt,virtualization=on,gic-version=${{ matrix.gic || 3 }},dtb-randomness=on
         run: sh tests/ci/run.sh "${{ matrix.suite }}"
       - name: Clean up AArch64 QEMU
         if: always()
@@ -100,7 +182,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: aarch64-${{ matrix.suite }}-logs
+          name: aarch64-${{ matrix.suite }}-${{ matrix.gic || 3 }}-logs
           path: |
             target/app/aarch64/*.log
             target/stack-audit/aarch64/*.json
@@ -118,9 +200,13 @@ jobs:
           retention-days: 7
 
   board-storage:
-    name: AArch64 / board storage and managed VM lifecycle
+    name: AArch64 / ${{ matrix.suite }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [board-storage-media, board-boot-system, board-alpine-rootfs, board-business, board-broker, board-userspace-device]
     permissions:
       contents: read
       packages: read
@@ -135,7 +221,7 @@ jobs:
         with:
           packages: clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler
       - name: Verify persistent Native storage and managed guests
-        run: sh tests/ci/run.sh board-storage
+        run: sh tests/ci/run.sh "${{ matrix.suite }}"
       - name: Clean up AArch64 QEMU
         if: always()
         run: sh tests/ci/cleanup-qemu.sh aarch64
@@ -143,7 +229,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: aarch64-board-storage-logs
+          name: aarch64-${{ matrix.suite }}-logs
           path: |
             target/board-tests/**/*.log
             target/ci/aarch64-stack16.config
@@ -160,15 +246,15 @@ jobs:
         include:
           - suite: riscv64-sdk
             name: SDK and app contracts
-          - suite: riscv64-runtime
-            name: apps and guest VM
+          - suite: riscv64-vm
+            name: Guest VM, retirement and stacks
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
       - name: Install Native SDK and RISC-V QEMU tools
         uses: ./.github/actions/tools
         with:
-          packages: clang cmake cpio lld llvm make shellcheck ${{ matrix.suite == 'riscv64-runtime' && 'qemu-system-misc' || '' }}
+          packages: clang cmake cpio lld llvm make shellcheck ${{ matrix.suite == 'riscv64-vm' && 'qemu-system-misc' || '' }}
       - name: Verify RISC-V Native applications and userspace Linux VMs
         run: sh tests/ci/run.sh "${{ matrix.suite }}"
       - name: Clean up RISC-V QEMU

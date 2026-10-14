@@ -35,21 +35,39 @@ and the one-time Pages/required-check setup.
 | `scripts` | Incremental build, deployment, board/package/rootfs, developer-entrypoint and QEMU transport Python tests; ShellCheck for test, acquisition and SDK scripts |
 | `native` | Serial local aggregate of all AArch64 Native suites below |
 | `native-sdk` | SDK publication/consumer checks, portable runtime and app tests, and service-manifest validation |
-| `native-gicv3` | Serial aggregate of `native-console` and `native-vm` |
-| `native-console` | GICv3 Native boot, console/terminal, shell language and editing, apps, fleet/storage failure and runtime-crash recovery |
+| `native-gicv3` | Serial aggregate of the GICv3 boot, interactive, failure and VM suites |
+| `native-fixture` | Build and package the ordinary Native kernel/initramfs pair; `CI_ARCH` selects AArch64 (default) or RISC-V |
+| `native-boot` | Native boot and application startup on one/four CPUs |
+| `native-console` | Paced input, pressure, shell restart and guest console |
+| `native-terminal` | Terminal modes, transformations and flow control |
+| `native-apps` | Native command-line application acceptance |
+| `native-shell` | Shell language, editing, completion and redirection |
+| `native-fleet` | Fleet configuration admission and error handling |
+| `native-storage-recovery` | Storage readiness and handoff failure recovery |
+| `native-filesystem` | Filesystem RPC and provider failure |
+| `native-runtime-crash` | Guest runtime failure and isolation in both fleet orders |
 | `native-vm` | VM smoke on both GIC backends and forced GICv3 common-register traps |
 | `native-gicv2` | GICv2 Native boot on one/four CPUs, console and runtime-crash recovery |
 | `native-smp-stack` | Serial aggregate of the three SMP suites and `native-retirement-stack` |
 | `native-smp-gicv3` | Guest SMP on GICv3 with four host CPUs |
-| `native-smp-gicv2` | Guest SMP on GICv2 with four host CPUs and abrupt runtime-exit retirement |
+| `native-smp-gicv2` | Serial aggregate of the following two GICv2 suites |
+| `native-smp-gicv2-guest` | Guest SMP on GICv2 with four host CPUs |
+| `native-smp-gicv2-retirement` | GICv2 SMP topology with abrupt runtime-exit retirement |
 | `native-smp-overcommit` | Guest SMP with one host CPU |
 | `native-retirement-stack` | Power-crash retirement in dormant/pending/powered-off states and stack limits |
 | `native-stack-16k` | Native userspace boot on one/four CPUs with 16 KiB kernel thread stacks, independent RAMFS test root, root/supervision handoff, shell commands, static/dynamic std and application startup |
 | `riscv64-native` | Serial aggregate of `riscv64-sdk` and `riscv64-runtime` |
 | `riscv64-sdk` | RISC-V SDK publication/consumer checks, app lint and host tests |
-| `riscv64-runtime` | Native static/dynamic std and application acceptance on one/four harts, file tools, paced shell input, userspace-managed guest boot, runtime-crash recovery and stack limits |
+| `riscv64-runtime` | Serial aggregate of the five ordinary Native probes with `CI_ARCH=riscv64`, plus `riscv64-vm` |
+| `riscv64-vm` | RISC-V fleet configuration, VM authority on one/four harts, runtime-crash recovery and stack limits |
 | `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
-| `board-storage` | Configuration storage, split-root boot and disk-independent recovery, Alpine rootfs, business guest, broker and userspace-device acceptance with 16 KiB kernel thread stacks and stack watermarks |
+| `board-storage` | Serial aggregate of the six board suites below; all use 16 KiB kernel thread stacks and stack watermarks |
+| `board-storage-media` | Configuration storage, cold restart and Native shell |
+| `board-boot-system` | Independent root, supervision handoff and disk-independent/provider failure recovery |
+| `board-alpine-rootfs` | Alpine ext4 root, write/sync/restart and checksums |
+| `board-business` | Managed guest start/stop/restart and physical block operations |
+| `board-broker` | Broker fairness, endpoint loss, active disks and Native storage |
+| `board-userspace-device` | Native physical device backend through MMIO/IRQ capabilities |
 | `aarch64-build` | Serial aggregate of the three AArch64 image build suites below |
 | `aarch64-production` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity and image ABI/instruction checks |
 | `aarch64-self-test` | Separate kernel-self-test image and image ABI/instruction checks |
@@ -58,19 +76,39 @@ and the one-time Pages/required-check setup.
 | `riscv64-qemu` | RISC-V kernel startup, SMP admission, and standalone mechanism self-tests |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
 
-GitHub Actions runs nine AArch64 Native shards and two RISC-V Native shards
-on independent runners. Each shard
-builds its own prerequisites; no suite consumes mutable outputs from another.
-Use `sh tests/ci/run.sh native-gicv2`, for example, to reproduce one shard.
-The local aggregates stay serial because kernel feature variants and
-initramfs fixtures share output paths. Do not run shards concurrently in the
-same checkout. The three AArch64 image variants also build on separate runners;
-their artifacts are named `aarch64-kernels-production`, `aarch64-kernels-self-test`
+GitHub Actions runs the Native boot, console, terminal, app and shell probes
+on separate runners. Two producer jobs build one immutable kernel/initramfs pair
+per architecture. Twelve probe jobs download the matching artifact from the
+**same workflow run**, check its revision, architecture and SHA-256 hashes, then
+skip only the image-building prerequisites. GICv2 and GICv3 consume the same
+AArch64 images. These consumers install QEMU only; they do not rebuild the SDK,
+Rust std, applications or guest payload. No cross-commit build/test result cache
+is trusted. The artifact consists of the two images and their manifest; mutable
+Cargo output and disks are never shared.
+
+Feature-specific Native tests, each of the six board acceptance suites, and
+RISC-V VM/retirement tests run independently and build their own prerequisites.
+This preserves the forced GICv3 trap variant, minimum stacks and failure-injection
+features without mixing their outputs with the ordinary fixture. The board broker
+keeps its full fairness/lifecycle sequence in one runner because later assertions
+depend on earlier transitions. Runtime diagnostics remain separate artifacts.
+
+Use `sh tests/ci/run.sh native-console` to build and run a single probe locally,
+or set `CI_ARCH=riscv64` for the RISC-V fixture. `CI_NATIVE_FIXTURE` is optional;
+when supplied, it must point to a validated artifact for the current commit and
+architecture. An invalid artifact fails instead of silently rebuilding. The
+`native`, `native-gicv3`, `native-gicv2`, `riscv64-runtime` and `board-storage`
+aggregates remain serial for local reproduction. Do not run suites concurrently
+in one checkout: feature variants and initramfs fixtures share output paths.
+
+The three AArch64 kernel image variants also build on separate runners; their
+artifacts are named `aarch64-kernels-production`, `aarch64-kernels-self-test`
 and `aarch64-kernels-compact`. Kernel QEMU jobs download only their image variant.
-Source quality runs alongside builds; only kernel QEMU jobs wait for image builds.
-All checks must still pass. Sharding reduces elapsed time by doing independent
-work in parallel; it does not remove test cases or reuse a test result from a
-previous commit, and the independent builds can increase total runner minutes.
+Quality, SDK and independent runtime builds start without waiting for fixture
+producers. All checks must pass; no test is dropped or weakened to reduce time.
+Parallelism trades additional runners for a shorter critical path. Actual elapsed
+time still includes runner queueing and artifact transfer; compare workflow
+start-to-finish and longest-job duration when measuring a change.
 
 The architecture QEMU runtime suites deliberately build with
 `kernel-self-test` and use an empty initramfs. They do not select a guest.
