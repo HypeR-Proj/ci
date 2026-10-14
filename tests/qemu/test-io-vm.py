@@ -96,6 +96,12 @@ time.sleep(60)
             (package / 'boot-artifacts.json').write_text(json.dumps(manifest))
             self.assertEqual(acceptance.package_payloads(package),
                              ((package / kernel_name).resolve(), (package / ramdisk_name).resolve()))
+            with self.assertRaisesRegex(ValueError, 'hyper.clients.v5'):
+                acceptance.package_payloads(package, require_client_resources=True)
+            manifest['client_table_version'] = 5
+            (package / 'boot-artifacts.json').write_text(json.dumps(manifest))
+            self.assertEqual(acceptance.package_payloads(package, require_client_resources=True),
+                             ((package / kernel_name).resolve(), (package / ramdisk_name).resolve()))
             (package / kernel_name).write_bytes(image + b'corruption')
             with self.assertRaisesRegex(ValueError, 'checksum mismatch'):
                 acceptance.package_payloads(package)

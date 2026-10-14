@@ -138,7 +138,7 @@ def prepare(args):
     spec = importlib.util.spec_from_file_location('hyper_io_images', ROOT / 'scripts/io-vm-images.py')
     images = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(images)
-    kernel, ramfs = images.package_payloads(args.package)
+    kernel, ramfs = images.package_payloads(args.package, require_client_resources=True)
     original = gzip.decompress(ramfs.read_bytes())
     # The binary echo probe owns the named port exclusively in this fixture.
     expanded = original + overlay({
@@ -164,6 +164,7 @@ def prepare(args):
     shutil.copyfile(kernel, package / kernel_name)
     (package / ramfs_name).write_bytes(compressed)
     metadata = {'format': 1, 'architecture': 'aarch64', 'platform': 'qemu',
+                'client_table_version': 5,
                 'kernel': kernel_name, 'initramfs': ramfs_name,
                 'initramfs_expanded_size': len(expanded),
                 'initramfs_compressed_size': len(compressed)}

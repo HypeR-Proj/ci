@@ -141,7 +141,15 @@ def main():
             typed('echo GUEST_AFTER_IDLE')
             await_text(rb'\nGUEST_AFTER_IDLE\n~ # ')
             send(b'\x1d')
-            await_text(rb'd/q: detach, any other key: resume')
+            await_text(rb'd/q/Ctrl-\]: detach')
+            send(b'x')
+            await_text(rb'\[vmm\] invalid command; resuming console')
+            # The menu action is consumed locally, not prefixed to the next
+            # guest command, and the console remains attached and usable.
+            typed('echo GUEST_AFTER_INVALID_ACTION')
+            await_text(rb'\nGUEST_AFTER_INVALID_ACTION\n~ # ')
+            send(b'\x1d')
+            await_text(rb'd/q/Ctrl-\]: detach')
             pump(0.2)
             send(b'q')
             await_text(console_lines(b'[vmm] detached', b'hyper-sh$ '))

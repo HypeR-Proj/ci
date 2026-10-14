@@ -54,7 +54,7 @@ the same virtio-scsi/raw disk/cache=writeback configuration. Each boot receives
 a fresh copy of the same GPT/FAT32 image, using the production board's volume
 size and formatter defaults. The runner reads each copy before boot, so host
 cache state is warm. Linux mounts FAT32 with noatime. HypeR keeps its ordinary
-services and its 128 MiB, one-vCPU I/O VM, all within the outer resource budget;
+services and its 64 MiB, one-vCPU I/O VM, all within the outer resource budget;
 there are no business VMs and no added CPU affinity policy.
 
 The memory workload is compiled once at -O2 -march=armv8-a and the same object

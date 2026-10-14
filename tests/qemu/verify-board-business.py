@@ -42,7 +42,9 @@ def prepare(args):
         part for part in board['disk']['partitions'] if 'content' in part
     ] + [{'label': 'business', 'size-mib': 8}]
     board['virtual-machines'] = [{'name': 'business', 'image': 'vm/business.itb',
-                                  'autostart': False, 'disk': {'source': 'PARTLABEL=business'},
+                                  'autostart': False, 'disk': {
+                                      'source': 'PARTLABEL=business',
+                                      'backend': {'request-queues': 1, 'sg-prealloc': 32}},
                                   'configuration': {'vcpus': 1,
                                                     'memory-bytes': 128 * 1024 * 1024,
                                                     'bootargs': 'console=ttyAMA0 earlycon rdinit=/init loglevel=4 hyper.role=business hyper.test=hold'}}]

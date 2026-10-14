@@ -115,7 +115,7 @@ def main():
             await_text(rb'~ # ')
             process.stdin.write(b'\x1d')
             process.stdin.flush()
-            await_text(rb'\[vmm\] d/q: detach, any other key: resume')
+            await_text(rb'\[vmm\] d/q/Ctrl-\]: detach')
             process.stdin.write(b'd')
             process.stdin.flush()
             await_text(rb'\[vmm\] detached')

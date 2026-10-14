@@ -90,7 +90,7 @@ def boot(args, mode):
                              + rb'\s+running\s+yes\s+read-only\s+'
                              + re.escape(args.observed_image.encode()) + rb'\n', observed):
                 raise RuntimeError(f'I/O VM observation unavailable: {observed!r}')
-            if b'vCPUs:' not in observed or b'RAM capacity: 128 MiB' not in observed:
+            if b'vCPUs:' not in observed or b'RAM capacity: 64 MiB' not in observed:
                 raise RuntimeError(f'I/O VM metrics missing: {observed!r}')
             for affinity in args.io_configuration.get('affinity', []):
                 vcpu = affinity['vcpu']
@@ -120,7 +120,7 @@ def boot(args, mode):
             if memory is None:
                 raise RuntimeError(f'missing guest memory sample: {observed!r}')
             used, total, available, free = map(int, memory.groups())
-            if not 0 < total <= 128 * 1024 or used + available != total or not 0 <= free <= total:
+            if not 0 < total <= 64 * 1024 or used + available != total or not 0 <= free <= total:
                 raise RuntimeError(f'invalid guest memory sample: {observed!r}')
             # Observation is granted by the broker; no management capability is
             # held for this target, including console and placement operations.
