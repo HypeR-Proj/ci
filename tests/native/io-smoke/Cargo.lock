@@ -11,6 +11,25 @@ name = "hyper-block"
 version = "0.0.0"
 
 [[package]]
+name = "hyper-component"
+version = "0.0.0"
+dependencies = [
+ "hyper-component-config",
+ "hyper-os",
+ "hyper-service-ipc",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "hyper-component-config"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "hyper-io-smoke"
 version = "0.0.0"
 dependencies = [
@@ -19,6 +38,17 @@ dependencies = [
  "hyper-vm-image",
  "hyper-vm-policy",
  "hyper-vm-support",
+]
+
+[[package]]
+name = "hyper-journal"
+version = "0.0.0"
+dependencies = [
+ "hyper-os",
+ "hyper-rt",
+ "hyper-service-ipc",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -43,8 +73,20 @@ name = "hyper-service"
 version = "0.0.0"
 dependencies = [
  "hyper-block",
+ "hyper-component",
+ "hyper-journal",
+ "hyper-os",
+ "hyper-service-ipc",
+ "serde",
+]
+
+[[package]]
+name = "hyper-service-ipc"
+version = "0.0.0"
+dependencies = [
  "hyper-os",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

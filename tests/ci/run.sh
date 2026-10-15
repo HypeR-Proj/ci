@@ -112,7 +112,7 @@ case "${1:-}" in
         ;;
     native-gicv3)
         for shard in native-boot native-console native-terminal native-apps native-shell \
-            native-fleet native-storage-recovery native-filesystem native-runtime-crash native-vm; do
+            native-fleet native-services native-storage-recovery native-filesystem native-runtime-crash native-vm; do
             sh tests/ci/run.sh "$shard"
         done
         ;;
@@ -125,6 +125,9 @@ case "${1:-}" in
         ;;
     native-console|native-terminal|native-apps|native-shell)
         run_native_probe "test-${1#native-}"
+        ;;
+    native-services)
+        make test-services ARCH=aarch64
         ;;
     native-fleet)
         make image native-initramfs ARCH=aarch64

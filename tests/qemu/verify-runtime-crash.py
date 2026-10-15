@@ -18,11 +18,11 @@ def main():
     parser.add_argument('--isolation-only', action='store_true')
     args = parser.parse_args()
     command = native_command(args.qemu, args.image, args.initramfs)
-    failures = (b'HypeR: fatal', b'kernel panic', b'HypeR init: critical service ',
-                b'HypeR bootstrap-stage1-init: critical service ',
-                b'HypeR init: VM fleet configuration rejected',
-                b'HypeR init: bootstrap failed',
-                b'HypeR bootstrap-stage1-init: bootstrap failed')
+    failures = (b'HypeR: fatal', b'kernel panic', b'HypeR system-startup: critical service ',
+                b'[HypeR bootstrap stage 1][init] critical service ',
+                b'HypeR system-startup: VM fleet configuration rejected',
+                b'HypeR system-startup: bootstrap failed',
+                b'[HypeR bootstrap stage 1][init] bootstrap failed')
     with Session(command, args.logfile, failures=failures) as session:
         await_text = session.await_text
 
@@ -70,7 +70,7 @@ def main():
 
         # Admission and shell readiness may print in either order.
         await_text(rb'(?s)(?=.*HypeR session: console ready)'
-                   rb'(?=.*HypeR init: VM fleet configured)')
+                   rb'(?=.*HypeR system-startup: VM fleet configured)')
         await_text(rb'hyper-sh\$ ')
         wait_state(b'alpine', b'running')
         wait_state(b'survivor', b'running')

@@ -140,7 +140,7 @@ def run(args):
             raise TimeoutError('ordinary VM did not reach stopped state')
 
         try:
-            await_text(rb'HypeR bootstrap-stage1-io-runtime: ready; bootstrap mounts complete\n')
+            await_text(rb'\[HypeR bootstrap stage 1\]\[io-runtime\] ready; bootstrap mounts complete\n')
             await_text(rb'hyper-sh\$ ')
             # READY precedes init provisioning. Wait for its stopped definition
             # before replacing it with the CLI-created test VM; both cannot own

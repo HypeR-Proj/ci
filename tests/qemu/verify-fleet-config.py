@@ -12,20 +12,20 @@ from session import Session, native_command
 from shell_status import checked, status
 
 
-CONFIGURED = b'HypeR init: VM fleet configured'
+CONFIGURED = b'HypeR system-startup: VM fleet configured'
 REJECTED = b'HypeR vm-manager: fleet configuration rejected:'
-BOOT_FAILED = b'HypeR bootstrap-stage1-init: bootstrap failed'
-INIT_FAILURES = (BOOT_FAILED, b'HypeR init: bootstrap failed',
-                 b'HypeR bootstrap-stage1-init: critical service ',
-                 b'HypeR init: critical service ')
-DEGRADED = b'HypeR init: VM fleet configuration unavailable; Native services remain available'
+BOOT_FAILED = b'[HypeR bootstrap stage 1][init] bootstrap failed'
+INIT_FAILURES = (BOOT_FAILED, b'HypeR system-startup: bootstrap failed',
+                 b'[HypeR bootstrap stage 1][init] critical service ',
+                 b'HypeR system-startup: critical service ')
+DEGRADED = b'HypeR system-startup: VM fleet configuration unavailable; Native services remain available'
 GUEST_RUNNING = b'HypeR: vCPU 0 running as scheduler thread'
 CASES = ('empty', 'no-autostart', 'malformed', 'missing-image', 'start-failure')
 KERNEL_FAILURES = (b'HypeR: fatal', b'kernel panic', b'HypeR crash monitor')
 
 
 def validate_log(case, output):
-    if b'HypeR bootstrap-stage1-fallback-sh: recovery console ready' in output:
+    if b'[HypeR bootstrap stage 1][fallback-sh] recovery console ready' in output:
         raise AssertionError('fleet failure reopened bootstrap recovery')
     if any(marker in output for marker in KERNEL_FAILURES):
         raise AssertionError('kernel failure during fleet provisioning')

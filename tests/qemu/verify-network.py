@@ -351,7 +351,7 @@ def run(args):
             command, args.log, failures=failures,
             output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
         scenario = Scenario(session, url, digest, args.expect_tx_offload)
-        session.await_text(rb'HypeR bootstrap-stage1-io-runtime: ready; bootstrap mounts complete\n', timeout=180)
+        session.await_text(rb'\[HypeR bootstrap stage 1\]\[io-runtime\] ready; bootstrap mounts complete\n', timeout=180)
         # Storage readiness precedes formal terminal ownership. Commands sent
         # before the shell prompt can be discarded by the session's input reset.
         session.await_text(rb'hyper-sh\$ ', timeout=180)

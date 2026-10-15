@@ -53,7 +53,7 @@ def boot(args, mode):
                     if any(marker in pending for marker in (
                             b'Kernel panic', b'HypeR: fatal', b'HypeR KERNEL PANIC',
                             b'bootstrap failed', b'BOARD-STORAGE: ' + mode.encode() + b' FAIL',
-                            b'HypeR bootstrap-stage1-io-runtime: failed:', b'HypeR io-runtime: failed:')):
+                            b'[HypeR bootstrap stage 1][io-runtime] failed:', b'HypeR io-runtime: failed:')):
                         # Preserve the complete crash report before terminating
                         # QEMU; its banner often arrives in a separate read.
                         drain_until = time.monotonic() + 3
@@ -70,15 +70,15 @@ def boot(args, mode):
         try:
             if args.require_userspace_device:
                 await_text(rb'DEVICE-TEST: worker prepared\n')
-            boot = await_text(rb'HypeR bootstrap-stage1-io-runtime: ready; bootstrap mounts complete\n')
-            if b'HypeR bootstrap-stage1-io-runtime: IO VM: ' not in boot:
+            boot = await_text(rb'\[HypeR bootstrap stage 1\]\[io-runtime\] ready; bootstrap mounts complete\n')
+            if b'[HypeR bootstrap stage 1][io-runtime] IO VM: ' not in boot:
                 raise RuntimeError('forwarded I/O VM log prefix missing')
             await_text(rb'hyper-sh\$ ')
             child.stdin.write(f'/bin/storage-probe {mode}\n'.encode())
             child.stdin.flush()
             await_text(b'BOARD-STORAGE: ' + mode.encode() + b' PASS\n', timeout=600)
             await_text(rb'hyper-sh\$ ')
-            child.stdin.write(checked('cp /etc/hyper/services.json /data/copied-services.json'))
+            child.stdin.write(checked('cp /etc/hyper/components.json /data/copied-components.json'))
             child.stdin.flush()
             copied = await_text(rb'hyper-sh\$ ')
             if status(copied) != 0:

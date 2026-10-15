@@ -25,7 +25,7 @@ class FleetLogTests(unittest.TestCase):
         for output in (
             b'alpine failed\n' + fleet.BOOT_FAILED,
             fleet.REJECTED + b' missing image\n',
-            b"HypeR init: critical service 'session' terminated\n" + fleet.BOOT_FAILED,
+            b"HypeR system-startup: critical service 'session' terminated\n" + fleet.BOOT_FAILED,
         ):
             with self.assertRaises(AssertionError):
                 fleet.validate_log('malformed', output)

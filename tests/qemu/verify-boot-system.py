@@ -124,7 +124,7 @@ def memory_accounting(run):
 
 def retired_bootstrap(session, run, logfile):
     """Require resource takeover and archive detachment before ordinary work."""
-    marker = b'HypeR init: bootstrap retired; boot archive detached'
+    marker = b'HypeR bootstrap-retire: bootstrap retired; boot archive detached'
     deadline = time.monotonic() + 120
     while marker not in logfile.read_bytes():
         if time.monotonic() >= deadline:
@@ -137,10 +137,10 @@ def retired_bootstrap(session, run, logfile):
     processes = run('ps --no-headers')
     running = re.findall(rb'^process\s+0x[0-9a-f]+\s+-\s+(\S+)\s+running\b',
                          processes, re.MULTILINE)
-    for name in (b'fallback-sh',):
+    for name in (b'init', b'fallback-sh'):
         if name in running:
             raise AssertionError(f'bootstrap process remains live: {name!r}')
-    for name in (b'console-raw', b'io-runtime', b'fs-backend', b'init'):
+    for name in (b'console-raw', b'io-runtime', b'fs-backend', b'component-manager'):
         if running.count(name) != 1:
             raise AssertionError(f'expected one adopted {name!r}: {processes!r}')
     initial = re.search(rb'memory \(kernel initialized\): \d+ MiB RAM, (\d+) reserved pages',
@@ -179,18 +179,18 @@ def require_order(evidence, markers):
 def check_handoff_order(evidence):
     require_order(evidence, (
         b'EROFS mounted at /system',
-        b'HypeR bootstrap-stage1-init: provisional system root active; preparing successor',
-        b'HypeR init: core supervision adopted',
-        b'FAT mounted at /data', b'HypeR init: VM fleet configured',
-        b'HypeR init: bootstrap retired; boot archive detached',
+        b'[HypeR bootstrap stage 1][init] provisional system root active; preparing successor',
+        b'HypeR system-startup: core supervision adopted',
+        b'FAT mounted at /data',
+        b'HypeR bootstrap-retire: bootstrap retired; boot archive detached',
     ))
 
 
 def check_rollback_order(evidence):
     require_order(evidence, (
-        b'HypeR bootstrap-stage1-init: provisional system root active; preparing successor',
-        b'HypeR bootstrap-stage1-init: system handoff rejected; bootstrap root restored',
-        b'HypeR bootstrap-stage1-fallback-sh: recovery console ready',
+        b'[HypeR bootstrap stage 1][init] provisional system root active; preparing successor',
+        b'[HypeR bootstrap stage 1][init] system handoff rejected; bootstrap root restored',
+        b'[HypeR bootstrap stage 1][fallback-sh] recovery console ready',
     ))
     if b'core supervision transferred' in evidence or b'core supervision adopted' in evidence:
         raise AssertionError('candidate failure crossed the ownership commit boundary')
@@ -199,18 +199,19 @@ def check_rollback_order(evidence):
 def check_provider_rejection(case, evidence):
     """A rejected real replacement must leave the original mount serving."""
     require_order(evidence, (
-        b'HypeR init: core supervision adopted',
-        b'HypeR init: provider adoption failed:',
-        b'HypeR session: console ready',
+        b'HypeR system-startup: core supervision adopted',
+        b'HypeR system-startup: provider adoption failed:',
     ))
+    if b'HypeR session: console ready' not in evidence:
+        raise AssertionError('provider failure lost the formal terminal')
     if b'bootstrap retirement disabled' not in evidence:
         raise AssertionError('failed provider preparation did not disable retirement')
     for forbidden in (b'bootstrap retired; boot archive detached',
-                      b'bootstrap-stage1-fallback-sh: recovery console ready',
+                      b'[HypeR bootstrap stage 1][fallback-sh] recovery console ready',
                       b'HypeR fs-backend: filesystem ownership adopted'):
         if forbidden in evidence:
             raise AssertionError(f'rejected provider crossed its boundary: {forbidden!r}')
-    if b'bootstrap-stage1-fs-backend: adoption preparation failed; bootstrap mounts retained:' not in evidence:
+    if b'[HypeR bootstrap stage 1][fs-backend] adoption preparation failed; bootstrap mounts retained:' not in evidence:
         raise AssertionError('original filesystem manager did not resume administration')
     if case == 'missing-fs-erofs':
         if b'EROFS recognized for /, but filesystem worker is unavailable' not in evidence:
@@ -218,8 +219,6 @@ def check_provider_rejection(case, evidence):
         if b'HypeR io-runtime: running backend adopted' not in evidence:
             raise AssertionError('filesystem rejection fixture never adopted the I/O owner')
     elif case == 'missing-io-runtime':
-        if b'replacement preparation failed; bootstrap provider retained' not in evidence:
-            raise AssertionError('I/O candidate unexpectedly passed construction')
         if b'HypeR io-runtime: running backend adopted' in evidence:
             raise AssertionError('missing I/O candidate somehow adopted the live VM')
     else:
@@ -229,9 +228,9 @@ def check_provider_rejection(case, evidence):
 def retained_provider_io(run):
     """Exercise old live providers after formal init abandoned preparation."""
     run('ls /boot/init', rb'\binit\b')
-    for name in ('init', 'io-runtime', 'fs-backend', 'fs-erofs'):
+    for name in ('component-manager', 'io-runtime', 'fs-backend', 'fs-erofs'):
         run(f'ps --name {name}', name.encode() + rb'\s+running')
-    run('cat /etc/hyper/init.json', rb'services')
+    run('cat /etc/hyper/components.json', rb'configuration_directory')
     mounts = run('mount', rb' on / type erofs')
     if b' on /system type ' in mounts:
         raise AssertionError('retained manager reported the provisional root path')
@@ -251,17 +250,17 @@ def check_manager_evidence(case, output):
     """Require the intended failure boundary, not an unrelated fixture exit."""
     markers = {
         'absent': (),
-        'missing': (b"failed to launch service 'vm-manager': service image or resources unavailable",),
-        'exit': (b'VM-PROVISION-FIXTURE-EXIT', b"'vm-manager' terminated: reason=process-exited status=1"),
+        'missing': (b'HypeR system-startup: /vm-manager: ServiceUnavailable',),
+        'exit': (b'VM-PROVISION-FIXTURE-EXIT', b'/vm-manager generation=1 retired: ProcessExited { status: 1 }'),
         'closed-reply': (b'VM-PROVISION-FIXTURE-CLOSED-REPLY',
                          b'VM fleet result channel closed without a reply',
-                         b"'vm-manager' terminated: reason=requested"),
+                         b'/vm-manager generation=1 retired: Requested'),
         'invalid-reply': (b'VM-PROVISION-FIXTURE-INVALID-REPLY',
                           b'VM fleet configuration reply is invalid',
-                          b"'vm-manager' terminated: reason=requested"),
-        'configured-exit': (b'HypeR init: VM fleet configured',
+                          b'/vm-manager generation=1 retired: Requested'),
+        'configured-exit': (b'HypeR system-startup: VM fleet configured',
                             b'VM-PROVISION-FIXTURE-CONFIGURED',
-                            b"'vm-manager' terminated: reason=process-exited status=0"),
+                            b'/vm-manager generation=1 retired: ProcessExited { status: 0 }'),
         'no-config': (b'HypeR vm-manager: initial fleet configuration unavailable',),
     }
     for marker in markers[case]:
@@ -337,8 +336,9 @@ def main():
                   '--disk', str(args.disk), '--board', str(args.board)]
     args.log.parent.mkdir(parents=True, exist_ok=True)
     failures = (b'HypeR: fatal', b'HypeR KERNEL PANIC', b'Kernel panic',
-                b'HypeR init: bootstrap failed',
-                b'HypeR bootstrap-stage1-init: bootstrap failed')
+                b'HypeR component-manager: fatal after ownership commit:',
+                b'HypeR system-startup: bootstrap failed',
+                b'[HypeR bootstrap stage 1][init] bootstrap failed')
     if not any((args.recovery, args.missing_worker, args.missing_data_worker,
                 args.failed_handoff, args.missing_shell, args.manager_case, args.provider_case)):
         failures += (b'provider adoption failed', b'I/O adoption unconfirmed',
@@ -353,9 +353,9 @@ def main():
         if args.recovery or args.missing_worker or args.failed_handoff:
             session.await_text(rb'system init unavailable; retaining core supervision and recovery shell', 180)
         else:
-            session.await_text(rb'HypeR init: core supervision adopted', 240)
+            session.await_text(rb'HypeR system-startup: core supervision adopted', 240)
             if args.manager_case in ('exit', 'closed-reply', 'invalid-reply', 'configured-exit'):
-                session.await_text(rb"HypeR init: service 'vm-manager' terminated", 180)
+                session.await_text(rb'HypeR component-manager: /vm-manager generation=1 retired:', 180)
             elif args.provider_case or args.missing_data_worker or args.manager_case in ('missing', 'no-config'):
                 session.await_text(rb'VM fleet configuration unavailable', 180)
             elif args.manager_case == 'absent':
@@ -363,7 +363,7 @@ def main():
             elif args.recovery:
                 session.await_text(rb'VM fleet configuration unavailable', 180)
             else:
-                session.await_text(rb'HypeR init: VM fleet configured', 240)
+                session.await_text(rb'HypeR system-startup: VM fleet configured', 240)
         # Only failures before supervision transfer belong to bootstrap.
         # Formal mount/service failures keep the formal console.
         recovery = (args.recovery or args.missing_worker
@@ -371,11 +371,15 @@ def main():
         if args.missing_shell:
             for _ in range(3):
                 session.await_text(rb'HypeR session-manager: session ended:', 30)
-            if b'HypeR bootstrap-stage1-fallback-sh:' in args.log.read_bytes():
+            if b'[HypeR bootstrap stage 1][fallback-sh] ' in args.log.read_bytes():
                 raise AssertionError('missing formal shell reopened bootstrap recovery')
             print(f'Boot/system missing shell passed: {args.log}')
             return
         prompt = rb'fallback-sh\$ ' if recovery else rb'hyper-sh\$ '
+        # Optional service diagnostics may arrive after the interactive prompt.
+        # If waiting for them consumed it, request a fresh empty command prompt.
+        if re.search(prompt, args.log.read_bytes()) and not re.search(prompt, session.pending):
+            session.send(b'\n')
         session.await_text(prompt, 180)
 
         def run(text, expected=None, **kwargs):
@@ -389,7 +393,22 @@ def main():
 
         normal = not (recovery or args.recovery or args.missing_data_worker or args.manager_case)
         if normal:
+            boot = re.sub(rb'\x1b\[[0-9;]*[A-Za-z]', b'', args.log.read_bytes())
+            require_order(boot, (
+                b'[START  ] /bootstrap-retire',
+                b'[DONE   ] /bootstrap-retire',
+                b'>> bootstrap retired',
+                b'HypeR: startup complete',
+                b'hyper-sh$ ',
+            ))
             retired_bootstrap(session, run, args.log)
+            for name in ('io-runtime', 'fs-backend', 'console-raw'):
+                run(f'componentctl status /{name}', rb'/' + name.encode() + rb'\s+running')
+            run('journalctl -c /io-runtime', rb'/io-runtime#1.*running backend adopted')
+            run('journalctl -c /fs-backend', rb'/fs-backend#1 Stdout:.*filesystem ownership adopted')
+            run('journalctl -c /vm-manager', rb'/vm-manager#1 Stderr:.*HypeR vm-manager: ready')
+            run('componentctl stop /io-runtime', rb'ownership retirement protocol', fails=True)
+            run('componentctl status /io-runtime', rb'/io-runtime\s+running')
         run('pwd', rb'\n/\n')
         if recovery:
             run('help', rb'Recovery shell:')
@@ -405,7 +424,7 @@ def main():
             run('exit')
             run('pwd | sh -c pwd', rb'\n/\n')
         if args.missing_data_worker:
-            for name in ('init', 'io-runtime', 'fs-backend', 'vm-manager'):
+            for name in ('component-manager', 'io-runtime', 'fs-backend', 'vm-manager'):
                 run(f'ps --name {name}', name.encode() + rb'\s+running')
             mounts = run('mount', rb' on / type erofs')
             if b' on /data type ' in mounts:
@@ -432,7 +451,7 @@ def main():
         if args.manager_case:
             # Real Native storage and core service processes must survive all
             # business-manager failure boundaries, before and after handoff.
-            for name in ('io-runtime', 'fs-backend', 'init'):
+            for name in ('io-runtime', 'fs-backend', 'component-manager'):
                 run(f'ps --name {name}', name.encode() + rb'\s+running')
             processes = run('ps --name vm-manager')
             if args.manager_case == 'no-config':
@@ -452,7 +471,7 @@ def main():
             run('cat /data/manager-isolation.txt', rb'virtual-machines')
             run('rm /data/manager-isolation.txt')
         if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):
-            system_services = run('ls /svc', rb'\binit\b')
+            system_services = run('ls /svc', rb'\bcomponent-manager\b')
             for provider in (b'fs-fat', b'fs-erofs', b'fs-backend', b'io-runtime', b'console-raw'):
                 if not re.search(rb'\b' + provider + rb'\b', system_services):
                     raise AssertionError(f'missing formal provider {provider!r}')
@@ -503,7 +522,7 @@ def main():
             run('umount /data')
             run('mount /data')
             run('rm /data/boot-system-test.txt')
-    if not recovery and b'HypeR bootstrap-stage1-fallback-sh: recovery console ready' in args.log.read_bytes():
+    if not recovery and b'[HypeR bootstrap stage 1][fallback-sh] recovery console ready' in args.log.read_bytes():
         raise AssertionError('successful boot started the fallback shell')
     if not (recovery or args.recovery or args.missing_data_worker or args.manager_case):
         evidence = args.log.read_bytes()
@@ -512,7 +531,7 @@ def main():
         check_manager_evidence(args.manager_case, args.log.read_bytes())
     if args.missing_data_worker:
         evidence = args.log.read_bytes()
-        if b'HypeR init: formal mounts unavailable:' not in evidence:
+        if b'FAT recognized for /data, but filesystem worker is unavailable' not in evidence:
             raise AssertionError('missing FAT worker was not reported by formal init')
         if evidence.index(b'core supervision adopted') > evidence.index(b'FAT recognized for /data'):
             raise AssertionError('data failure occurred before formal handoff')

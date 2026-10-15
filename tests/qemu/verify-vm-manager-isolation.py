@@ -47,23 +47,35 @@ def main():
             fixtures[case] = fixture
         system = work / 'system-root'
         shutil.copytree(args.system_root, system, symlinks=True)
-        manifest_path = system / 'etc/hyper/services.json'
-        original = manifest_path.read_text()
+        init = json.loads((system / 'etc/hyper/components.json').read_text())
+        unit_directory = system / init['configuration_directory'].lstrip('/')
+        original = {path.name: path.read_text() for path in unit_directory.glob('*.json')}
+        policy_path = system / 'etc/hyper/startup.json'
+        original_policy = policy_path.read_text()
         for case in args.cases:
-            manifest = json.loads(original)
+            policy = json.loads(original_policy)
+            units = {name: json.loads(text) for name, text in original.items()}
             manager = system / 'svc/vm-manager'
             if manager.exists():
                 manager.unlink()
             if case == 'absent':
-                manifest['services'] = [item for item in manifest['services']
-                                        if item['name'] != 'vm-manager']
-                manifest.pop('virtual-machines', None)
+                del units['vm-manager.json']
+                units['root.json']['children'] = [c for c in units['root.json']['children'] if c['name'] != 'vm-manager']
+                policy['applications'] = [a for a in policy['applications'] if a['component'] != '/vm-manager']
             elif case == 'no-config':
-                manifest.pop('virtual-machines', None)
+                for application in policy['applications']:
+                    if application['component'] == '/vm-manager':
+                        application.pop('fleet', None)
                 shutil.copy2(args.system_root / 'svc/vm-manager', manager)
             elif case in fixtures:
                 shutil.copy2(fixtures[case], manager)
-            manifest_path.write_text(json.dumps(manifest, indent=2) + '\n')
+            policy_path.write_text(json.dumps(policy))
+            for name in original:
+                path = unit_directory / name
+                if name in units:
+                    path.write_text(json.dumps(units[name], indent=2) + '\n')
+                else:
+                    path.unlink(missing_ok=True)
             # Missing executable is intentional; verify runtime degradation
             # rather than sending the deliberately incomplete tree to a packer
             # which checks executable presence in the bootstrap archive.

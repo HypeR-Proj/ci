@@ -41,7 +41,7 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
         targets = {arg for call in commands if call[0] == 'make'
                    for arg in call[1:] if arg.startswith('test-')}
         self.assertEqual(targets, {
-            'test-native', 'test-console', 'test-terminal', 'test-apps', 'test-shell',
+            'test-native', 'test-console', 'test-terminal', 'test-apps', 'test-shell', 'test-services',
             'test-fleet-config', 'test-storage-failure', 'test-filesystem-failure',
             'test-runtime-crash', 'test-vm-smoke',
         })

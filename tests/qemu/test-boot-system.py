@@ -23,10 +23,10 @@ class RetirementEvidenceTests(unittest.TestCase):
             log = Path(directory) / 'console.log'
             log.write_bytes(
                 b'HypeR: memory (kernel initialized): 1024 MiB RAM, 10 reserved pages\n'
-                b'HypeR init: bootstrap retired; boot archive detached\n')
+                b'HypeR bootstrap-retire: bootstrap retired; boot archive detached\n')
             processes = b''.join(
                 b'process 0x01 - ' + name + b' running threads=1 pending=0\n'
-                for name in (b'console-raw', b'io-runtime', b'fs-backend', b'init'))
+                for name in (b'console-raw', b'io-runtime', b'fs-backend', b'component-manager'))
             outputs = {
                 'ls /boot/init': b'ls: /boot/init: not found\n',
                 'ls -1 /boot': boot_entries,
@@ -79,10 +79,10 @@ class RootHandoffEvidenceTests(unittest.TestCase):
     def test_root_is_switched_before_candidate_adopts_owners(self):
         markers = (
             b'EROFS mounted at /system',
-            b'HypeR bootstrap-stage1-init: provisional system root active; preparing successor',
-            b'HypeR init: core supervision adopted',
-            b'FAT mounted at /data', b'HypeR init: VM fleet configured',
-            b'HypeR init: bootstrap retired; boot archive detached',
+            b'[HypeR bootstrap stage 1][init] provisional system root active; preparing successor',
+            b'HypeR system-startup: core supervision adopted',
+            b'FAT mounted at /data', b'HypeR system-startup: VM fleet configured',
+            b'HypeR bootstrap-retire: bootstrap retired; boot archive detached',
         )
         boot.check_handoff_order(b'\n'.join(markers))
         with self.assertRaises(AssertionError):
@@ -90,9 +90,9 @@ class RootHandoffEvidenceTests(unittest.TestCase):
 
     def test_recovery_requires_namespace_rollback_before_prompt(self):
         markers = (
-            b'HypeR bootstrap-stage1-init: provisional system root active; preparing successor',
-            b'HypeR bootstrap-stage1-init: system handoff rejected; bootstrap root restored',
-            b'HypeR bootstrap-stage1-fallback-sh: recovery console ready',
+            b'[HypeR bootstrap stage 1][init] provisional system root active; preparing successor',
+            b'[HypeR bootstrap stage 1][init] system handoff rejected; bootstrap root restored',
+            b'[HypeR bootstrap stage 1][fallback-sh] recovery console ready',
         )
         boot.check_rollback_order(b'\n'.join(markers))
         with self.assertRaises(AssertionError):
@@ -107,10 +107,10 @@ class RootHandoffEvidenceTests(unittest.TestCase):
 class ProviderRejectionEvidenceTests(unittest.TestCase):
     def evidence(self, case):
         common = (
-            b'HypeR init: core supervision adopted',
-            b'HypeR init: provider adoption failed: bootstrap retirement disabled; '
+            b'HypeR system-startup: core supervision adopted',
+            b'HypeR system-startup: provider adoption failed: bootstrap retirement disabled; '
             b'replacement preparation failed; bootstrap provider retained',
-            b'HypeR bootstrap-stage1-fs-backend: adoption preparation failed; bootstrap mounts retained: closed',
+            b'[HypeR bootstrap stage 1][fs-backend] adoption preparation failed; bootstrap mounts retained: closed',
             b'HypeR session: console ready',
         )
         if case == 'missing-fs-erofs':
@@ -125,14 +125,14 @@ class ProviderRejectionEvidenceTests(unittest.TestCase):
     def test_wrong_failure_boundary_or_retirement_cannot_pass(self):
         for case in boot.PROVIDER_REJECTIONS:
             evidence = self.evidence(case)
-            for extra in (b'HypeR init: bootstrap retired; boot archive detached',
-                          b'HypeR bootstrap-stage1-fallback-sh: recovery console ready',
+            for extra in (b'HypeR bootstrap-retire: bootstrap retired; boot archive detached',
+                          b'[HypeR bootstrap stage 1][fallback-sh] recovery console ready',
                           b'HypeR fs-backend: filesystem ownership adopted'):
                 with self.subTest(case=case, extra=extra), self.assertRaises(AssertionError):
                     boot.check_provider_rejection(case, evidence + b'\n' + extra)
             with self.assertRaises(AssertionError):
                 boot.check_provider_rejection(case, evidence.replace(
-                    b'bootstrap-stage1-fs-backend: adoption preparation failed;', b'unrelated:'))
+                    b'[HypeR bootstrap stage 1][fs-backend] adoption preparation failed;', b'unrelated:'))
         with self.assertRaises(AssertionError):
             boot.check_provider_rejection('missing-fs-erofs', self.evidence('missing-io-runtime'))
         with self.assertRaises(AssertionError):

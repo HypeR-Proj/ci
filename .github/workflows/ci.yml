@@ -138,6 +138,9 @@ jobs:
         include:
           - suite: native-sdk
             name: SDK and app contracts
+          - suite: native-services
+            name: Service lifecycle and journal
+            gic: 3
           - suite: native-fleet
             name: Fleet configuration
           - suite: native-storage-recovery
@@ -185,6 +188,8 @@ jobs:
           name: aarch64-${{ matrix.suite }}-${{ matrix.gic || 3 }}-logs
           path: |
             target/app/aarch64/*.log
+            target/app/aarch64/services.*/*.log
+            target/app/aarch64/storage-failure/*.log
             target/stack-audit/aarch64/*.json
             target/stack-audit/aarch64/*.log
             target/ci/aarch64-stack16.config

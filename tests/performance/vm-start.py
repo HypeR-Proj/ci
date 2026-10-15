@@ -94,7 +94,7 @@ def boot(args, index):
     start = time.monotonic()
     with Session(command, folder / 'serial.log', failures=(b'HypeR: fatal', b'HypeR KERNEL PANIC',
                  b'Kernel panic', b'HypeR vm-runtime: failed',
-                 b'HypeR bootstrap-stage1-io-runtime: failed', b'HypeR io-runtime: failed')) as vm:
+                 b'[HypeR bootstrap stage 1][io-runtime] failed', b'HypeR io-runtime: failed')) as vm:
         starts = [start_result(vm, start, 0)]
         for restart in range(1, args.starts):
             stop(vm, restart)
