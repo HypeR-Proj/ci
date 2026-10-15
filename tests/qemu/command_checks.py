@@ -4,9 +4,11 @@
 """User-facing command options exercised through Native processes and the VFS."""
 
 import re
+import json
 
 
 def verify_command_options(run):
+    verify_memory_statistics(run)
     run('ldd --help', rb'Inspect Native ELF')
     dependencies = run('ldd /bin/vmm', rb'libhyper_vm_policy_shared.so => /lib64/')
     if dependencies.count(b'libhyper_rust_std.so =>') != 1:
@@ -66,3 +68,28 @@ def verify_command_options(run):
         raise AssertionError(f'free did not report two MiB samples: {samples!r}')
     run('handle shell --summary --kind directory --no-headers', rb'\ndirectory\s+[1-9]\d*\s+[1-9]\d*\n')
     run('handle --summary --kind process', rb'\nprocess\s+[1-9]\d*\n')
+
+
+def verify_memory_statistics(run):
+    """Check the shipped diagnostic ABI and persistence without timing thresholds."""
+    run('memstat --save /tmp/memory-before.json', rb'owner.page_tables.resident_pages')
+    run('memstat --save /tmp/memory-before.json', rb'memstat:', failed=True)
+    run('memstat --diff /tmp/memory-before.json --classes', rb'CHANGE')
+    output = run('memstat --json')
+    begin = output.find(b'{')
+    if begin < 0:
+        raise AssertionError(f'no memory statistics JSON: {output!r}')
+    sample, _ = json.JSONDecoder().raw_decode(output[begin:].decode())
+    if sample['version'] != 1 or sample['started_at_ns'] > sample['finished_at_ns']:
+        raise AssertionError(f'invalid memory statistics envelope: {sample!r}')
+    metrics = sample['metrics']
+    for key in ('heap.live_objects', 'heap.allocations', 'file_cache.index_capacity',
+                'buddy.order_18.free_blocks', 'owner.page_tables.resident_pages'):
+        if key not in metrics:
+            raise AssertionError(f'missing diagnostic metric: {key}')
+    classes = [key for key in metrics if key.startswith('heap_class.')]
+    if bool(classes) != sample['heap_profiling']:
+        raise AssertionError('heap class availability disagrees with configuration')
+    run('echo invalid > /tmp/memory-invalid.json')
+    run('memstat --diff /tmp/memory-invalid.json', rb'memstat:', failed=True)
+    run('rm /tmp/memory-before.json /tmp/memory-invalid.json')
