@@ -55,7 +55,7 @@ case "${1:-}" in
         run_kernel_suite quality
         ;;
     scripts)
-        python3 -B lib/terminal/tests/linux-formatting.py
+        python3 -B svc/terminal-service/tests/linux-formatting.py
         python3 -B tests/ci/test-install-tools.py
         python3 -B tests/ci/test-native-fixture.py
         python3 -B tests/ci/test-suites.py
