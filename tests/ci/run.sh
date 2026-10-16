@@ -123,7 +123,10 @@ case "${1:-}" in
                 run_native_probe test-native QEMU_CPUS="$cpus"
         done
         ;;
-    native-console|native-terminal|native-apps|native-shell)
+    native-apps)
+        run_native_probe test-apps test-editor
+        ;;
+    native-console|native-terminal|native-shell)
         run_native_probe "test-${1#native-}"
         ;;
     native-services)

@@ -130,13 +130,60 @@ class ProviderRejectionEvidenceTests(unittest.TestCase):
                           b'HypeR fs-backend: filesystem ownership adopted'):
                 with self.subTest(case=case, extra=extra), self.assertRaises(AssertionError):
                     boot.check_provider_rejection(case, evidence + b'\n' + extra)
-            with self.assertRaises(AssertionError):
-                boot.check_provider_rejection(case, evidence.replace(
-                    b'[HypeR bootstrap stage 1][fs-backend] adoption preparation failed;', b'unrelated:'))
         with self.assertRaises(AssertionError):
             boot.check_provider_rejection('missing-fs-erofs', self.evidence('missing-io-runtime'))
         with self.assertRaises(AssertionError):
             boot.check_provider_rejection('missing-io-runtime', self.evidence('missing-fs-erofs'))
+
+    def test_bootstrap_diagnostic_can_be_split_by_successor_mirror(self):
+        bootstrap = (b'[    5.286838][HypeR bootstrap stage 1][fs-backend] '
+                     b'adoption preparation failed; bootstrap mounts retained: InvalidResponse\n')
+        for case in boot.PROVIDER_REJECTIONS:
+            lines = self.evidence(case).splitlines(keepends=True)
+            # CI observed the formal failure report inside the bootstrap prefix.
+            # Both mirrors remain live when replacement preparation is rejected.
+            for offset in range(len(bootstrap)):
+                evidence = (lines[0] + bootstrap[:offset] + lines[1]
+                            + bootstrap[offset:] + b''.join(lines[3:]))
+                with self.subTest(case=case, offset=offset):
+                    boot.check_provider_rejection(case, evidence)
+
+    def test_recovery_requires_successful_administration_and_persistent_io(self):
+        responses = {
+            'ls /boot/init': b'init\n',
+            'cat /etc/hyper/components.json': b'configuration_directory\n',
+            'mount': b'PARTUUID=test on / type erofs (ro)\n',
+            'cat /data/provider-rejection.txt': b'\nPROVIDER-REJECTION-IO\n',
+        }
+        for name in ('component-manager', 'io-runtime', 'fs-backend', 'fs-erofs'):
+            responses[f'ps --name {name}'] = name.encode() + b' running\n'
+
+        def exercise(fail_at=None, corrupt_read=False):
+            session = Mock()
+            seen = []
+
+            def run(command, expected=None):
+                seen.append(command)
+                rc = 1 if len(seen) == fail_at else 0
+                output = responses.get(command, b'')
+                if corrupt_read and command == 'cat /data/provider-rejection.txt':
+                    output = b'wrong content\n'
+                session.await_text.return_value = (
+                    output + f'\nHYPER-COMMAND-STATUS={rc}\nhyper-sh$ '.encode())
+                return boot.command(session, command, expected)
+
+            boot.retained_provider_io(run)
+            return seen
+
+        commands = exercise()
+        # Each transition and read must fail the scenario even if the earlier
+        # diagnostic claims the old filesystem provider survived.
+        for position in range(1, len(commands) + 1):
+            with self.subTest(command=commands[position - 1], position=position):
+                with self.assertRaises(AssertionError):
+                    exercise(fail_at=position)
+        with self.assertRaises(AssertionError):
+            exercise(corrupt_read=True)
 
     def test_fault_fixture_only_changes_its_new_system_copy(self):
         with tempfile.TemporaryDirectory() as directory:

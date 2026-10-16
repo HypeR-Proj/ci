@@ -43,7 +43,7 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
         self.assertEqual(targets, {
             'test-native', 'test-console', 'test-terminal', 'test-apps', 'test-shell', 'test-services',
             'test-fleet-config', 'test-storage-failure', 'test-filesystem-failure',
-            'test-runtime-crash', 'test-vm-smoke',
+            'test-runtime-crash', 'test-vm-smoke', 'test-editor',
         })
 
     def test_board_shards_keep_minimum_stacks_and_instrumentation(self):

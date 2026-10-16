@@ -211,8 +211,9 @@ def check_provider_rejection(case, evidence):
                       b'HypeR fs-backend: filesystem ownership adopted'):
         if forbidden in evidence:
             raise AssertionError(f'rejected provider crossed its boundary: {forbidden!r}')
-    if b'[HypeR bootstrap stage 1][fs-backend] adoption preparation failed; bootstrap mounts retained:' not in evidence:
-        raise AssertionError('original filesystem manager did not resume administration')
+    # The predecessor's raw console can overlap the successor's journal mirror.
+    # Its recovery banner is not an atomic serial record. retained_provider_io()
+    # proves resumed administration through mount/unmount and persisted I/O.
     if case == 'missing-fs-erofs':
         if b'EROFS recognized for /, but filesystem worker is unavailable' not in evidence:
             raise AssertionError('replacement failed outside worker preparation')
