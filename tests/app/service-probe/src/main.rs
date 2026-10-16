@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Native lifecycle/stdio probe. The plain mode deliberately uses only std I/O.
-use std::{io::Read, time::Duration};
+use std::{
+    io::{Read, Write},
+    time::Duration,
+};
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     match std::env::args().nth(1).as_deref() {
@@ -13,6 +16,29 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
             println!("SERVICE_STDOUT_OK");
             eprintln!("SERVICE_STDERR_OK");
+        }
+        Some("journal-burst") => {
+            let label = std::env::args()
+                .nth(2)
+                .ok_or("missing journal source label")?;
+            let payload = |stream: &str| {
+                let mut text: String = (0..96)
+                    .map(|i| format!("JOURNAL_BURST {label} {stream} {i:03}\n"))
+                    .collect();
+                text.push_str(&format!("JOURNAL_BURST {label} {stream} EOF"));
+                text
+            };
+            let output = payload("out");
+            let errors = payload("err");
+            let writer = std::thread::spawn(move || -> std::io::Result<()> {
+                let mut stdout = std::io::stdout().lock();
+                stdout.write_all(output.as_bytes())?;
+                stdout.flush()
+            });
+            let mut stderr = std::io::stderr().lock();
+            stderr.write_all(errors.as_bytes())?;
+            stderr.flush()?;
+            writer.join().map_err(|_| "stdout writer failed")??;
         }
         Some("fail") => {
             eprintln!("SERVICE_FAILURE_ATTEMPT");
@@ -161,7 +187,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         _ => {
             return Err(
-                "expected plain, fail, memory-lock, echo, connect, idle, timeout, observe, or ipc"
+                "expected plain, journal-burst, fail, memory-lock, echo, connect, idle, timeout, observe, or ipc"
                     .into(),
             );
         }

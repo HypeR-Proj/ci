@@ -60,6 +60,10 @@ def prepare(args):
         value['capabilities'] = [{'name': 'echo', 'kind': protocol}]
         value['expose'] = [{'name': 'echo', 'from': 'self', 'source': 'echo', 'kind': protocol}]
         write(value)
+    for name in ('burst-a', 'burst-b'):
+        value = component(name, 'journal-burst')
+        value['program']['arguments'].append(name)
+        write(value)
     for name, mode, provider in [('client', 'connect', 'server'), ('timeout', 'timeout', 'silent')]:
         value = component(name, mode)
         value['use'] = [{'name': 'echo', 'kind': protocol}]
@@ -160,6 +164,28 @@ def run(args):
             raise AssertionError('read-only observer mutation was not rejected')
         if b'SERVICE_LARGE_REPLY_OK' not in command('journalctl -c /tests/ipc'):
             raise AssertionError('large IPC reply framing failed')
+        command('componentctl start /tests/burst-a; componentctl start /tests/burst-b')
+        for name in ('burst-a', 'burst-b'):
+            state('/tests/' + name, 'completed')
+            # Process completion does not imply journal EOF has been consumed.
+            until = time.monotonic() + 30
+            while True:
+                logs = command('journalctl -c /tests/' + name + ' -n 256')
+                records = re.findall(
+                    rb'/tests/' + name.encode() + rb'#1 (Stdout|Stderr): JOURNAL_BURST (\S+) (out|err) (\d{3}|EOF)( \[partial\])?',
+                    logs,
+                )
+                if len(records) == 194:
+                    break
+                if time.monotonic() >= until:
+                    raise AssertionError(f'incomplete batched journal for {name}: {logs!r}')
+                vm.pump(0.1)
+            for stream, tag in ((b'Stdout', b'out'), (b'Stderr', b'err')):
+                actual = [(label, kind, value, partial) for channel, label, kind, value, partial in records if channel == stream]
+                expected = [(name.encode(), tag, f'{i:03}'.encode(), b'') for i in range(96)]
+                expected.append((name.encode(), tag, b'EOF', b' [partial]'))
+                if actual != expected:
+                    raise AssertionError(f'batch order, framing or attribution changed: {actual!r}')
         command('componentctl routes /tests/client echo')
         for generation in (1, 2):
             command('componentctl start /tests/client')
