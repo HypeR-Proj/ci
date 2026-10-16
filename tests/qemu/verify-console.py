@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Exercise paced terminal input, stale readiness, and bidirectional pressure."""
+from functools import partial
 import os
 import random
 import re
@@ -27,7 +28,8 @@ def main():
         raise ValueError("HYPER_TEST_VM must be 0 or 1")
     verify_vm = verify_vm == "1"
     command = native_command(qemu, image, initramfs)
-    with Session(command, logfile, output_filter=append_console_output) as session:
+    with Session(command, logfile,
+                 output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
         pending = session.pending
         pump = session.pump
         send = session.send

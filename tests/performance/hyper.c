@@ -7,11 +7,25 @@
 #include <hyper/syscall.h>
 #include <string.h>
 
+static void output_number(uint64_t value)
+{
+	char digits[20];
+	size_t first = sizeof(digits);
+	do {
+		digits[--first] = '0' + value % 10;
+		value /= 10;
+	} while (value);
+	bench_output(digits + first, sizeof(digits) - first);
+}
+
 _Noreturn void bench_fail(const char *operation, int64_t error)
 {
-	(void)error;
 	bench_output("BENCH-FAIL: ", 12);
 	bench_output(operation, strlen(operation));
+	bench_output(" status=", 8);
+	if (error < 0)
+		bench_output("-", 1);
+	output_number(error < 0 ? 0 - (uint64_t)error : (uint64_t)error);
 	bench_output("\n", 1);
 	hyper_process_exit(1);
 }
@@ -54,8 +68,12 @@ void bench_read(uint64_t file, uint64_t offset, void *buffer, size_t size)
 	while (size) {
 		size_t actual = 0;
 		int64_t status = __hyper_std_fs_read(file, offset, buffer, size, &actual);
-		if (status || !actual || actual > size)
+		if (status || !actual || actual > size) {
+			bench_output("BENCH-IO: read offset=", 22);
+			output_number(offset);
+			bench_output("\n", 1);
 			bench_fail("read", status);
+		}
 		offset += actual;
 		buffer = (char *)buffer + actual;
 		size -= actual;
@@ -68,8 +86,12 @@ void bench_write(uint64_t file, uint64_t offset, const void *buffer, size_t size
 		size_t actual = 0;
 		uint64_t end = 0;
 		int64_t status = __hyper_std_fs_write(file, offset, 0, buffer, size, &actual, &end);
-		if (status || !actual || actual > size)
+		if (status || !actual || actual > size) {
+			bench_output("BENCH-IO: write offset=", 23);
+			output_number(offset);
+			bench_output("\n", 1);
 			bench_fail("write", status);
+		}
 		offset += actual;
 		buffer = (const char *)buffer + actual;
 		size -= actual;

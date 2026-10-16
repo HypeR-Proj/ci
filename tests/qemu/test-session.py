@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Exercise serial transport using small controlled child processes, not QEMU."""
+from functools import partial
 from pathlib import Path
 import sys
 import tempfile
@@ -71,6 +72,28 @@ class SessionTests(unittest.TestCase):
                     output_filter=append_console_output
                 ) as session:
                     session.await_text(b'READY')
+
+    def test_guest_printk_splitting_echo_does_not_block_enter(self):
+        raw = (b'\x1b[6necho HYPER_GUEST_CONS'
+               b'[    8.346375] hrtimer: interrupt took 2075120 ns\nOLE_RX')
+        result = b'\nHYPER_GUEST_CONSOLE_RX\n'
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'raw.log'
+            # Await Enter after echo, as BusyBox does. The test must not need
+            # a rescue key to advance beyond an interleaved diagnostic.
+            script = (f'import sys,time; data={raw!r}; '
+                      '[(sys.stdout.buffer.write(bytes([b])), sys.stdout.flush(), '
+                      'time.sleep(0.001)) for b in data]; '
+                      'assert sys.stdin.buffer.read(1) == b"\\r"; '
+                      f'sys.stdout.buffer.write({result!r}); sys.stdout.flush(); time.sleep(30)')
+            with self.session(
+                script, log,
+                output_filter=partial(append_console_output, filter_guest_logs=True)
+            ) as session:
+                session.await_text(rb'echo HYPER_GUEST_CONSOLE_RX', timeout=5)
+                session.send(b'\r')
+                session.await_text(rb'\nHYPER_GUEST_CONSOLE_RX\n', timeout=5)
+            self.assertEqual(log.read_bytes(), raw + result)
 
     def test_timeout_reaps_owned_process(self):
         with tempfile.TemporaryDirectory() as directory:

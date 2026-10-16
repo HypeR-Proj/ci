@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Native boot acceptance: explicit phases, command receipts and scoped evidence."""
+from functools import partial
 import os
 from pathlib import Path
 import re
@@ -33,8 +34,10 @@ def main():
                 b'bootstrap failed', b'fatal after ownership commit', b'critical service ',
                 b'VM fleet configuration rejected', b'VM fleet result channel closed',
                 b'VM fleet configuration reply is invalid', b'VM provisioning channel closed')
+    # Guest printk can split even command echo. Preserve it in the raw log,
+    # but reassemble terminal bytes before matching interactive responses.
     with Session(native_command(qemu, image, initramfs), log, failures=failures,
-                 output_filter=append_console_output) as vm:
+                 output_filter=partial(append_console_output, filter_guest_logs=True)) as vm:
         shell = Shell(vm)
         journal = Journal(shell)
 

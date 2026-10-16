@@ -218,8 +218,9 @@ geometry, allocator ownership statistics, and lazy guest demand paging.
 The separate Native suite validates guest userspace and interactive console
 input. The kernel matrix also requires Native dispatcher validation, bounded Channel
 transaction tests, and the AArch64 VHE raw-code EL0 proof: repeated direct
-`abi_query`, scheduling and lifecycle calls, Event creation/signal/wait,
-contained breakpoint fault,
+`abi_query` and unsupported-call returns, scheduling and lifecycle calls, Event
+creation/signal/wait, active COW copyout, blocked syscall migration with FP/TLS
+preservation, contained breakpoint fault,
 Process/Thread join, and acknowledged retirement.
 
 The standalone AArch64 runner explicitly uses multithreaded TCG. With at least
@@ -242,6 +243,12 @@ Two further boots use separate system-image copies missing the formal I/O runtim
 or EROFS worker. They require failed replacement preparation to retain the original
 providers and `/boot`, keep the formal shell available, and serve mount, write,
 unmount and remount requests through the retained filesystem manager.
+Three mounted-worker fault cases replace only the formal FAT executable with a
+test provider that never writes media. Explicit process exit and a user CPU
+exception must be observable in the journal and component/mount status, while
+root listing still displays healthy entries and `/tmp` remains usable. A fault
+after namespace detach must retain its diagnostic after the mount owner drops. The
+fault provider is not built or packaged in the default system profile.
 The fallback shell does not receive a formal loader or formal shell delegation;
 the recovery cases do not launch a system shell through it. Separate synthetic
 storage-failure acceptance includes formal-shell failure after handoff, which
