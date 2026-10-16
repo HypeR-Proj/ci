@@ -144,9 +144,66 @@ of the overall test budget.
 The separate guest SMP scenario allows a fixed 300 seconds for each guest boot
 or reboot on shared TCG runners; ordinary commands retain a 90-second deadline.
 On failure it prints the raw serial tail, including filtered guest boot records.
-Ordinary command submissions wait for the expected shell prompt count, so a
-child's final output cannot trigger input intended for its successor. Interactive
-guest console and std input probes instead use their own readiness markers.
+Native boot, application, fleet, runtime-crash, service and storage-recovery
+command assertions use the result protocol described below. Interactive guest
+console and terminal input probes use their own readiness markers.
+
+## QEMU observations
+
+Choose the oracle for the behavior being tested:
+
+* `Session` owns QEMU, deadlines, raw serial archival and process cleanup.
+  `await_text` consumes the interactive cursor. `observe` reads the archive with
+  an independent cursor; use `mark()` before an action when old evidence must
+  not satisfy a new assertion. A prompt is terminal output, not service readiness
+  or proof that asynchronous logs have all arrived.
+* `command.Shell` runs finite formal-shell commands once. Commands enter through
+  bracketed paste to avoid per-character echo delays under concurrent kernel
+  logs. It captures merged
+  stdout/stderr in `/tmp`, then the development-only `/bin/test-report` exports
+  numbered hex chunks and a footer carrying the command's status, byte length
+  and FNV-1a checksum of **status and payload**. The saved status is bound to the
+  command token and written inside the capture group: failed output/status
+  writes cannot reuse a previous command's result. A fresh token identifies every
+  command and a separate builtin receipt establishes return to the shell after
+  the exporter has exited. Echo, stale prompts and unrelated logs cannot become
+  command results. Bad transmission permits at most two re-reads of the saved
+  result with fresh transfer tokens, within the original deadline; the command
+  is never retried. Persistent corruption is an observation failure, not a
+  successful test. Exported results are limited to 1 MiB; commands must bound
+  their captured output and wait for their writers to finish. This checksum
+  detects accidental corruption, not malicious tampering.
+* `journal.Journal` queries bounded JSON pages through `journalctl --json`, pins
+  the snapshot's upper cursor, and checks component, generation and stream.
+  Wait for the expected records explicitly: process completion does not imply
+  that journal ingestion has reached EOF. Retention drops or rejected sources
+  invalidate completeness assertions; dropped serial mirror bytes do not.
+  A stalled or regressing page cursor cannot complete a partial snapshot.
+  Journal is a bounded diagnostic store, not an unlimited full-log archive.
+* Raw terminal/editor/pager tests continue to exercise actual bytes and UI
+  behavior. Redirecting those commands would change the thing under test.
+  Bootstrap recovery cannot depend on a formal journal or test exporter. Require
+  the recovery operation and namespace/lifecycle outcome; diagnostic prefixes
+  and message bodies from separate writers need not be adjacent on the UART.
+
+The result helper has no kernel/ABI hooks, special capabilities or bootstrap
+dependencies and is absent from the normal `system` build profile. Test results
+remain on the host beside each raw log in `.log.commands/`, with command text,
+exit status, exact output bytes and any damaged transfers. CI uploads these
+directories with serial logs on both success and failure. Host regression tests
+inject split reads, interleaved logs, old prompts, corrupted status/payload,
+missing/reordered chunks, source loss and delayed generations. They also execute
+the actual Rust exporter against a host shell to check side effects are not
+repeated by a result re-read.
+
+Capture commands must wait for their output writers before returning; detached
+background writers and shell replacement/exit belong in dedicated scenarios.
+Session cleanup checks fatal diagnostics drained after the final assertion too.
+
+Existing board/device-specific and early-kernel serial runners still require
+their own device evidence; do not replace genuine device/terminal checks with a
+journal banner. New ordinary command assertions should use the shared result
+protocol instead of adding prompt counters or another subprocess/read loop.
 
 The AArch64 QEMU matrix covers one and four CPUs with the VHE-capable `max`
 model, plus constrained-memory and 42-bit compact-address-space cases. FEAT_VHE

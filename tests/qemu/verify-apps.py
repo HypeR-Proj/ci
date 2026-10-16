@@ -11,7 +11,7 @@ import time
 from session import Session, native_command
 from handle_checks import verify_handles
 from command_checks import verify_command_options
-from shell_status import checked, status
+from command import Shell
 
 
 def main():
@@ -25,11 +25,10 @@ def main():
         await_text = session.await_text
         send = session.send
 
+        shell = Shell(session)
+
         def run(text, expected=None, failed=False, timeout=60):
-            send(checked(text))
-            output = await_text(rb'hyper-sh\$ ', timeout=timeout)
-            if (status(output) != 0) != failed:
-                raise AssertionError(f'{text}: unexpected exit status: {output!r}')
+            output = shell.check(text, failed=failed, timeout=timeout)
             if expected is not None and not re.search(expected, output):
                 raise AssertionError(f'{text}: missing {expected!r}: {output!r}')
             return output

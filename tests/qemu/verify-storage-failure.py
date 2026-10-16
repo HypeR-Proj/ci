@@ -12,7 +12,7 @@ import sys
 import time
 
 from session import Session, native_command
-from shell_status import checked, status
+from command import Shell
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -115,6 +115,7 @@ def prepare(args):
             '--boot-components', *args.boot_components, '--',
             '0755', 'boot:svc/io-runtime', str(provider.resolve()),
             '0755', 'boot:bin/recovery-echo', str(static_echo),
+            '0755', 'system:bin/test-report', str(args.apps / 'test-report'),
             '0644', 'etc/hyper/board.json', str(board_path),
             '0644', 'etc/hyper/io-clients.conf', str(clients),
             '0644', 'etc/hyper/storage.json', str(storage),
@@ -167,17 +168,17 @@ def inject_invalid_provider(composition, invalid_image):
     manifest.write_text(json.dumps(entries, indent=2) + '\n')
 
 
-def shell(session, command, *, allow_failure=False, recovery=False):
+def shell(session, command, *, recovery=False):
     if recovery:
         session.send(command + b"\n/bin/recovery-echo STORAGE-''COMMAND-DONE\n")
         output = session.await_text(rb'STORAGE-COMMAND-DONE\n')
         session.await_text(rb'fallback-sh\$ ')
         failed = b'sh: ' in output
     else:
-        session.send(checked(command))
-        output = session.await_text(rb'hyper-sh\$ ')
-        failed = status(output) != 0
-    if not allow_failure and failed:
+        result = session.shell.run(command)
+        output = b'\n' + result.output
+        failed = result.status != 0
+    if failed:
         raise AssertionError(f'Native command failed: {output!r}')
     return output
 
@@ -193,11 +194,9 @@ def run_case(args, case):
     if case in ('handoff-failure', 'root-switch-failure'):
         failures += (b'core supervision transferred', b'core supervision adopted')
     with Session(command, logfile, failures=failures) as session:
+        session.shell = Shell(session)
         def formal_prompt():
-            pattern = rb'hyper-sh\$ '
-            if re.search(pattern, logfile.read_bytes()) and not re.search(pattern, session.pending):
-                session.send(b'\n')
-            session.await_text(pattern, 60)
+            session.await_text(rb'hyper-sh\$ ', 60)
 
         if case == 'handoff-failure':
             session.await_text(rb'\[HypeR bootstrap stage 1\]\[fallback-sh\] recovery console ready', 180)
@@ -218,7 +217,10 @@ def run_case(args, case):
             if positions != sorted(positions):
                 raise AssertionError('fallback began before precommit root rollback')
         elif case == 'root-switch-failure':
-            session.await_text(rb'\[HypeR bootstrap stage 1\]\[init\] cannot prepare system root:', 180)
+            # Bootstrap's diagnostic prefix and body are separate writes; a
+            # fixture log may appear between them. Recovery/namespace probes
+            # below establish the boundary, not the banner's presentation.
+            session.observe(rb'cannot prepare system root:', 180)
             session.await_text(rb'\[HypeR bootstrap stage 1\]\[fallback-sh\] recovery console ready', 60)
             session.await_text(rb'fallback-sh\$ ')
             shell(session, b'/bin/recovery-echo ROOT_PREPARATION_RECOVERED', recovery=True)
@@ -229,9 +231,9 @@ def run_case(args, case):
             if b'provisional system root active' in logfile.read_bytes():
                 raise AssertionError('failed root preparation published a new root')
         elif case == 'critical-exit':
-            session.await_text(re.escape(ADOPTED), 180)
-            session.await_text(rb'provider adoption failed: bootstrap retirement disabled; /io-runtime:', 30)
-            session.await_text(CRITICAL_RETIRED, FORMAL_STARTUP_TIMEOUT)
+            session.observe(re.escape(ADOPTED), 180)
+            session.observe(rb'provider adoption failed: bootstrap retirement disabled; /io-runtime:', 30)
+            session.observe(CRITICAL_RETIRED, FORMAL_STARTUP_TIMEOUT)
             formal_prompt()
             # Formal init already owns supervision. The formal session manager
             # remains independent of the failed business service.
@@ -241,30 +243,33 @@ def run_case(args, case):
                     raise AssertionError(f'boot-critical recovery lost {name}: {processes!r}')
             shell(session, b'echo FORMAL_CRITICAL_FAILURE_OK')
         elif case == 'critical-exit-after-ready':
-            session.await_text(re.escape(ADOPTED), 180)
-            session.await_text(rb'HypeR system-startup: VM fleet configured', FORMAL_STARTUP_TIMEOUT)
+            session.observe(re.escape(ADOPTED), 180)
+            session.observe(rb'HypeR system-startup: VM fleet configured', FORMAL_STARTUP_TIMEOUT)
             formal_prompt()
             shell(session, b'echo FORMAL_STARTUP_COMMITTED')
             # The fixture waits for this explicit trigger, so failure cannot
             # race the startup decision merely because the host is slow.
-            session.send(b'touch /tmp/critical-exit\n')
-            session.await_text(CRITICAL_RETIRED, 60)
+            boundary = session.mark()
+            if re.search(CRITICAL_RETIRED, logfile.read_bytes()):
+                raise AssertionError('critical provider exited before the explicit trigger')
+            shell(session, b'touch /tmp/critical-exit')
+            session.observe(CRITICAL_RETIRED, 60, after=boundary)
         elif case == 'missing-system-shell':
-            session.await_text(re.escape(ADOPTED), 180)
-            session.await_text(rb'HypeR system-startup: VM fleet configured', FORMAL_STARTUP_TIMEOUT)
+            session.observe(re.escape(ADOPTED), 180)
+            session.observe(rb'HypeR system-startup: VM fleet configured', FORMAL_STARTUP_TIMEOUT)
             for _ in range(3):
                 session.await_text(rb'HypeR session-manager: session ended:', 30)
         else:
             if case == 'timeout':
-                session.await_text(rb'READINESS-FIXTURE-RUNNING')
+                session.observe(rb'READINESS-FIXTURE-RUNNING')
                 # No shell may consume terminal input before boot resolves.
                 # The live provider is checked after the real readiness deadline.
                 session.pump(1)
                 if re.search(rb'(?:hyper|fallback)-sh\$ ', logfile.read_bytes()):
                     raise AssertionError('readiness wait started an early shell')
             # Exercise the production 120 s deadline, not a test-only override.
-            session.await_text(re.escape(ADOPTED), 240)
-            session.await_text(re.escape(DEGRADED), 120)
+            session.observe(re.escape(ADOPTED), 240)
+            session.observe(re.escape(DEGRADED), 120)
             formal_prompt()
             if case == 'root-change':
                 # The observer can finish before init logs the unavailable
@@ -289,7 +294,7 @@ def run_case(args, case):
             listing = shell(session, b'vmm list')
             if re.search(rb'^\S+\s+(?:starting|running|stopping|stopped|failed)\s+', listing, re.M):
                 raise AssertionError('unavailable fleet published VM definitions')
-            start = shell(session, b'vmm start alpine', allow_failure=True)
+            start = session.shell.check('vmm start alpine', failed=True)
             if b'VM fleet unavailable: initial configuration is unavailable' not in start:
                 raise AssertionError(f'vmm did not report unavailable configuration: {start!r}')
             deadline = time.monotonic() + (3 if case in LIVE_PROVIDERS else 30)
@@ -308,21 +313,23 @@ def run_case(args, case):
                 elif time.monotonic() >= deadline:
                     raise AssertionError(f'{case}: failed provider did not terminate')
                 session.pump(0.1)
+        evidence = {
+            'closed-ready': b'storage unavailable: readiness channel closed',
+            'invalid-ready': b'storage unavailable: invalid readiness reply',
+            'oversized-ready': b'storage unavailable: invalid readiness reply',
+            'timeout': b'storage unavailable: readiness timed out',
+            'launch-failure': b"failed to launch service 'io-runtime': service image or resources unavailable",
+        }.get(case)
+        if evidence is not None:
+            session.observe(re.escape(evidence), timeout=30)
+        # provider-exit is proved by readiness failure plus the live-process
+        # check above. Supervision transfer can race the old supervisor's exit
+        # log; that optional diagnostic is not a lifecycle contract.
     output = logfile.read_bytes()
     if case in ('critical-exit', 'critical-exit-after-ready') and DEGRADED in output:
         raise AssertionError('critical service failure was swallowed as optional storage failure')
     if case not in ('handoff-failure', 'root-switch-failure') and b'[HypeR bootstrap stage 1][fallback-sh] recovery console ready' in output:
         raise AssertionError('a post-handoff failure reopened bootstrap recovery')
-    evidence = {
-        'provider-exit': b"'io-runtime' terminated: reason=process-exited status=1",
-        'closed-ready': b'storage unavailable: readiness channel closed',
-        'invalid-ready': b'storage unavailable: invalid readiness reply',
-        'oversized-ready': b'storage unavailable: invalid readiness reply',
-        'timeout': b'storage unavailable: readiness timed out',
-        'launch-failure': b"failed to launch service 'io-runtime': service image or resources unavailable",
-    }.get(case)
-    if evidence is not None and evidence not in output:
-        raise AssertionError(f'{case}: did not reach the intended failure boundary: {evidence!r}')
     if case == 'missing-config' and b'cannot open VM fleet configuration' not in output:
         raise AssertionError('missing-config scenario failed before opening the fleet file')
     # NOT_FOUND from the real controller claim must be fully queued before

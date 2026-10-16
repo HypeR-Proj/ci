@@ -9,7 +9,7 @@ import sys
 import time
 
 from session import Session, native_command
-from shell_status import checked, status
+from command import Shell
 
 
 CONFIGURED = b'HypeR system-startup: VM fleet configured'
@@ -51,6 +51,7 @@ def main():
     if not rejected:
         failures += (REJECTED,)
     with Session(command, logfile, failures=failures) as session:
+        shell = Shell(session)
         if rejected:
             session.await_text(rb'(?s)(?=.*' + re.escape(REJECTED)
                                + rb')(?=.*' + re.escape(DEGRADED) + rb')')
@@ -58,13 +59,11 @@ def main():
             session.send(b"echo FLEET-''RECOVERY-OK\n")
             session.await_text(rb'FLEET-RECOVERY-OK\n')
             session.await_text(rb'hyper-sh\$ ')
-            session.send(b'vmm list\n')
-            listing = session.await_text(rb'hyper-sh\$ ')
+            listing = shell.check('vmm list')
             if re.search(rb'^\S+\s+(?:starting|running|stopping|stopped|failed)\s+',
                          listing, flags=re.M):
                 raise AssertionError('rejected fleet published definitions')
-            session.send(b'vmm start alpine\n')
-            response = session.await_text(rb'hyper-sh\$ ')
+            response = shell.check('vmm start alpine', failed=True)
             if b'VM fleet unavailable: initial configuration is unavailable' not in response:
                 raise AssertionError(f'rejected fleet did not report unavailability: {response!r}')
         else:
@@ -73,11 +72,7 @@ def main():
             session.await_text(rb'hyper-sh\$ ')
 
             def run(command, timeout=60):
-                session.send(checked(command))
-                output = session.await_text(rb'hyper-sh\$ ', timeout)
-                if status(output) != 0:
-                    raise AssertionError(f'{command!r} failed: {output!r}')
-                return output
+                return shell.check(command, timeout=timeout)
 
             if case == 'start-failure':
                 # A valid image and policy were admitted. CPU affinity fails

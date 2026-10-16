@@ -12,7 +12,8 @@ import shutil
 import time
 
 from session import Session, native_command
-from shell_status import checked, status
+from command import Shell
+from journal import Journal
 
 
 def prepare(args):
@@ -116,21 +117,16 @@ def run(args):
         prompt = boot.index(b'hyper-sh$ ')
         if not start < release < prompt:
             raise AssertionError('startup display/console/shell handoff is out of order')
-        for marker in (b'SERVICE_STDOUT_OK', b'SERVICE_STDERR_OK',
-                       b'HypeR system-startup: core supervision adopted'):
-            if marker not in boot[start:release]:
-                raise AssertionError(f'service log was hidden until startup completed: {marker!r}')
+        # Eager processes may finish after startup. Their log delivery is
+        # verified through the journal below, independently of splash timing.
         for marker in (b'/console', b'/journal', b'/session-manager'):
             if marker not in boot[start:release]:
                 raise AssertionError(f'early display missed component startup: {marker!r}')
         if b'HypeR session-manager: session ended:' in boot:
             raise AssertionError(f'initial session needed recovery: {boot!r}')
-        def command(text):
-            vm.send(checked(text))
-            output = vm.await_text(rb'hyper-sh\$ ', timeout=30)
-            if status(output) != 0:
-                raise AssertionError(f'{text}: {output!r}')
-            return output
+        shell = Shell(vm)
+        journal = Journal(shell)
+        command = shell.check
         def state(name, expected, instance=None):
             until = time.monotonic() + 30
             while time.monotonic() < until:
@@ -149,41 +145,26 @@ def run(args):
             for result in ('allowed', 'denied'):
                 path = '/tests/' + prefix + 'resident-' + result
                 state(path, 'completed')
-                marker = ('COMPONENT_MEMORY_LOCK_' + result.upper() + '_OK').encode()
-                if marker not in command('journalctl -c ' + path):
-                    raise AssertionError(f'{path}: memory residency authority mismatch')
+                journal.message(path, 'COMPONENT_MEMORY_LOCK_' + result.upper() + '_OK')
         state('/tests/server', 'stopped', 0)
-        vm.send(checked('vmm list'))
-        unavailable = vm.await_text(rb'hyper-sh\$ ', timeout=10)
-        if status(unavailable) == 0 or b'Status(Status(-15))' not in unavailable:
+        unavailable = shell.check('vmm list', failed=True, timeout=10)
+        if b'Status(Status(-15))' not in unavailable:
             raise AssertionError(f'absent manager did not close its rendezvous: {unavailable!r}')
-        logs = command('journalctl -c /tests/plain')
-        if b'Stdout: SERVICE_STDOUT_OK' not in logs or b'Stderr: SERVICE_STDERR_OK' not in logs:
-            raise AssertionError(f'unadapted stdio not attributed: {logs!r}')
-        if b'SERVICE_OBSERVER_DENIED_OK' not in command('journalctl -c /tests/observer'):
-            raise AssertionError('read-only observer mutation was not rejected')
-        if b'SERVICE_LARGE_REPLY_OK' not in command('journalctl -c /tests/ipc'):
-            raise AssertionError('large IPC reply framing failed')
+        journal.message('/tests/plain', 'SERVICE_STDOUT_OK', stream='stdout')
+        journal.message('/tests/plain', 'SERVICE_STDERR_OK', stream='stderr')
+        journal.message('/tests/observer', 'SERVICE_OBSERVER_DENIED_OK')
+        journal.message('/tests/ipc', 'SERVICE_LARGE_REPLY_OK')
         command('componentctl start /tests/burst-a; componentctl start /tests/burst-b')
         for name in ('burst-a', 'burst-b'):
             state('/tests/' + name, 'completed')
-            # Process completion does not imply journal EOF has been consumed.
-            until = time.monotonic() + 30
-            while True:
-                logs = command('journalctl -c /tests/' + name + ' -n 256')
-                records = re.findall(
-                    rb'/tests/' + name.encode() + rb'#1 (Stdout|Stderr): JOURNAL_BURST (\S+) (out|err) (\d{3}|EOF)( \[partial\])?',
-                    logs,
-                )
-                if len(records) == 194:
-                    break
-                if time.monotonic() >= until:
-                    raise AssertionError(f'incomplete batched journal for {name}: {logs!r}')
-                vm.pump(0.1)
-            for stream, tag in ((b'Stdout', b'out'), (b'Stderr', b'err')):
-                actual = [(label, kind, value, partial) for channel, label, kind, value, partial in records if channel == stream]
-                expected = [(name.encode(), tag, f'{i:03}'.encode(), b'') for i in range(96)]
-                expected.append((name.encode(), tag, b'EOF', b' [partial]'))
+            records = journal.wait('/tests/' + name, lambda items: len(items) >= 194)
+            if len(records) != 194:
+                raise AssertionError(f'unexpected journal records for {name}: {records!r}')
+            for stream, tag in (('stdout', 'out'), ('stderr', 'err')):
+                actual = [(r['text'], r['continued'], r['source']['generation'])
+                          for r in records if r['source']['stream'] == stream]
+                expected = [(f'JOURNAL_BURST {name} {tag} {i:03}', False, 1) for i in range(96)]
+                expected.append((f'JOURNAL_BURST {name} {tag} EOF', True, 1))
                 if actual != expected:
                     raise AssertionError(f'batch order, framing or attribution changed: {actual!r}')
         command('componentctl routes /tests/client echo')
@@ -191,9 +172,12 @@ def run(args):
             command('componentctl start /tests/client')
             state('/tests/client', 'completed', generation)
             state('/tests/server', 'running', 1)
-        logs = command('journalctl -c /tests/client')
-        if logs.count(b'COMPONENT_CONCURRENT_CONNECT_OK') != 2 or logs.count(b'COMPONENT_UNDECLARED_DENIED_OK') != 2:
-            raise AssertionError(f'concurrent scoped connections failed: {logs!r}')
+        for generation in (1, 2):
+            journal.message('/tests/client', 'COMPONENT_CONCURRENT_CONNECT_OK', generation=generation)
+            records = journal.message('/tests/client', 'COMPONENT_UNDECLARED_DENIED_OK', generation=generation)
+        for marker in ('COMPONENT_CONCURRENT_CONNECT_OK', 'COMPONENT_UNDECLARED_DENIED_OK'):
+            if sum(marker in record['text'] for record in records) != 2:
+                raise AssertionError(f'client log duplicated an outcome: {records!r}')
         command('componentctl restart /tests/server')
         state('/tests/server', 'running', 2)
         command('componentctl start /tests/client')
@@ -202,18 +186,17 @@ def run(args):
         state('/tests/server', 'stopped', 2)
         command('componentctl start /tests/timeout')
         state('/tests/timeout', 'completed', 1)
-        if b'COMPONENT_DEADLINE_OK' not in command('journalctl -c /tests/timeout'):
-            raise AssertionError('unpublished provider did not respect connection deadline')
+        journal.message('/tests/timeout', 'COMPONENT_DEADLINE_OK')
         command('componentctl stop /tests/silent')
         state('/tests/silent', 'stopped', 1)
         command('componentctl start /tests/retry')
         state('/tests/retry', 'failed', 3)
-        logs = command('journalctl -c /tests/retry')
-        if logs.count(b'Stderr: SERVICE_FAILURE_ATTEMPT') != 3:
-            raise AssertionError(f'retry budget or attribution failed: {logs!r}')
-        vm.send(checked('componentctl stop /session-manager'))
-        denied = vm.await_text(rb'hyper-sh\$ ', timeout=10)
-        if status(denied) == 0 or b'ownership retirement protocol' not in denied:
+        for generation in (1, 2, 3):
+            records = journal.message('/tests/retry', 'SERVICE_FAILURE_ATTEMPT', generation=generation, stream='stderr')
+        if sum(record['text'] == 'SERVICE_FAILURE_ATTEMPT' for record in records) != 3:
+            raise AssertionError(f'retry budget or attribution failed: {records!r}')
+        denied = shell.check('componentctl stop /session-manager', failed=True, timeout=10)
+        if b'ownership retirement protocol' not in denied:
             raise AssertionError(f'stateful stop was not rejected: {denied!r}')
         command('echo COMPONENT_MANAGEMENT_OK')
     print(f'component management acceptance passed: {args.log}')

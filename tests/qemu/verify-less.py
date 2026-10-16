@@ -8,6 +8,7 @@ import sys
 
 from guest_console import append_console_output
 from session import Session, native_command
+from command import Shell
 
 
 def main():
@@ -17,10 +18,11 @@ def main():
         session.await_text(rb'HypeR session: console ready\n', timeout=90)
         session.await_text(rb'hyper-sh\$ ')
 
-        def run(command, expected):
-            session.send(command.encode() + b'\r')
-            output = session.await_text(rb'hyper-sh\$ ', timeout=60)
-            if not re.search(expected, output):
+        shell = Shell(session)
+
+        def run(command, expected=None, timeout=60):
+            output = shell.check(command, timeout=timeout)
+            if expected is not None and not re.search(expected, output):
                 raise AssertionError(f'{command}: {output!r}')
 
         def quit_tool():
@@ -28,7 +30,7 @@ def main():
             run('echo TERMINAL_RESTORED', rb'\nTERMINAL_RESTORED\n')
 
         lines = ''.join(f'line{n:03d}\\n' for n in range(1, 81))
-        run(f"printf '{lines}' > /tmp/pager-file", rb'hyper-sh')
+        run(f"printf '{lines}' > /tmp/pager-file")
         for command in ('less /tmp/pager-file', 'cat /tmp/pager-file | less', 'less < /tmp/pager-file'):
             session.send(command.encode() + b'\r')
             first = session.await_text(rb'lines 1-(\d+) / 80 \(END\)', timeout=60)

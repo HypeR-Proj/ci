@@ -8,7 +8,7 @@ import re
 import time
 
 from session import Session, native_command
-from shell_status import checked, status
+from command import Shell
 
 
 def main():
@@ -29,12 +29,10 @@ def main():
         def send(command):
             session.send(command + b'\n')
 
+        shell = Shell(session)
+
         def run(command, timeout=60):
-            session.send(checked(command))
-            output = await_text(rb'hyper-sh\$ ', timeout)
-            if status(output) != 0:
-                raise AssertionError(f'{command!r} failed: {output!r}')
-            return output
+            return shell.check(command, timeout=timeout)
 
         def wait_state(name, expected, timeout=60):
             deadline = time.monotonic() + timeout

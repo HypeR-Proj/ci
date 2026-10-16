@@ -32,6 +32,23 @@ class SessionTests(unittest.TestCase):
             self.assertEqual(log.read_bytes(), b'first\r\nsecond\r\ncommand\n')
             self.assertIsNotNone(session.process.returncode)
 
+    def test_independent_event_observers_survive_prompt_consumption(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.session(
+                "import sys,time; print('OLD\\nEVENT\\nhyper-sh$ '); "
+                "sys.stdin.readline(); print('NEW\\nEVENT'); time.sleep(30)",
+                Path(directory) / 'raw.log'
+            ) as session:
+                session.await_text(rb'hyper-sh\$ ')
+                session.observe(b'EVENT')
+                boundary = session.mark()
+                session.send(b'next\n')
+                session.observe(b'NEW\nEVENT', after=boundary)
+                with self.assertRaises(TimeoutError):
+                    session.observe(b'OLD', after=boundary, timeout=0.02)
+                # Observing did not consume the interactive cursor.
+                session.await_text(b'NEW\nEVENT')
+
     def test_filtered_console_rejoins_ci_wakeup_and_preserves_raw_log(self):
         raw = (b'\nGUEST_WAKE_06<4>[   84.456723] HypeR: '
                b'masked virtual timer PPI without an active vCPU\n\n~ # ')
@@ -79,6 +96,19 @@ class SessionTests(unittest.TestCase):
                 with self.session("import time; print('kernel panic READY'); time.sleep(30)",
                                   Path(directory) / 'log') as session:
                     session.await_text(b'READY')
+
+    def test_cleanup_checks_fatal_output_after_the_final_assertion(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'log'
+            with self.assertRaisesRegex(RuntimeError, 'kernel failure'):
+                with self.session("import sys; print('READY'); sys.stdin.readline(); "
+                                  "print('kernel panic after READY')", log) as session:
+                    session.await_text(b'READY')
+                    session.send(b'finish\n')
+                    session.process.wait(timeout=3)
+                    # Leave the fatal bytes in the pipe for close() to drain.
+            self.assertIn(b'kernel panic after READY', log.read_bytes())
+            self.assertTrue(session.log.closed)
 
     def test_exception_cleanup_escalates_to_kill(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -7,6 +7,7 @@ import re
 import selectors
 import subprocess
 import time
+from pathlib import Path
 
 
 def native_command(qemu, image, initramfs, *, machine='virt,virtualization=on,gic-version=3'):
@@ -24,7 +25,8 @@ def native_command(qemu, image, initramfs, *, machine='virt,virtualization=on,gi
 
 
 class Session:
-    def __init__(self, command, logfile, *, failures=(b'HypeR: fatal', b'kernel panic'),
+    def __init__(self, command, logfile, *, failures=(b'HypeR: fatal', b'kernel panic',
+                 b'Kernel panic', b'HypeR KERNEL PANIC', b'HypeR crash monitor'),
                  cleanup_timeout=3, output_filter=None):
         self.command = command
         self.logfile = logfile
@@ -51,6 +53,11 @@ class Session:
 
     def __exit__(self, kind, error, traceback):
         self.close()
+        # A successful final assertion can leave a fatal diagnostic unread in
+        # the pipe. Cleanup drains it; it must still fail an otherwise good run.
+        # Preserve the original exception if the scenario had already failed.
+        if kind is None:
+            self._failure()
 
     def close(self):
         try:
@@ -135,3 +142,35 @@ class Session:
     def send(self, data):
         self.process.stdin.write(data)
         self.process.stdin.flush()
+
+    def mark(self):
+        """Raw-log offset for a fresh asynchronous observation, independent of UI."""
+        while self._read(0):
+            self._failure()
+        return self.log.tell()
+
+    def observe(self, pattern, timeout=60, *, after=0):
+        """Wait on archived evidence without consuming terminal expectations.
+
+        Services can finish before or after a prompt/command. Each observer owns
+        its cursor; unrelated await_text calls cannot discard its evidence.
+        Use mark() before the action when an earlier generation must not match.
+        """
+        deadline = time.monotonic() + timeout
+        pending = bytearray()
+        with Path(self.logfile).open('rb') as archive:
+            archive.seek(after)
+            while True:
+                self._failure()
+                pending.extend(archive.read().replace(b'\r', b''))
+                match = re.search(pattern, pending)
+                if match:
+                    return match.group(0)
+                if len(pending) > 16 * 1024 * 1024:
+                    raise RuntimeError('serial observation exceeds 16 MiB; narrow its cursor')
+                self._exited()
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError(f'log observation {pattern!r} after {after}: '
+                                       f'{bytes(pending[-4096:])!r}')
+                self._read(min(0.2, remaining))

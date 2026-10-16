@@ -8,6 +8,7 @@ import sys
 
 from guest_console import append_console_output
 from session import Session, native_command
+from command import Shell
 
 
 def main():
@@ -17,11 +18,11 @@ def main():
         session.await_text(rb'HypeR session: console ready\n')
         session.await_text(rb'hyper-sh\$ ')
 
-        def run(command, expected, timeout=30):
-            source = '{ ' + command + '\n}' if '\n' in command else command
-            session.send(source.encode() + b'\r')
-            output = session.await_text(rb'hyper-sh\$ ', timeout=timeout)
-            if not re.search(expected, output):
+        shell = Shell(session)
+
+        def run(command, expected=None, timeout=60):
+            output = shell.check(command, timeout=timeout)
+            if expected is not None and not re.search(expected, output):
                 raise AssertionError(f'{command}: {output!r}')
 
         run("set --; argc() { echo ARGC=$#; }; argc \"$@\"; argc ''\"$@\"",
@@ -85,6 +86,15 @@ def main():
         run('printf abc > /tmp/glob-alpha; printf def > /tmp/glob-beta; echo /tmp/glob-*',
             rb'\n/tmp/glob-alpha /tmp/glob-beta\n')
 
+        # From here the input line/history/terminal itself is under test. A
+        # capture wrapper would change the history being asserted and hide UI.
+        def run(command, expected=None, timeout=30):
+            source = '{ ' + command + '\n}' if '\n' in command else command
+            session.send(source.encode() + b'\r')
+            output = session.await_text(rb'hyper-sh\$ ', timeout=timeout)
+            if expected is not None and not re.search(expected, output):
+                raise AssertionError(f'{command}: {output!r}')
+
         session.send(b"prin\t'%s\\n' COMPLETED\r")
         session.await_text(rb'\nCOMPLETED\nhyper-sh\$ ')
         session.send(b'echo edtor\x1b[D\x1b[D\x1b[Di\x1b[F\r')
@@ -100,7 +110,7 @@ def main():
             session.await_text(rb'\nBACKSPACE_OK\nhyper-sh\$ ')
         session.send(b'echo edxitor\x1b[D\x1b[D\x1b[D\x1b[D\x7f\x1b[F\r')
         session.await_text(rb'\neditor\nhyper-sh\$ ')
-        run("printf 'SPACE_FILE\\n' > '/tmp/review spaced'", rb'hyper-sh')
+        run("printf 'SPACE_FILE\\n' > '/tmp/review spaced'")
         session.send(b'cat /tmp/review\t\r')
         session.await_text(rb'\nSPACE_FILE\nhyper-sh\$ ')
         run('mkdir /tmp/complete; mkdir /tmp/complete/alpha; mkdir /tmp/complete/beta; touch /tmp/complete/file',

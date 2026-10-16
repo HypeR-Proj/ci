@@ -8,6 +8,7 @@ import sys
 
 from guest_console import append_console_output
 from session import Session, native_command
+from command import Shell
 
 
 def main():
@@ -17,10 +18,11 @@ def main():
         session.await_text(rb'HypeR session: console ready\n', timeout=90)
         session.await_text(rb'hyper-sh\$ ')
 
-        def run(command, expected):
-            session.send(command.encode() + b'\r')
-            output = session.await_text(rb'hyper-sh\$ ', timeout=60)
-            if not re.search(expected, output):
+        shell = Shell(session)
+
+        def run(command, expected=None, timeout=60):
+            output = shell.check(command, timeout=timeout)
+            if expected is not None and not re.search(expected, output):
                 raise AssertionError(f'{command}: {output!r}')
 
         def edit(path):
