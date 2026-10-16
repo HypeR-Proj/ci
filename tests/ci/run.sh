@@ -124,7 +124,7 @@ case "${1:-}" in
         done
         ;;
     native-apps)
-        run_native_probe test-apps test-editor
+        run_native_probe test-apps test-editor test-less
         ;;
     native-console|native-terminal|native-shell)
         run_native_probe "test-${1#native-}"

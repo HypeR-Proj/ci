@@ -40,7 +40,7 @@ and the one-time Pages/required-check setup.
 | `native-boot` | Native boot and application startup on one/four CPUs |
 | `native-console` | Paced input, pressure, shell restart and guest console |
 | `native-terminal` | Terminal modes, transformations and flow control |
-| `native-apps` | Native command-line applications plus editor terminal interaction |
+| `native-apps` | Native command-line applications plus editor/pager terminal interaction |
 | `native-shell` | Shell language, editing, completion and redirection |
 | `native-services` | Service readiness, scoped control, captured stdio, query and restart limits; early progress alongside unsuppressed logs and failed-console recovery |
 | `native-fleet` | Fleet configuration admission and error handling |
