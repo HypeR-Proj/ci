@@ -6,6 +6,7 @@
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,11 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'qemu'))
 from session import Session, native_command
 from shell_status import checked, status
+
+ROOT = Path(__file__).resolve().parents[2]
+_runner_spec = importlib.util.spec_from_file_location('board_runner', ROOT / 'scripts/run-io-vm.py')
+_runner = importlib.util.module_from_spec(_runner_spec)
+_runner_spec.loader.exec_module(_runner)
 
 
 DEFAULT_COMMANDS = (
@@ -37,6 +43,7 @@ def identity(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--qemu', default='qemu-system-aarch64')
+    parser.add_argument('--board', type=Path, default=ROOT / 'boards/qemu.json')
     for name in ('image', 'initramfs', 'disk', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--boots', type=int, default=3)
@@ -57,16 +64,19 @@ def main():
         if not path.is_file():
             parser.error(f'missing artifact: {path}')
     args.output.mkdir(parents=True)
+    sys.path.insert(0, str(ROOT / 'scripts'))
+    board = _runner.validate_board_disk(args.disk, args.board)
     command = native_command(args.qemu, args.image.resolve(), args.initramfs.resolve())
+    machine_index = command.index('-machine') + 1
+    command[machine_index] = _runner.machine_arguments(board, command[machine_index])
     command += [
         '-accel', 'tcg,thread=multi', '-global', 'virtio-mmio.force-legacy=false',
         '-drive', 'if=none,id=physicaldisk,format=raw,snapshot=on,cache=writeback,file='
         + str(args.disk.resolve()).replace(',', ',,'),
-        '-device', 'virtio-scsi-device,id=physicalscsi,iommu_platform=on',
+        '-device', _runner.storage_controller(board),
         '-device', 'scsi-hd,drive=physicaldisk,bus=physicalscsi.0,scsi-id=0,lun=0',
-        '-netdev', 'user,id=physicalnet',
-        '-device', 'virtio-net-device,id=physicalnet,netdev=physicalnet,iommu_platform=on',
     ]
+    command.extend(_runner.network_arguments(board))
     report = {
         'host': platform.platform(),
         'qemu_version': subprocess.check_output([args.qemu, '--version'], text=True),

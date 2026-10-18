@@ -145,7 +145,7 @@ def main():
     check_bootstrap(root)
     check_stdlib(root)
     index = subprocess.run(['git', 'ls-files', '--stage', '-z'], cwd=root,
-                           check=True, capture_output=True).stdout
+                           check=True, stdout=subprocess.PIPE).stdout
     check_index(index)
     print('workspace dependency declarations verified')
 

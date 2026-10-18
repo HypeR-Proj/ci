@@ -73,6 +73,14 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
         calls = self.run_suite('native-shell')
         self.assertEqual(calls, [['make', 'test-shell', 'ARCH=aarch64']])
 
+    def test_mmio_compatibility_has_its_own_network_lifecycle_suite(self):
+        for suite, target in [('io-network', 'test-board-network'),
+                              ('io-network-mmio', 'test-board-mmio')]:
+            calls = [call for call in self.run_suite(suite) if call[0] == 'make']
+            self.assertEqual(len(calls), 1)
+            self.assertIn(target, calls[0])
+            self.assertIn('IO_VM_PACKAGE=/fixture/io-vm', calls[0])
+
     def test_stress_consumes_fixture_on_one_and_four_cpus(self):
         calls = self.run_suite('native-stress', CI_NATIVE_FIXTURE='/fixture/native', CI_ARCH='riscv64')
         make = [call for call in calls if call[0] == 'make']

@@ -25,6 +25,9 @@ class ToolInstallation(unittest.TestCase):
                                return_value={'ID': 'ubuntu', 'VERSION_ID': '24.04'})
         release.start()
         self.addCleanup(release.stop)
+        identity = patch.object(tools.os, 'geteuid', return_value=1000)
+        identity.start()
+        self.addCleanup(identity.stop)
 
     def test_available_tools_need_no_package_manager(self):
         with patch.object(tools.shutil, 'which', return_value='/usr/local/bin/tool'), \
@@ -101,7 +104,7 @@ class ToolInstallation(unittest.TestCase):
         self.assertIn('--no-download', calls[2][0])
 
     def test_download_failure_does_not_start_installation(self):
-        with self.assertRaisesRegex(RuntimeError, 'both Ubuntu mirrors'):
+        with self.assertRaisesRegex(RuntimeError, 'both ubuntu mirrors'):
             self.execute([0, 100, 0, 100])
 
     def test_dpkg_failure_is_reported_without_network_retry(self):
@@ -113,6 +116,36 @@ class ToolInstallation(unittest.TestCase):
                 patch.object(tools.platform, 'freedesktop_os_release', return_value={'ID': 'debian'}), \
                 patch.object(tools.subprocess, 'run') as run:
             with self.assertRaisesRegex(ValueError, 'Ubuntu 24.04'):
+                tools.install(['qemu-system-arm'], self.cache)
+            run.assert_not_called()
+
+    def test_debian_container_uses_its_keyring_and_no_sudo(self):
+        with patch.object(tools.platform, 'freedesktop_os_release',
+                          return_value={'ID': 'debian', 'VERSION_ID': '13'}), \
+                patch.object(tools.os, 'geteuid', return_value=0):
+            calls = self.execute([0, 0, 0])
+        for command, _, sources in calls:
+            self.assertNotIn('sudo', command)
+            self.assertIn('signed-by=/usr/share/keyrings/debian-archive-keyring.gpg', sources)
+            self.assertIn('http://deb.debian.org/debian trixie main', sources)
+            self.assertIn('trixie-updates main', sources)
+            self.assertIn('http://deb.debian.org/debian-security trixie-security main', sources)
+            self.assertNotIn('ubuntu', sources)
+        self.assertEqual(calls[-1][0][0], 'apt-get')
+
+    def test_debian_fallback_keeps_release_and_security_repositories(self):
+        with patch.object(tools.platform, 'freedesktop_os_release',
+                          return_value={'ID': 'debian', 'VERSION_ID': '13'}):
+            calls = self.execute([100, 0, 0, 0])
+        self.assertIn('http://ftp.debian.org/debian trixie main', calls[1][2])
+        self.assertIn('http://security.debian.org/debian-security trixie-security main', calls[1][2])
+
+    def test_old_debian_cannot_install_trixie_packages(self):
+        with patch.object(tools.shutil, 'which', return_value=None), \
+                patch.object(tools.platform, 'freedesktop_os_release',
+                             return_value={'ID': 'debian', 'VERSION_ID': '12'}), \
+                patch.object(tools.subprocess, 'run') as run:
+            with self.assertRaisesRegex(ValueError, 'Debian 13'):
                 tools.install(['qemu-system-arm'], self.cache)
             run.assert_not_called()
 

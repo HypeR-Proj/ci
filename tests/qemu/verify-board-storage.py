@@ -69,6 +69,7 @@ def boot(args, mode):
 
         try:
             if args.require_userspace_device:
+                await_text(rb'\[HypeR bootstrap stage 1\]\[io-runtime\] device permission attenuation passed\n')
                 await_text(rb'DEVICE-TEST: worker prepared\n')
             boot = await_text(rb'\[HypeR bootstrap stage 1\]\[io-runtime\] ready; bootstrap mounts complete\n')
             if b'[HypeR bootstrap stage 1][io-runtime] IO VM: ' not in boot:

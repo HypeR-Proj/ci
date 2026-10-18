@@ -38,6 +38,12 @@ def prepare(args):
     """Add a network-only peer to the normal disk+network Alpine deployment."""
     board = Board.load(args.board)
     source = copy.deepcopy(board.source)
+    if args.physical_transport == 'mmio':
+        source['io-vm']['io-device'] = {'profile': 'virtio-mmio-scsi', 'compatible': 'virtio,mmio'}
+        source['io-vm']['network-device'] = {'profile': 'virtio-mmio-net', 'compatible': 'virtio,mmio'}
+    else:
+        source['io-vm']['io-device'] = {'profile': 'pci-function', 'pci-id': '1af4:1048'}
+        source['io-vm']['network-device'] = {'profile': 'pci-function', 'pci-id': '1af4:1041'}
     guests = source['virtual-machines']
     if (source['boot'] != 'qemu-direct' or len(guests) != 1
             or 'disk' not in guests[0] or 'network' not in guests[0]):
@@ -208,7 +214,6 @@ class Scenario:
         self.send(f'vmm console {name}\n'.encode())
         self.session.await_text(re.escape(f'Connected to {name}.'.encode()))
         self.send(b'\n')
-        # Two Linux guests boot concurrently under cross-architecture TCG.
         # Match the SMP boot allowance; network commands keep their own limits.
         self.session.await_text(rb'~ # ', timeout=GUEST_BOOT_TIMEOUT_SECONDS)
         try:
@@ -356,6 +361,12 @@ def run(args):
             output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
         scenario = Scenario(session, url, digest, args.expect_tx_offload)
         session.await_text(rb'\[HypeR bootstrap stage 1\]\[io-runtime\] ready; bootstrap mounts complete\n', timeout=180)
+        if board.source['io-vm']['io-device']['profile'] == 'pci-function':
+            for marker in (b'SMMUv3 stage-2 active:', b'physical PCI DMA domain installed',
+                           b'PCI function 1af4:1048 prepared', b'PCI function 1af4:1041 prepared'):
+                # Interactive output removes kernel records. Admission evidence
+                # must come from the unfiltered archive, even after readiness.
+                session.observe(re.escape(marker), timeout=1)
         # Storage readiness precedes formal terminal ownership. Commands sent
         # before the shell prompt can be discarded by the session's input reset.
         session.await_text(rb'hyper-sh\$ ', timeout=180)
@@ -372,11 +383,17 @@ def run(args):
         # Runtime forwarding and later client reset exercise the adopted policy
         # without keeping bootstrap configuration files alive for inspection.
 
+        # Bring each guest to readiness before booting the next. Concurrent
+        # Linux initialization saturates cross-architecture TCG workers and can
+        # exhaust the boot deadline before either console becomes interactive.
+        # Both guests stay alive for all transfer/reset/retirement assertions.
         for vm in guests:
             scenario.native(f'vmm start {vm["name"]}')
-        for vm in guests:
             with scenario.console(vm):
                 scenario.automatic_network(vm)
+        for vm in guests:
+            with scenario.console(vm):
+                scenario.interface(vm)
                 scenario.transfer()
                 if args.external_url:
                     scenario.external_transfer(args.external_url)
@@ -408,7 +425,8 @@ def main():
     fixture = actions.add_parser('prepare', help='derive the two-guest acceptance configuration')
     fixture.add_argument('--board', type=Path, required=True)
     fixture.add_argument('--output', type=Path, required=True)
-    fixture.add_argument('--virtio-transport', choices=('mmio', 'pci'), default='mmio')
+    fixture.add_argument('--virtio-transport', choices=('mmio', 'pci'), default='pci')
+    fixture.add_argument('--physical-transport', choices=('pci', 'mmio'), default='pci')
     fixture.set_defaults(handler=prepare)
     execute = actions.add_parser('run', help='verify a built acceptance fixture')
     execute.add_argument('--qemu', default='qemu-system-aarch64')

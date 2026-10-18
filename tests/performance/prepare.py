@@ -52,6 +52,9 @@ def main():
          SOURCE / 'hyper.c', out / 'workload.o', '-lhyper-std', '-o', out / 'bench-hyper'])
     board = json.loads((ROOT / 'boards/qemu.json').read_text())
     board['virtual-machines'] = []
+    # This historical Linux comparison uses the same MMIO controller on both
+    # sides. Production PCI/SMMU acceptance belongs to the board suites.
+    board['io-vm']['io-device'] = {'profile': 'virtio-mmio-scsi', 'compatible': 'virtio,mmio'}
     # Preserve the disk/memory baseline's identical network-free machines.
     board['io-vm'].pop('network-device', None)
     board['io-vm'].pop('networks', None)

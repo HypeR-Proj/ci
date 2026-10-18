@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   storage:
-    name: AArch64 / cross-VM physical storage
+    name: AArch64 / MMIO cross-VM reset compatibility
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -57,18 +57,27 @@ jobs:
           retention-days: 7
 
   network:
-    name: AArch64 / guest networking / ${{ matrix.transport == 'pci' && 'PCI / ' || '' }}GICv${{ matrix.gic }}
+    name: AArch64 / physical and guest ${{ matrix.transport }} / GICv${{ matrix.gic }}
     runs-on: ubuntu-24.04
+    container: debian:trixie-slim
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         gic: [2, 3]
-        transport: [mmio]
+        transport: [pci]
         include:
           - gic: 3
-            transport: pci
+            transport: mmio
     steps:
+      # Prepare a minimal container before checkout and the local setup actions.
+      - name: Bootstrap Debian tools
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          timeout --kill-after=10s 90s apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=15 update --error-on=any
+          apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=15 install -y --no-install-recommends \
+            ca-certificates git python3 rustup build-essential curl xz-utils zstd unzip
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
       - uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4
@@ -84,7 +93,7 @@ jobs:
           IO_VM_REFERENCE: ${{ inputs.reference }}
           QEMU_MACHINE: virt,virtualization=on,gic-version=${{ matrix.gic }}
           QEMU_CPUS: 4
-        run: sh tests/ci/run.sh io-network
+        run: sh tests/ci/run.sh ${{ matrix.transport == 'mmio' && 'io-network-mmio' || 'io-network' }}
       - name: Clean up AArch64 QEMU
         if: always()
         run: sh tests/ci/cleanup-qemu.sh aarch64
@@ -97,4 +106,36 @@ jobs:
             target/board-tests/network.*/network.log
             target/board-tests/network.*/config.json
           if-no-files-found: ignore
+          retention-days: 7
+
+  dma-isolation:
+    name: AArch64 / SMMUv3 DMA containment
+    runs-on: ubuntu-24.04
+    container: debian:trixie-slim
+    timeout-minutes: 20
+    steps:
+      # Prepare a minimal container before checkout and the local setup actions.
+      - name: Bootstrap Debian tools
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          timeout --kill-after=10s 90s apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=15 update --error-on=any
+          apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=15 install -y --no-install-recommends \
+            ca-certificates git python3 rustup build-essential curl xz-utils zstd unzip
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/tools
+        with:
+          packages: clang lld cpio qemu-system-arm
+      - name: Check real DMA, revocation and failure containment
+        run: make test-smmuv3 ARCH=aarch64 QEMU_CPUS=4
+      - name: Clean up QEMU
+        if: always()
+        run: sh tests/ci/cleanup-qemu.sh aarch64
+      - name: Upload DMA fault evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smmuv3-dma-evidence
+          path: kernel/target/smmuv3*-qemu.log
           retention-days: 7

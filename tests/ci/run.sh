@@ -237,10 +237,12 @@ case "${1:-}" in
         make -o image -o app test-io-standby ARCH=aarch64 IO_VM_PACKAGE="$package" \
             QEMU_CPUS=1 QEMU_MACHINE=virt,virtualization=on,gic-version=2
         ;;
-    io-network)
+    io-network|io-network-mmio)
         package=$(python3 -B scripts/fetch-io-vm.py \
             --reference "${IO_VM_REFERENCE:-}" --platform qemu)
-        make test-board-network ARCH=aarch64 IO_VM_PACKAGE="$package"
+        target=test-board-network
+        if test "$1" = io-network-mmio; then target=test-board-mmio; fi
+        make "$target" ARCH=aarch64 IO_VM_PACKAGE="$package"
         ;;
     board-storage)
         for shard in board-storage-media board-boot-system board-alpine-rootfs \

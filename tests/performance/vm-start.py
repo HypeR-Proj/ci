@@ -79,15 +79,16 @@ def boot(args, index):
     # This warms only the host file cache, not either guest's filesystem cache.
     with (args.fixture / 'base.img').open('rb') as stream:
         disk_sha256 = hashlib.file_digest(stream, 'sha256').hexdigest()
-    command = [args.qemu, '-machine', 'virt-11.1,virtualization=on,gic-version=3',
+    machine = _runner.machine_arguments(args.board, 'virt-11.1,virtualization=on,gic-version=3')
+    command = [args.qemu, '-machine', machine,
                '-accel', 'tcg,thread=multi', '-cpu', 'max', '-smp', '4', '-m', '1G',
                '-nodefaults', '-display', 'none', '-nic', 'none', '-no-reboot',
                '-kernel', str(args.image), '-initrd', str(args.initramfs),
                '-append', 'earlycon=pl011,mmio32,0x09000000',
                '-global', 'virtio-mmio.force-legacy=false', '-snapshot',
                '-drive', f'if=none,id=disk,format=raw,file={str(args.fixture / "base.img").replace(",", ",,")},cache=writeback',
-               '-device', 'virtio-scsi-device,id=scsi,iommu_platform=on',
-               '-device', 'scsi-hd,drive=disk,bus=scsi.0,scsi-id=0,lun=0',
+               '-device', _runner.storage_controller(args.board),
+               '-device', 'scsi-hd,drive=disk,bus=physicalscsi.0,scsi-id=0,lun=0',
                '-serial', 'stdio', '-monitor', 'none']
     command.extend(_runner.network_arguments(args.board))
     (folder / 'command.json').write_text(json.dumps(command, indent=2) + '\n')

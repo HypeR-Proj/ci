@@ -213,6 +213,7 @@ jobs:
   board-storage:
     name: AArch64 / ${{ matrix.suite }}
     runs-on: ubuntu-24.04
+    container: debian:trixie-slim
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -222,6 +223,14 @@ jobs:
       contents: read
       packages: read
     steps:
+      # Prepare a minimal container before checkout and the local setup actions.
+      - name: Bootstrap Debian tools
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          timeout --kill-after=10s 90s apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=15 update --error-on=any
+          apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=15 install -y --no-install-recommends \
+            ca-certificates git python3 rustup build-essential curl xz-utils zstd unzip
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
       - uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4

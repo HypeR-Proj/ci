@@ -12,15 +12,19 @@ the kernel component before running them. All suites are directly runnable
 locally.
 The `quality` suite requires ripgrep, while the `scripts` suite requires
 ShellCheck. The shared `tools` action reuses available runner commands and
-installs missing Ubuntu packages. It caches only downloaded `.deb` archives;
-APT still refreshes authenticated package indexes and validates the selected
-archives. Cache keys include the package set, installer revision, runner
-architecture and UTC date, with older matching downloads available as a fallback.
+installs missing Ubuntu 24.04 or Debian 13 packages. It caches only downloaded
+`.deb` archives; APT still refreshes authenticated package indexes and validates
+the selected archives. Cache keys include the distribution/version, package set,
+installer revision, runner architecture and UTC date, with older matching
+downloads available as a fallback.
 Index updates have a 60-second deadline and archive downloads a 180-second
-deadline per mirror. A failed or slow download retries through the other Ubuntu
-mirror; package installation starts only after downloading succeeds and is not
+deadline per mirror. A failed or slow download retries through another mirror
+for that distribution; installation starts only after downloading succeeds and is not
 subject to that download deadline. This keeps slow package servers from consuming
 the entire test job's budget without interrupting dpkg midway through an install.
+
+Cargo download caches use a digest of tracked lockfiles captured before the
+build. Cache finalization reuses that key without walking generated directories.
 
 The separate `Documentation` workflow builds the complete Markdown, Rustdoc
 and Doxygen site on every pull request and push to `main`. Its build job checks
@@ -63,6 +67,8 @@ and the one-time Pages/required-check setup.
 | `riscv64-runtime` | Serial aggregate of the six ordinary Native probes with `CI_ARCH=riscv64`, plus `riscv64-vm` |
 | `riscv64-vm` | RISC-V fleet configuration, VM authority on one/four harts, runtime-crash recovery and stack limits |
 | `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
+| `io-network` | Default physical/guest PCI storage and network lifecycle, with physical SMMUv3 translation |
+| `io-network-mmio` | Dedicated physical/guest MMIO compatibility: storage, network, driver reset and VM restart |
 | `board-storage` | Serial aggregate of the six board suites below; all use 16 KiB kernel thread stacks and stack watermarks |
 | `board-storage-media` | Configuration storage, cold restart and Native shell |
 | `board-boot-system` | Independent root, supervision handoff and disk-independent/provider failure recovery |
@@ -150,6 +156,18 @@ command assertions use the result protocol described below. Interactive guest
 console and terminal input probes use their own readiness markers.
 
 ## QEMU observations
+
+PCI deployment, network and DMA containment jobs run in Debian 13 (`trixie`)
+containers, using the distribution QEMU package. They require QEMU 9.2 or newer
+for SMMUv3 stage-2; Ubuntu 24.04's package lacks that model. CI does not build
+QEMU. Package caches are separated by distribution and version. The dedicated
+MMIO network matrix entry remains enabled, and the independent MMIO cross-VM
+reset job also retains coverage on Ubuntu's older QEMU. No benchmark thresholds
+are part of these jobs.
+
+Network acceptance boots its two SMP guests one at a time to bound TCG startup
+contention. Both remain running during payload checks, driver rebinds and peer
+restart checks; guest boot retains a 300-second deadline.
 
 Choose the oracle for the behavior being tested:
 

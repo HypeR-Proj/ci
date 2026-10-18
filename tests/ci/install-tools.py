@@ -12,7 +12,7 @@ import shutil
 import subprocess
 
 # Hosted runners already carry several of these tools outside dpkg. Installing
-# the matching Ubuntu metapackage needlessly downloads another copy of CMake.
+# the matching distribution metapackage needlessly downloads another copy of CMake.
 COMMANDS = {
     'clang': ('clang',), 'cmake': ('cmake',), 'cpio': ('cpio',),
     'lld': ('ld.lld',), 'llvm': ('llvm-ar', 'llvm-ranlib', 'llvm-readobj'),
@@ -35,14 +35,29 @@ def missing_packages(packages):
                    if not all(shutil.which(command) for command in COMMANDS[package])})
 
 
+def repositories(release):
+    """Select authenticated repositories matching the job's userspace."""
+    identity = (release.get('ID'), release.get('VERSION_ID'))
+    if identity == ('ubuntu', '24.04'):
+        return ('ubuntu', 'noble', 'main universe restricted multiverse', (
+            ('http://archive.ubuntu.com/ubuntu', 'http://security.ubuntu.com/ubuntu'),
+            ('http://azure.archive.ubuntu.com/ubuntu', 'http://azure.archive.ubuntu.com/ubuntu'),
+        ))
+    if identity == ('debian', '13'):
+        return ('debian', 'trixie', 'main', (
+            ('http://deb.debian.org/debian', 'http://deb.debian.org/debian-security'),
+            ('http://ftp.debian.org/debian', 'http://security.debian.org/debian-security'),
+        ))
+    raise ValueError('CI tool installation requires Ubuntu 24.04 or Debian 13')
+
+
 def install(packages, cache):
     missing = missing_packages(packages)
     if not missing:
         print('All requested CI tools are already available', flush=True)
         return
-    release = platform.freedesktop_os_release()
-    if (release.get('ID'), release.get('VERSION_ID')) != ('ubuntu', '24.04'):
-        raise ValueError('CI tool installation requires Ubuntu 24.04')
+    distribution, codename, components, mirrors = repositories(platform.freedesktop_os_release())
+    privilege = [] if os.geteuid() == 0 else ['sudo']
     cache = cache.resolve()
     cache.mkdir(parents=True, exist_ok=True)
     sources = cache.parent / 'hyper-tools.list'
@@ -57,29 +72,26 @@ def install(packages, cache):
     ]
     # Only downloads have a wall-clock deadline: interrupting dpkg halfway
     # through an installation would leave a partially configured runner.
-    for archive, security in (
-        ('http://archive.ubuntu.com/ubuntu', 'http://security.ubuntu.com/ubuntu'),
-        ('http://azure.archive.ubuntu.com/ubuntu', 'http://azure.archive.ubuntu.com/ubuntu'),
-    ):
+    for archive, security in mirrors:
         sources.write_text(''.join(
-            f'deb [signed-by=/usr/share/keyrings/ubuntu-archive-keyring.gpg] '
-            f'{mirror} {suite} main universe restricted multiverse\n'
-            for mirror, suite in ((archive, 'noble'), (archive, 'noble-updates'),
-                                  (security, 'noble-security'))
+            f'deb [signed-by=/usr/share/keyrings/{distribution}-archive-keyring.gpg] '
+            f'{mirror} {suite} {components}\n'
+            for mirror, suite in ((archive, codename), (archive, f'{codename}-updates'),
+                                  (security, f'{codename}-security'))
         ))
         print(f'Installing missing tools {missing} via {archive}', flush=True)
-        update = ['sudo', 'timeout', '--kill-after=10s', '60s',
+        update = [*privilege, 'timeout', '--kill-after=10s', '60s',
                   'apt-get', *options, 'update', '--error-on=any']
-        download = ['sudo', 'timeout', '--kill-after=10s', '180s',
+        download = [*privilege, 'timeout', '--kill-after=10s', '180s',
                     'apt-get', *options, '--assume-yes', '--no-install-recommends',
                     '--download-only', 'install', *missing]
         if subprocess.run(update).returncode == 0 and subprocess.run(download).returncode == 0:
             break
     else:
-        raise RuntimeError('CI tool downloads failed on both Ubuntu mirrors')
+        raise RuntimeError(f'CI tool downloads failed on both {distribution} mirrors')
     # APT selects packages using freshly authenticated indexes and verifies
     # archive hashes, including when the .deb files came from Actions cache.
-    subprocess.run(['sudo', 'apt-get', *options, '--assume-yes',
+    subprocess.run([*privilege, 'apt-get', *options, '--assume-yes',
                     '--no-install-recommends', '--no-download', 'install', *missing], check=True)
 
 
