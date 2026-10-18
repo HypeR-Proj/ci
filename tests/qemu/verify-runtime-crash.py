@@ -9,6 +9,7 @@ import time
 
 from session import Session, native_command
 from command import Shell
+from journal import Journal
 
 
 def main():
@@ -30,6 +31,8 @@ def main():
             session.send(command + b'\n')
 
         shell = Shell(session)
+        journal = Journal(shell)
+        reported_crashes = 0
 
         def run(command, timeout=60):
             return shell.check(command, timeout=timeout)
@@ -57,6 +60,7 @@ def main():
             return tuple(map(int, match.groups()))
 
         def crash_alpine():
+            nonlocal reported_crashes
             send(b'vmm console alpine')
             await_text(rb'Connected to alpine\. Press Ctrl-\] for the control menu\.')
             session.send(b'\x1e\n')
@@ -65,6 +69,19 @@ def main():
             await_text(rb'\[vmm\] (?:virtual machine disconnected|console write failed: disconnected)')
             await_text(rb'hyper-sh\$ ')
             wait_state(b'alpine', b'failed')
+            reported_crashes += 1
+            marker = "/vm-manager generation=1 worker failure: VM 'alpine' runtime process="
+            records = journal.wait('/component-manager', lambda records: sum(
+                marker in record['text'] for record in records) >= reported_crashes)
+            reports = [record['text'] for record in records if marker in record['text']]
+            if len(reports) != reported_crashes or any(
+                    not report.startswith(('ERROR: ', 'CRITICAL: ')) or 'terminated:' not in report
+                    for report in reports):
+                raise AssertionError(f'VM failure report lost or duplicated: {reports!r}')
+            status = run(b'componentctl status /vm-manager')
+            # componentctl escapes diagnostic text before terminal display.
+            if rb"VM \'alpine\' runtime process=" not in status:
+                raise AssertionError(f'VM failure missing from component status: {status!r}')
 
         # Admission and shell readiness may print in either order.
         await_text(rb'(?s)(?=.*HypeR session: console ready)'

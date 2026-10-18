@@ -252,16 +252,16 @@ def check_manager_evidence(case, output):
     markers = {
         'absent': (),
         'missing': (b'HypeR system-startup: /vm-manager: ServiceUnavailable',),
-        'exit': (b'VM-PROVISION-FIXTURE-EXIT', b'/vm-manager generation=1 retired: ProcessExited { status: 1 }'),
+        'exit': (b'VM-PROVISION-FIXTURE-EXIT', b'/vm-manager generation=1 terminated: ProcessExited { status: 1 }'),
         'closed-reply': (b'VM-PROVISION-FIXTURE-CLOSED-REPLY',
                          b'VM fleet result channel closed without a reply',
-                         b'/vm-manager generation=1 retired: Requested'),
+                         b'/vm-manager generation=1 terminated: Requested'),
         'invalid-reply': (b'VM-PROVISION-FIXTURE-INVALID-REPLY',
                           b'VM fleet configuration reply is invalid',
-                          b'/vm-manager generation=1 retired: Requested'),
+                          b'/vm-manager generation=1 terminated: Requested'),
         'configured-exit': (b'HypeR system-startup: VM fleet configured',
                             b'VM-PROVISION-FIXTURE-CONFIGURED',
-                            b'/vm-manager generation=1 retired: ProcessExited { status: 0 }'),
+                            b'/vm-manager generation=1 terminated: ProcessExited { status: 0 }'),
         'no-config': (b'HypeR vm-manager: initial fleet configuration unavailable',),
     }
     for marker in markers[case]:
@@ -356,7 +356,7 @@ def main():
         else:
             session.await_text(rb'HypeR system-startup: core supervision adopted', 240)
             if args.manager_case in ('exit', 'closed-reply', 'invalid-reply', 'configured-exit'):
-                session.await_text(rb'HypeR component-manager: /vm-manager generation=1 retired:', 180)
+                session.await_text(rb'/vm-manager generation=1 terminated:', 180)
             elif args.provider_case or args.missing_data_worker or args.manager_case in ('missing', 'no-config'):
                 session.await_text(rb'VM fleet configuration unavailable', 180)
             elif args.manager_case == 'absent':

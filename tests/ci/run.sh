@@ -132,6 +132,8 @@ case "${1:-}" in
         ;;
     native-services)
         make test-services ARCH=aarch64
+        make test-process-retirement ARCH=aarch64
+        make test-service-failure ARCH=aarch64
         ;;
     native-fleet)
         make image native-initramfs ARCH=aarch64

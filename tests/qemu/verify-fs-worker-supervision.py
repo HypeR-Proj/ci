@@ -64,6 +64,8 @@ def run(args):
         else:
             shell.check(f'echo fault >/data/{args.case}', failed=True, timeout=30)
         reason = 'ProcessExited { status: 37 }' if args.case == 'exit' else 'Fault {'
+        vm.observe(rb'HypeR component-manager: CRITICAL: /fs-backend generation=1 worker failure: .*'
+                   + re.escape(reason.encode()), 15)
         records = journal.message('/fs-backend', reason, stream='stderr')
         failures = [r for r in records if reason in r['text']]
         if len(failures) != 1 or not all(s in failures[0]['text'] for s in ('fs-fat', '/data', '0x')):

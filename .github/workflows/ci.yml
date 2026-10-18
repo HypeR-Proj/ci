@@ -191,6 +191,8 @@ jobs:
           path: |
             target/app/aarch64/*.log
             target/app/aarch64/services.*/*.log
+            target/app/aarch64/retirement.*/**/*.log
+            target/app/aarch64/service-failure.*/**/*.log
             target/app/aarch64/storage-failure/*.log
             target/app/aarch64/**/*.log.commands/**
             target/stack-audit/aarch64/*.json

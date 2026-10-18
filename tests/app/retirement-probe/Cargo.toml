@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+workspace = "../../../app"
+name = "hyper-retirement-probe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "hyper-retirement-probe"
+path = "src/main.rs"
+test = false
+bench = false
+
+[dependencies]
+hyper-os.workspace = true
+hyper-rt.workspace = true
+hyper-service.workspace = true
+
+[lints]
+workspace = true
