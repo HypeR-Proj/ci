@@ -92,7 +92,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [aarch64, riscv64]
-        suite: [native-boot, native-console, native-terminal, native-apps, native-shell]
+        suite: [native-boot, native-console, native-terminal, native-apps, native-shell, native-stress]
         gic: [3]
         include:
           - arch: aarch64
@@ -127,6 +127,7 @@ jobs:
           path: |
             target/app/${{ matrix.arch }}/*.log
             target/app/${{ matrix.arch }}/*.log.commands/**
+            target/app/${{ matrix.arch }}/lifecycle-stress-*.json
           if-no-files-found: ignore
           retention-days: 7
 

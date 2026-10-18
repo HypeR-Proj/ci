@@ -44,7 +44,7 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
             'test-native', 'test-console', 'test-terminal', 'test-apps', 'test-shell', 'test-services',
             'test-fleet-config', 'test-storage-failure', 'test-filesystem-failure',
             'test-runtime-crash', 'test-vm-smoke', 'test-editor', 'test-less',
-            'test-service-failure', 'test-process-retirement',
+            'test-service-failure', 'test-process-retirement', 'test-lifecycle-stress',
         })
 
     def test_board_shards_keep_minimum_stacks_and_instrumentation(self):
@@ -72,6 +72,15 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
     def test_local_probe_builds_its_own_images(self):
         calls = self.run_suite('native-shell')
         self.assertEqual(calls, [['make', 'test-shell', 'ARCH=aarch64']])
+
+    def test_stress_consumes_fixture_on_one_and_four_cpus(self):
+        calls = self.run_suite('native-stress', CI_NATIVE_FIXTURE='/fixture/native', CI_ARCH='riscv64')
+        make = [call for call in calls if call[0] == 'make']
+        self.assertEqual(len(make), 2)
+        for call, cpus in zip(make, (1, 4)):
+            self.assertEqual(call[1:6], ['-o', 'image', '-o', 'native-initramfs', 'test-lifecycle-stress'])
+            self.assertIn(f'QEMU_CPUS={cpus}', call)
+            self.assertIn('ARCH=riscv64', call)
 
     def test_gicv2_smp_keeps_topology_and_retirement_coverage(self):
         calls = [call for call in self.run_suite('native-smp-gicv2') if call[0] == 'make']

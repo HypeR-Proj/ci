@@ -57,9 +57,10 @@ and the one-time Pages/required-check setup.
 | `native-smp-overcommit` | Guest SMP with one host CPU |
 | `native-retirement-stack` | Power-crash retirement in dormant/pending/powered-off states and stack limits |
 | `native-stack-16k` | Native userspace boot on one/four CPUs with 16 KiB kernel thread stacks, independent RAMFS test root, root/supervision handoff, shell commands, static/dynamic std and application startup |
+| `native-stress` | Seeded concurrent handle churn, cross-process MOVE and process stop/normal exit; 12 rounds each on one/four CPUs, supports `CI_ARCH=riscv64` |
 | `riscv64-native` | Serial aggregate of `riscv64-sdk` and `riscv64-runtime` |
 | `riscv64-sdk` | RISC-V SDK publication/consumer checks, app lint and host tests |
-| `riscv64-runtime` | Serial aggregate of the five ordinary Native probes with `CI_ARCH=riscv64`, plus `riscv64-vm` |
+| `riscv64-runtime` | Serial aggregate of the six ordinary Native probes with `CI_ARCH=riscv64`, plus `riscv64-vm` |
 | `riscv64-vm` | RISC-V fleet configuration, VM authority on one/four harts, runtime-crash recovery and stack limits |
 | `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
 | `board-storage` | Serial aggregate of the six board suites below; all use 16 KiB kernel thread stacks and stack watermarks |
@@ -77,9 +78,9 @@ and the one-time Pages/required-check setup.
 | `riscv64-qemu` | RISC-V kernel startup, SMP admission, and standalone mechanism self-tests |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |
 
-GitHub Actions runs the Native boot, console, terminal, app and shell probes
+GitHub Actions runs the Native boot, console, terminal, app, shell and stress probes
 on separate runners. Two producer jobs build one immutable kernel/initramfs pair
-per architecture. Twelve probe jobs download the matching artifact from the
+per architecture. Fourteen probe jobs download the matching artifact from the
 **same workflow run**, check its revision, architecture and SHA-256 hashes, then
 skip only the image-building prerequisites. GICv2 and GICv3 consume the same
 AArch64 images. These consumers install QEMU only; they do not rebuild the SDK,
@@ -231,6 +232,14 @@ against production publication/admission mechanisms. See the commands and
 coverage limits in [validation coverage](../../kernel/tests/VALIDATION.md).
 These are correctness tests; storage/network performance benchmarks remain
 manual and have no CI throughput or latency thresholds.
+
+`quality` includes 32 deterministic handle-fuzz seeds, each with 256 operations
+against production handle/object code. `native-stress` adds real concurrent
+Native syscall/stop coverage using the shared fixture on one/four CPUs. It has
+fixed CI round limits and preserves the seed and command results on failure.
+Longer campaigns and exact replay commands are documented in
+[lifecycle fuzz/stress](../stress/README.md); fuzz seeds do not reproduce exact
+scheduler interleavings.
 
 `make test-boot-system ARCH=aarch64` reproduces the split-root and recovery
 part of `board-storage`. It creates an isolated disk, checks supervision handoff,

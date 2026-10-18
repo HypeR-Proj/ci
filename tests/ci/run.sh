@@ -76,6 +76,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-stack.py
         python3 -B tests/qemu/test-boot-system.py
         python3 -B tests/qemu/test-session.py
+        python3 -B tests/qemu/test-lifecycle-stress.py
         python3 -B tests/qemu/test-power-crash.py
         python3 -B tests/qemu/test-command.py
         python3 -B tests/qemu/test-console.py
@@ -113,7 +114,7 @@ case "${1:-}" in
             --directory "target/ci/native-$arch"
         ;;
     native-gicv3)
-        for shard in native-boot native-console native-terminal native-apps native-shell \
+        for shard in native-boot native-console native-terminal native-apps native-shell native-stress \
             native-fleet native-services native-storage-recovery native-filesystem native-runtime-crash native-vm; do
             sh tests/ci/run.sh "$shard"
         done
@@ -127,6 +128,11 @@ case "${1:-}" in
         ;;
     native-apps)
         run_native_probe test-apps test-editor test-less
+        ;;
+    native-stress)
+        for cpus in 1 4; do
+            run_native_probe test-lifecycle-stress QEMU_CPUS="$cpus"
+        done
         ;;
     native-console|native-terminal|native-shell)
         run_native_probe "test-${1#native-}"
@@ -271,7 +277,7 @@ case "${1:-}" in
         make app-sdk-test ARCH=riscv64
         ;;
     riscv64-runtime)
-        for shard in native-boot native-console native-terminal native-apps native-shell; do
+        for shard in native-boot native-console native-terminal native-apps native-shell native-stress; do
             CI_ARCH=riscv64 sh tests/ci/run.sh "$shard"
         done
         sh tests/ci/run.sh riscv64-vm
