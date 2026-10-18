@@ -13,6 +13,7 @@ import time
 
 from session import Session, native_command
 from command import Shell
+from journal import Journal
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -195,8 +196,8 @@ def run_case(args, case):
         failures += (b'core supervision transferred', b'core supervision adopted')
     with Session(command, logfile, failures=failures) as session:
         session.shell = Shell(session)
-        def formal_prompt():
-            session.await_text(rb'hyper-sh\$ ', 60)
+        def formal_prompt(timeout=60):
+            session.await_text(rb'hyper-sh\$ ', timeout)
 
         if case == 'handoff-failure':
             session.await_text(rb'\[HypeR bootstrap stage 1\]\[fallback-sh\] recovery console ready', 180)
@@ -269,8 +270,13 @@ def run_case(args, case):
                     raise AssertionError('readiness wait started an early shell')
             # Exercise the production 120 s deadline, not a test-only override.
             session.observe(re.escape(ADOPTED), 240)
-            session.observe(re.escape(DEGRADED), 120)
-            formal_prompt()
+            # Live fixtures can consume the full 60 s adoption deadline after
+            # supervision transfers. Preserve that startup budget when moving
+            # the degraded-state assertion from the serial mirror to journal.
+            formal_prompt(FORMAL_STARTUP_TIMEOUT)
+            # Splash and kernel output may split the serial mirror mid-line.
+            # The attributed journal record is the complete service evidence.
+            Journal(session.shell).message('/startup', DEGRADED.decode(), timeout=120)
             if case == 'root-change':
                 # The observer can finish before init logs the unavailable
                 # fleet. Check the complete capture, not only unread output.

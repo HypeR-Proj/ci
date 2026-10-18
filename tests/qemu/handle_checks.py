@@ -54,7 +54,9 @@ def verify_handles(run):
     run(f'grep {obj} /handle-objects', record[2])
     run('handle --kind 0xffffffff --no-headers > /handle-empty')
     run('ls --bytes /handle-empty', rb'\s0\s+/handle-empty')
-    piped = run('handle --all | grep -q .', timeout=15)
+    # Use a durable process: --all may legitimately report a skipped process
+    # when this pipeline's grep exits during the weakly consistent scan.
+    piped = run('handle shell | grep -q .', timeout=15)
     if b'handle:' in piped:
         raise AssertionError(f'early pipe close produced an error: {piped!r}')
     run('rm /handle-objects /handle-empty')

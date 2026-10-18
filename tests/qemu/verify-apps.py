@@ -199,7 +199,10 @@ def main():
             send(b'\x1b[1;1Recho HYPER_CLI_GUEST_OK\n')
             await_text(rb'\nHYPER_CLI_GUEST_OK\n')
             send(b'\x1dq')
-            await_text(rb'\[vmm\] detached\nhyper-sh\$ ')
+            # Kernel retirement diagnostics may arrive between detachment and
+            # the next prompt; both events must occur, but need not be adjacent.
+            await_text(rb'\[vmm\] detached\n')
+            await_text(rb'hyper-sh\$ ')
             run('vmm stop io --wait --timeout 60', rb'io: stopped', timeout=65)
             state('io', 'stopped')
             state('alpine', 'running')

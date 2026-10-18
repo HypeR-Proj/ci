@@ -21,6 +21,29 @@ spec.loader.exec_module(acceptance)
 
 
 class DiskAcceptanceTests(unittest.TestCase):
+    def test_failure_reason_is_retained_when_prefix_arrives_first(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            child = directory / 'fixture-process'
+            child.write_text('''#!/usr/bin/env python3
+import sys, time
+sys.stdout.write('IO-VM-SMOKE: FAIL ')
+sys.stdout.flush()
+time.sleep(0.1)
+print('nonidentity DMA setup failed', flush=True)
+time.sleep(60)
+''')
+            child.chmod(0o755)
+            log = directory / 'acceptance.log'
+            diagnostic = io.StringIO()
+            with contextlib.redirect_stderr(diagnostic), self.assertRaisesRegex(
+                    RuntimeError, 'fixture reported a failure'):
+                acceptance.run(str(child), directory / 'kernel', directory / 'initramfs',
+                               log, 5)
+            self.assertIn('IO-VM-SMOKE: FAIL nonidentity DMA setup failed',
+                          diagnostic.getvalue())
+            self.assertIn(b'nonidentity DMA setup failed\n', log.read_bytes())
+
     def test_runner_checks_disk_after_stopping_its_owned_process(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

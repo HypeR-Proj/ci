@@ -120,6 +120,19 @@ class SessionTests(unittest.TestCase):
                                   Path(directory) / 'log') as session:
                     session.await_text(b'READY')
 
+    def test_failure_cleanup_retains_reason_after_split_marker(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'log'
+            with self.assertRaisesRegex(RuntimeError, 'kernel failure'):
+                with self.session(
+                    "import sys,time; sys.stdout.write('kernel panic '); sys.stdout.flush(); "
+                    "time.sleep(0.1); print('full reason'); time.sleep(30)", log
+                ) as session:
+                    session.await_text(b'READY')
+            self.assertIn(b'kernel panic full reason\n', log.read_bytes())
+            self.assertIsNotNone(session.process.returncode)
+            self.assertTrue(session.log.closed)
+
     def test_cleanup_checks_fatal_output_after_the_final_assertion(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / 'log'

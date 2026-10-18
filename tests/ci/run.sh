@@ -76,6 +76,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-stack.py
         python3 -B tests/qemu/test-boot-system.py
         python3 -B tests/qemu/test-session.py
+        python3 -B tests/qemu/test-power-crash.py
         python3 -B tests/qemu/test-command.py
         python3 -B tests/qemu/test-console.py
         python3 -B tests/qemu/test-console-hotplug.py

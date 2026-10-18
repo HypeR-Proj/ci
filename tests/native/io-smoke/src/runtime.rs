@@ -4,7 +4,8 @@
 use hyper_os::device;
 use hyper_os::guest_io::{Mailbox, Notification};
 use hyper_os::handle::{
-    GuestMailboxObject, GuestNotificationObject, VirtualCpuObject, VirtualMachineObject,
+    DeviceAssignmentAuthorityObject, GuestMailboxObject, GuestNotificationObject, HandleRef,
+    VirtualCpuObject, VirtualMachineObject,
 };
 use hyper_os::startup::{self, Startup};
 use hyper_os::virtual_serial::{self, Output};
@@ -34,7 +35,12 @@ fn show(error: impl std::fmt::Debug) -> String {
     format!("{error:?}")
 }
 
-fn fixture_image(config: &hyper_vm_policy::fleet::Config, path: &str) -> Result<Image> {
+fn fixture_image(
+    config: &hyper_vm_policy::fleet::Config,
+    path: &str,
+    authority: HandleRef<'_, DeviceAssignmentAuthorityObject>,
+    dma_alias: u64,
+) -> Result<Image> {
     let mut matches = config
         .machines
         .iter()
@@ -45,8 +51,23 @@ fn fixture_image(config: &hyper_vm_policy::fleet::Config, path: &str) -> Result<
     if matches.next().is_some() {
         return Err("ambiguous fixture image configuration".into());
     }
-    let file = std::fs::File::open(path).map_err(|error| format!("open {path}: {error}"))?;
-    Image::load(definition, file)
+    let load = || {
+        let file = std::fs::File::open(path).map_err(|error| format!("open {path}: {error}"))?;
+        Image::load(definition, file)
+    };
+    let image = load()?;
+    let extent =
+        device::dma_extent(authority, image.memory.as_handle_ref(), 0, RAM_BYTES).map_err(show)?;
+    if extent.physical_base != dma_alias {
+        return Ok(image);
+    }
+    // The test needs nonidentity DMA, independently of allocator ordering.
+    // Hold the colliding allocation until its replacement owns different RAM.
+    // One replacement suffices: two live allocations cannot share this base.
+    println!("IO-VM-SMOKE: reserving identity DMA placement for {path}");
+    let replacement = load()?;
+    drop(image);
+    Ok(replacement)
 }
 fn device_node(base: u64, irq: u32) -> MmioDevice {
     MmioDevice {
@@ -267,11 +288,11 @@ fn suite(startup: &Startup<'_>) -> Result<()> {
         .read_to_end(&mut config_bytes)
         .map_err(show)?;
     let config = hyper_vm_policy::fleet::Config::parse(&config_bytes)?;
-    let front = fixture_image(&config, "/vm/business.itb")
+    let front = fixture_image(&config, "/vm/business.itb", authority, SHARED_BASE)
         .map_err(|error| format!("load business image: {error}"))?;
     println!("IO-VM-SMOKE: loading I/O image");
-    let io =
-        fixture_image(&config, "/vm/io.itb").map_err(|error| format!("load I/O image: {error}"))?;
+    let io = fixture_image(&config, "/vm/io.itb", authority, RAM_BASE)
+        .map_err(|error| format!("load I/O image: {error}"))?;
     let io_extent =
         device::dma_extent(authority, io.memory.as_handle_ref(), 0, RAM_BYTES).map_err(show)?;
     let front_extent =

@@ -19,6 +19,16 @@ guest_smp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(guest_smp)
 
 
+def await_power_loss(session, mode, after):
+    # Runtime stderr and the console client drain independently. Observe the
+    # crash marker without consuming an already printed disconnect or prompt.
+    session.observe(b'HYPER_POWER_CRASH state=' + mode.encode() + rb'\n',
+                    timeout=90, after=after)
+    if mode == 'powered-off':
+        session.await_text(rb'\[vmm\] virtual machine disconnected', timeout=90)
+        session.await_text(rb'hyper-sh\$ ', timeout=90)
+
+
 def main():
     qemu, image, initramfs, logfile, mode = sys.argv[1:]
     if mode not in ('dormant', 'pending', 'powered-off'):
@@ -63,6 +73,7 @@ def main():
             if baseline_guest != 0:
                 raise RuntimeError('fixture unexpectedly autostarted a guest')
             for cycle in range(3):
+                cycle_start = session.mark()
                 send(b'vmm start alpine')
                 if mode == 'powered-off':
                     await_text(rb'hyper-sh\$ ')
@@ -73,10 +84,7 @@ def main():
                     await_text(rb'\nPOWER_CRASH_ONLINE=0-3\n')
                     await_text(rb'~ # ')
                     send(b'echo 0 > /sys/devices/system/cpu/cpu1/online')
-                await_text(b'HYPER_POWER_CRASH state=' + mode.encode() + rb'\n')
-                if mode == 'powered-off':
-                    await_text(rb'\[vmm\] virtual machine disconnected')
-                    await_text(rb'hyper-sh\$ ')
+                await_power_loss(session, mode, cycle_start)
                 wait_state(b'failed')
                 for _ in range(90):
                     user, guest = owners()

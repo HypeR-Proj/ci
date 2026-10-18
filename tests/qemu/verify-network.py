@@ -31,6 +31,8 @@ from board_config import Board
 from guest_console import append_console_output
 from session import Session
 
+GUEST_BOOT_TIMEOUT_SECONDS = 300
+
 
 def prepare(args):
     """Add a network-only peer to the normal disk+network Alpine deployment."""
@@ -206,7 +208,9 @@ class Scenario:
         self.send(f'vmm console {name}\n'.encode())
         self.session.await_text(re.escape(f'Connected to {name}.'.encode()))
         self.send(b'\n')
-        self.session.await_text(rb'~ # ', timeout=180)
+        # Two Linux guests boot concurrently under cross-architecture TCG.
+        # Match the SMP boot allowance; network commands keep their own limits.
+        self.session.await_text(rb'~ # ', timeout=GUEST_BOOT_TIMEOUT_SECONDS)
         try:
             yield
         finally:

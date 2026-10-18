@@ -92,9 +92,26 @@ def main():
         process = re.search(rb'^process\s+(0x[0-9a-f]+)\s+-\s+shell\s', processes, re.M)
         if process is None:
             raise AssertionError('persistent shell Process missing')
-        run('ps --threads', rb'^  thread\s+0x[0-9a-f]+\s+0x[0-9a-f]+\s+\S+\s+user/(resident|retiring) process=',
+        threads = run('ps --threads', rb'^  thread\s+0x[0-9a-f]+\s+0x[0-9a-f]+\s+\S+\s+user/(resident|retiring) process=',
             rb'^  thread\s+0x[0-9a-f]+\s+kernel\s+\S+\s+(bootstrap|idle|kernel|vcpu)/(resident|retiring) process=kernel',
             rb'\skernel\s+idle/0\s+idle/resident')
+        for index in range(int(cpus)):
+            for name, role in (('idle', 'idle'), ('ktimer', 'kernel')):
+                pattern = (rb'^  thread\s+0x[0-9a-f]+\s+kernel\s+'
+                           + f'{name}/{index}'.encode() + rb'\s+'
+                           + role.encode() + rb'/resident\s+process=kernel')
+                if len(re.findall(pattern, threads, re.M)) != 1:
+                    raise AssertionError(f'missing or duplicate {name}/{index}: {threads!r}')
+        for process_name, names in (
+                ('session-manager', ('terminal-recovery', 'thread-reaper')),
+                ('journal', ('journal-admit', 'journal-query-admit', 'thread-reaper')),
+                ('console-raw', ('console-control', 'thread-reaper'))):
+            for name in names:
+                pattern = (rb'^  thread\s+0x[0-9a-f]+\s+0x[0-9a-f]+\s+'
+                           + name.encode() + rb'\s+user/resident process='
+                           + process_name.encode() + rb'$')
+                if not re.search(pattern, threads, re.M):
+                    raise AssertionError(f'missing {process_name}/{name}: {threads!r}')
         run('handle ' + process[1].decode(), rb'^HANDLE\s+OBJECT\s+KIND\s+RIGHTS$',
             rb'^0x[0-9a-f]{16}\s+0x[0-9a-f]{16}\s+[a-z][a-z-]+\s+[a-z][a-z|-]+')
         run('handle --objects', rb'^KOID\s+KIND\s+STATE\s+HANDLES\s+REFS$',
@@ -107,7 +124,8 @@ def main():
         static = run('std-test-static --name static', rb'^HYPER_STD_OK hello static$')
         for name, output in ((b'dynamic', dynamic), (b'static', static)):
             for marker in (b'HYPER_STD_OK hello ' + name, b'HYPER_STD_TLS_DROP_OK',
-                           b'HYPER_STD_FP_THREADS_OK', b'HYPER_COW_OK', b'HYPER_STD_STDERR_OK'):
+                           b'HYPER_STD_FP_THREADS_OK', b'HYPER_COW_OK', b'HYPER_STD_STDERR_OK',
+                           b'HYPER_STD_THREAD_NAMES_OK'):
                 if output.count(marker) != 1:
                     raise AssertionError(f'std {name!r}: missing/duplicate {marker!r}: {output!r}')
         run('std-test --help', rb'^HypeR standard library acceptance probe$', rb'^Usage: .*std-test')

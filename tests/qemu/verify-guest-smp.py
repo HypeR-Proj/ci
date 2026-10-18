@@ -22,6 +22,31 @@ from guest_console import append_console_output
 GUEST_BOOT_TIMEOUT_SECONDS = 300
 
 
+def verify_vcpu_startup(log, guest_cpus, host_cpus):
+    # First-run records are separated in time. Automatic migration can reuse
+    # a host CPU between records, so their union is not a placement snapshot.
+    # Keep execution evidence for every vCPU within one VM incarnation.
+    records = re.findall(
+        rb'HypeR: vCPU (\d+) running as scheduler thread \d+ '
+        rb'on guarded stack [^;]+; host CPU (\d+); '
+        rb'VM VmId \{ slot: (\d+), generation: (\d+) \}', log)
+    instances = {}
+    for cpu, host, slot, generation in records:
+        if int(host) >= host_cpus:
+            raise RuntimeError(f'invalid host CPU placement: vCPU {int(cpu)} on {int(host)}')
+        instances.setdefault((slot, generation), {})[int(cpu)] = int(host)
+    if not any(set(placements) == set(range(guest_cpus)) for placements in instances.values()):
+        raise RuntimeError('missing complete per-vCPU host placement records')
+
+
+def verify_host_affinity(status, targets):
+    placements = sorted((int(cpu), host.decode()) for cpu, host in re.findall(
+        rb'(?m)^ *vCPU (\d+): pCPU ([^\n]+)\n', status))
+    expected = sorted((cpu, str(host)) for cpu, host in targets.items())
+    if placements != expected:
+        raise RuntimeError(f'vCPU affinity mismatch: {placements}; expected {expected}')
+
+
 def main():
     qemu, image, initramfs, logfile = sys.argv[1:]
     guest_cpus = int(os.environ.get('GUEST_CPUS', '4'))
@@ -62,31 +87,27 @@ def main():
                 time.sleep(0.1)
             raise TimeoutError('VM did not restart')
 
-        def verify_host_placement():
-            # Startup records capture the actual executing host CPU, not a
-            # requested affinity or a scheduler queue assignment. Group by VM
-            # incarnation so a reboot cannot fabricate distinct placement.
-            session.log.flush()
-            records = re.findall(
-                rb'HypeR: vCPU (\d+) running as scheduler thread \d+ '
-                rb'on guarded stack [^;]+; host CPU (\d+); '
-                rb'VM VmId \{ slot: (\d+), generation: (\d+) \}',
-                Path(logfile).read_bytes())
-            instances = {}
-            for cpu, host, slot, generation in records:
-                instances.setdefault((slot, generation), {})[int(cpu)] = int(host)
-            expected = min(host_cpus, guest_cpus)
-            for placements in instances.values():
-                if set(placements) != set(range(guest_cpus)):
-                    continue
-                hosts = set(placements.values())
-                if any(cpu >= host_cpus for cpu in hosts):
-                    raise RuntimeError(f'invalid host CPU placement: {placements}')
-                if len(hosts) < expected:
-                    raise RuntimeError(f'guest CPUs collapsed onto {len(hosts)} host CPUs: '
-                                       f'{placements}; expected {expected}')
-                return
-            raise RuntimeError('missing complete per-vCPU host placement records')
+        def host_status():
+            send(b'vmm status alpine')
+            return session.await_text(rb'hyper-sh\$ ', 90)
+
+        def migration_targets(cycle):
+            # Spread over every available host CPU, and also co-locate the
+            # whole guest to exercise virtual hardware ownership while sharing.
+            return {cpu: 0 if cycle == 1 else (cpu + cycle + 1) % host_cpus
+                    for cpu in range(guest_cpus)}
+
+        def wait_host_affinity(targets):
+            deadline = time.monotonic() + 30
+            while True:
+                status = host_status()
+                try:
+                    verify_host_affinity(status, targets)
+                    return
+                except RuntimeError as error:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(f'vCPU migration did not complete: {error}') from error
+                time.sleep(0.1)
 
         def online(token, expected):
             send(f'printf "{token}="; /bin/busybox cat /sys/devices/system/cpu/online'.encode())
@@ -103,23 +124,14 @@ def main():
             await_text(rb'~ # ')
             session.send(b'\x1dd')
             await_text(rb'hyper-sh\$ ')
-            for cpu in range(guest_cpus):
-                # Also share one physical CPU to exercise virtual hardware
-                # ownership when several vCPUs of the same VM time-slice.
-                target = 0 if cycle == 1 else (cpu + cycle + 1) % host_cpus
+            targets = migration_targets(cycle)
+            for cpu, target in targets.items():
                 send(f'vmm affinity alpine {cpu} {target}'.encode())
                 await_text(fr'vCPU {cpu}: affinity accepted; inspect vmm status for placement\n'.encode())
                 await_text(rb'hyper-sh\$ ')
-                deadline = time.monotonic() + 30
-                while True:
-                    send(b'vmm status alpine')
-                    placement = await_text(fr'vCPU {cpu}: pCPU [^\n]*\n'.encode())
-                    await_text(rb'hyper-sh\$ ')
-                    if placement == f'vCPU {cpu}: pCPU {target}\n'.encode():
-                        break
-                    if time.monotonic() >= deadline:
-                        raise TimeoutError(f'vCPU {cpu} migration did not complete: {placement!r}')
-                    time.sleep(0.1)
+            # Singleton affinities make all placements stable together. Verify
+            # the complete spread/co-location instead of independent samples.
+            wait_host_affinity(targets)
             attach()
             send(f'while [ ! -f {marker} ]; do sleep 1; done; cat {marker}'.encode())
             await_text(rb'\nTIMER_OK\n')
@@ -150,7 +162,8 @@ def main():
             for cycle in range(3):
                 online(f'SMP_ONLINE_{cycle}', f'0-{guest_cpus - 1}')
                 if cycle == 0:
-                    verify_host_placement()
+                    session.log.flush()
+                    verify_vcpu_startup(Path(logfile).read_bytes(), guest_cpus, host_cpus)
                 migrate_guest_cpus(cycle)
                 online(f'SMP_MIGRATED_{cycle}', f'0-{guest_cpus - 1}')
                 # Offline all secondaries, then bring them back repeatedly.
@@ -174,6 +187,13 @@ def main():
                     await_text(rb'(?:^|\n)CPU_WORK_OK\n')
                 await_text(rb'(?:^|\n)SMP_WORK_DONE\n')
                 await_text(rb'~ # ')
+                if host_cpus > 1:
+                    session.send(b'\x1dd')
+                    await_text(rb'hyper-sh\$ ')
+                    # Hotplug and sustained progress must preserve every
+                    # accepted affinity despite periodic automatic balancing.
+                    verify_host_affinity(host_status(), migration_targets(cycle))
+                    attach()
             for _ in range(2):
                 send(b'reboot')
                 await_text(rb'\[vmm\] virtual machine disconnected')
@@ -187,6 +207,9 @@ def main():
             _user, guest = memory_owners()
             if guest != 0:
                 raise RuntimeError('guest poweroff leaked guest pages')
+            session.log.flush()
+            if b'masked virtual timer PPI without an active vCPU' in Path(logfile).read_bytes():
+                raise RuntimeError('guest timer interrupt escaped vCPU ownership')
             print(f'verified {guest_cpus} guest CPUs, migration, hotplug, two reboots, '
                   'and poweroff reclamation')
         except Exception:

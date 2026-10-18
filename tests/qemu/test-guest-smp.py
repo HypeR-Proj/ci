@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 roolrz
 # SPDX-License-Identifier: Apache-2.0
 
-"""Regression tests for multiplexed host logs and guest console output."""
+"""Regression tests for guest SMP placement and multiplexed console output."""
 
 import importlib.util
 from pathlib import Path
@@ -12,6 +12,58 @@ spec = importlib.util.spec_from_file_location(
     'guest_smp', Path(__file__).with_name('verify-guest-smp.py'))
 guest_smp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(guest_smp)
+
+
+class HostPlacementTests(unittest.TestCase):
+    def startup(self, placements, *, slot=0, generation=0):
+        return b''.join(
+            (f'HypeR: vCPU {cpu} running as scheduler thread {cpu + 1} '
+             f'on guarded stack 0x1000-0x2000; host CPU {host}; '
+             f'VM VmId {{ slot: {slot}, generation: {generation} }}\n').encode()
+            for cpu, host in placements.items())
+
+    def status(self, placements):
+        return b''.join(f'  vCPU {cpu}: pCPU {host}\n'.encode()
+                        for cpu, host in placements.items())
+
+    def test_startup_may_reuse_hosts_between_first_dispatches(self):
+        guest_smp.verify_vcpu_startup(self.startup({0: 2, 1: 0, 2: 1, 3: 2}), 4, 4)
+
+    def test_single_host_runs_every_guest_cpu(self):
+        guest_smp.verify_vcpu_startup(self.startup(dict.fromkeys(range(4), 0)), 4, 1)
+
+    def test_startup_rejects_unavailable_host(self):
+        with self.assertRaisesRegex(RuntimeError, 'invalid host CPU'):
+            guest_smp.verify_vcpu_startup(self.startup({0: 0, 1: 4}), 2, 4)
+
+    def test_startup_requires_every_guest_cpu(self):
+        for placements in ({}, {0: 0}, {0: 0, 2: 1}):
+            with self.subTest(placements=placements), self.assertRaisesRegex(
+                    RuntimeError, 'missing complete'):
+                guest_smp.verify_vcpu_startup(self.startup(placements), 2, 4)
+
+    def test_different_vm_incarnations_cannot_complete_startup(self):
+        for identity in ({'slot': 1}, {'generation': 1}):
+            log = self.startup({0: 0}) + self.startup({1: 1}, **identity)
+            with self.subTest(identity=identity), self.assertRaisesRegex(
+                    RuntimeError, 'missing complete'):
+                guest_smp.verify_vcpu_startup(log, 2, 4)
+
+    def test_live_status_accepts_exact_spread_and_colocation(self):
+        for placements in ({0: 1, 1: 2, 2: 3, 3: 0}, dict.fromkeys(range(4), 0)):
+            with self.subTest(placements=placements):
+                guest_smp.verify_host_affinity(self.status(placements), placements)
+
+    def test_live_status_requires_complete_exact_affinity(self):
+        targets = {0: 1, 1: 0}
+        cases = [self.status(placements) for placements in (
+            {}, {0: 1}, {0: 1, 1: 0, 2: 2}, {0: 0, 1: 1}, {0: 0, 1: 0},
+            {0: 1, 1: 4}, {0: 1, 1: 'unassigned'}, {0: 1, 1: '0 pending'})]
+        cases.append(self.status(targets) + self.status({0: 1}))
+        for status in cases:
+            with self.subTest(status=status), self.assertRaisesRegex(
+                    RuntimeError, 'vCPU affinity mismatch'):
+                guest_smp.verify_host_affinity(status, targets)
 
 
 class ConsoleOutputTests(unittest.TestCase):

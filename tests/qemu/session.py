@@ -52,7 +52,19 @@ class Session:
         return self
 
     def __exit__(self, kind, error, traceback):
-        self.close()
+        try:
+            if kind is not None:
+                # Failure markers can precede their formatted reason on the
+                # serial stream. Preserve a bounded raw tail before stopping
+                # QEMU, without filtering or replacing the original failure.
+                deadline = time.monotonic() + 0.5
+                while not self.eof and (remaining := deadline - time.monotonic()) > 0:
+                    try:
+                        self._read(min(0.05, remaining))
+                    except OSError:
+                        break
+        finally:
+            self.close()
         # A successful final assertion can leave a fatal diagnostic unread in
         # the pipe. Cleanup drains it; it must still fail an otherwise good run.
         # Preserve the original exception if the scenario had already failed.

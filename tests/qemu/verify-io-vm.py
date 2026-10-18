@@ -103,6 +103,22 @@ def run(qemu, image, initramfs, logfile, timeout, test="basic"):
             else:
                 raise TimeoutError(f'cross-VM fixture exceeded {timeout:g} seconds')
         except Exception:
+            # A failure prefix can arrive before the formatted reason. Retain
+            # a bounded tail before terminating our QEMU, without changing the
+            # failed result or waiting for a potentially broken guest to exit.
+            drain_deadline = time.monotonic() + 0.5
+            while time.monotonic() < drain_deadline:
+                events = selector.select(max(0, drain_deadline - time.monotonic()))
+                if not events:
+                    break
+                data = os.read(events[0][0].fd, 65536)
+                if not data:
+                    break
+                log.write(data)
+                log.flush()
+                pending.extend(data.replace(b'\r', b''))
+                if len(pending) > 65536:
+                    del pending[:-65536]
             sys.stderr.write(pending[-16384:].decode(errors='replace'))
             sys.stderr.write(f'\nRetained physical disk: {disk}\n')
             raise
