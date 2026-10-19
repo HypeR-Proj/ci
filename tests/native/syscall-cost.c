@@ -4,6 +4,7 @@
 
 /* Opt-in Native syscall/IPC comparison; no emulator timing pass threshold. */
 #include <hyper/startup.h>
+#include <hyper/invocation.h>
 #include <hyper/std.h>
 #include <hyper/stream.h>
 #include <hyper/syscall.h>
@@ -83,8 +84,8 @@ static int query(uint64_t iterations, hyper_native_handle_t unused)
 static int event(uint64_t iterations, hyper_native_handle_t handle)
 {
 	for (uint64_t index = 0; index != iterations; ++index) {
-		hyper_call_result_t signal = hyper_native_call6(HYPER_NATIVE_SYS_EVENT_SIGNAL,
-			handle, 0, 1, 0, 0, 0);
+		hyper_call_result_t signal = hyper_native_invoke6(
+			handle, HYPER_NATIVE_OP_EVENT_SIGNAL, 0, 1, 0, 0, 0, 0);
 		if (signal.status)
 			return 1;
 		hyper_call_result_t wait = hyper_object_wait_one(handle, 1, UINT64_MAX);
@@ -102,8 +103,8 @@ static int channel(uint64_t iterations, hyper_native_handle_t handle)
 		uint64_t received = UINT64_MAX;
 		if (hyper_byte_channel_write(handle, &index, sizeof(index)))
 			return 1;
-		hyper_call_result_t read = hyper_byte_channel_read(channel_peer, &received,
-			sizeof(received));
+		hyper_call_result_t read =
+			hyper_byte_channel_read(channel_peer, &received, sizeof(received));
 		if (read.status || read.value0 != sizeof(received) || received != index)
 			return 1;
 	}
@@ -130,8 +131,8 @@ static int measure(const char *name, int (*operation)(uint64_t, hyper_native_han
 int hyper_main(const hyper_startup_t *startup)
 {
 	(void)startup;
-	hyper_call_result_t created = hyper_native_call6(HYPER_NATIVE_SYS_EVENT_CREATE,
-		0, 0, 0, 0, 0, 0);
+	hyper_call_result_t created = hyper_native_invoke6(
+		hyper_native_object_factory(), HYPER_NATIVE_OP_EVENT_CREATE, 0, 0, 0, 0, 0, 0);
 	if (created.status)
 		return failure("SYSCALL-COST FAIL stage=event-create\n");
 	hyper_call_result_t endpoints = hyper_byte_channel_create();
@@ -141,8 +142,8 @@ int hyper_main(const hyper_startup_t *startup)
 	}
 	channel_peer = endpoints.value1;
 	int failed = measure("abi-query", query, 0) ||
-		measure("ready-event", event, created.value0) ||
-		measure("channel-roundtrip", channel, endpoints.value0);
+		     measure("ready-event", event, created.value0) ||
+		     measure("channel-roundtrip", channel, endpoints.value0);
 	(void)hyper_handle_close(endpoints.value0);
 	(void)hyper_handle_close(endpoints.value1);
 	(void)hyper_handle_close(created.value0);
