@@ -93,7 +93,8 @@ def memory_accounting(run):
     totals = re.search(rb'^Reserved: (\d+) B  Managed: (\d+) B  Allocated: (\d+) B',
                        output, re.MULTILINE)
     owners = re.search(rb'^Owners:([^\n]+)', output, re.MULTILINE)
-    if not mem or not totals or not owners:
+    cache_retained = re.search(r'non-reclaimable=(\d+ B|—)', output.decode())
+    if not mem or not totals or not owners or not cache_retained:
         raise AssertionError(f'incomplete memory report: {output!r}')
     values = [None if value == '—' else int(value[:-2])
               for value in re.findall(r'\d+ B|—', mem[1].decode())]
@@ -120,7 +121,28 @@ def memory_accounting(run):
             raise AssertionError(f'partial census presented as complete: {output!r}')
     elif available != free + reclaimable or total != used + free + reclaimable:
         raise AssertionError(f'derived memory does not balance: {output!r}')
-    return ownership
+    if used is not None:
+        retained = cache_retained[1]
+        if retained == '—':
+            raise AssertionError(f'used lacks its cache breakdown: {output!r}')
+        retained = int(retained[:-2])
+        accounted = reserved + retained + sum(ownership[key] for key in
+            ('kernel', 'user', 'guest', 'other'))
+        if used != accounted or ownership['buffered/cached'] != retained + reclaimable:
+            raise AssertionError(f'used and cache breakdown do not balance: {output!r}')
+    return {**ownership, 'used': used}
+
+
+def memory_baseline(session, run):
+    """Wait for a complete census without accepting inconsistent arithmetic."""
+    deadline = time.monotonic() + 30
+    while True:
+        report = memory_accounting(run)
+        if report['used'] is not None:
+            return report
+        if time.monotonic() >= deadline:
+            raise AssertionError('VM retirement baseline has no complete cache census')
+        session.pump(0.5)
 
 
 def retired_bootstrap(session, run, logfile):
@@ -504,21 +526,55 @@ def main():
             # VM definitions retain their image file even while stopped.
             run('umount /data', fails=True)
             run('vmm list', rb'alpine\s+stopped')
+            def kernel_pages():
+                sample = run('memstat --json')
+                match = re.search(rb'(\{\n.*\n\})', sample, re.DOTALL)
+                if match is None:
+                    raise AssertionError(f'missing memory snapshot: {sample!r}')
+                metrics = json.loads(match[1])['metrics']
+                return metrics['owner.kernel.resident_pages']['value']
+
+            baseline_kernel_pages = kernel_pages()
+            # Drain the diagnostic output before sampling the quiescent user
+            # footprint. A warm image may grow reclaimable cache, not used RAM.
+            session.pump(1)
+            baseline_memory = memory_baseline(session, run)
+
+            def retired_vm_memory():
+                # RELEASE_MEMORY and stopped publication can precede deferred
+                # owners' destruction. Used RAM excludes reclaimable cache;
+                # direct kernel pages separately catch retained SMMU tables
+                # (the regression left hundreds of pages). Bound diagnostic
+                # noise without requiring warm cache payloads to disappear.
+                deadline = time.monotonic() + 60
+                pages = None
+                while True:
+                    report = memory_accounting(run)
+                    guest, used = report['guest'], report['used']
+                    if (guest == baseline_memory['guest'] and used is not None
+                            and used <= baseline_memory['used'] + 512 * 1024):
+                        pages = kernel_pages()
+                        if pages <= baseline_kernel_pages + 32:
+                            return
+                    if time.monotonic() >= deadline:
+                        raise AssertionError(
+                            f'VM memory did not retire: guest={guest}, used={used}; '
+                            f'last sampled kernel pages={pages}; '
+                            f'baseline guest={baseline_memory["guest"]}, '
+                            f'used={baseline_memory["used"]}, kernel pages={baseline_kernel_pages}')
+                    session.pump(0.5)
+
             run('vmm start alpine --wait --timeout 60', rb'alpine: running')
             running_memory = memory_accounting(run)
             if running_memory['guest'] <= baseline_memory['guest']:
                 raise AssertionError('Alpine backing was not added to guest memory')
             run('vmm stop alpine --wait --timeout 60', rb'alpine: stopped')
-            # Lifecycle completion precedes asynchronous backend/VMO retirement.
-            deadline = time.monotonic() + 60
-            while memory_accounting(run)['guest'] != baseline_memory['guest']:
-                if time.monotonic() >= deadline:
-                    raise AssertionError('guest backing accounting did not retire')
-                session.pump(0.1)
+            retired_vm_memory()
             # Reopen the image and allocate a fresh guest after the first
             # adopted runtime has retired all backend resources.
             run('vmm start alpine --wait --timeout 60', rb'alpine: running')
             run('vmm stop alpine --wait --timeout 60', rb'alpine: stopped')
+            retired_vm_memory()
             run('vmm delete alpine')
             run('umount /data')
             run('mount -o ro PARTLABEL=hyper-data /data')

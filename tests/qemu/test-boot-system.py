@@ -50,6 +50,41 @@ class RecoveryConsoleTests(unittest.TestCase):
             self.assertIn(raw, log.read_bytes())
 
 
+class MemoryAccountingTests(unittest.TestCase):
+    def report(self, *, complete=True, retained=20480):
+        derived = ('278528 B', '49152 B', '131072 B') if complete else ('—', '—', '—')
+        retained = f'{retained} B' if complete else '—'
+        return (
+            f'Mem: 409600 B {derived[0]} 81920 B {derived[1]} {derived[2]}\n'
+            'Reserved: 40960 B  Managed: 368640 B  Allocated: 286720 B\n'
+            'Owners: kernel=94208 B user=40960 B guest=81920 B '
+            'buffered/cached=69632 B other=0 B\n'
+            f'          non-reclaimable={retained} (included in used and buffered/cached)\n'
+        ).encode()
+
+    def test_baseline_retries_a_concurrent_incomplete_census(self):
+        session = Mock()
+        run = Mock(side_effect=[self.report(complete=False), self.report()])
+        with patch.object(boot.time, 'monotonic', return_value=0):
+            report = boot.memory_baseline(session, run)
+        self.assertEqual(report['used'], 278528)
+        session.pump.assert_called_once_with(0.5)
+
+    def test_baseline_cannot_wait_forever_for_a_complete_census(self):
+        run = Mock(return_value=self.report(complete=False))
+        with patch.object(boot.time, 'monotonic', side_effect=[0, 31]), \
+                self.assertRaisesRegex(AssertionError, 'no complete cache census'):
+            boot.memory_baseline(Mock(), run)
+
+    def test_complete_census_must_reconcile_retained_cache_with_used(self):
+        # Total/free arithmetic and physical owners are internally consistent,
+        # but omitting pinned cache from the used breakdown must still fail.
+        session = Mock()
+        with self.assertRaisesRegex(AssertionError, 'used and cache breakdown'):
+            boot.memory_baseline(session, Mock(return_value=self.report(retained=0)))
+        session.pump.assert_not_called()
+
+
 class RetirementEvidenceTests(unittest.TestCase):
     def check(self, *, extra_process=b'', boot_entries=b'', reserved=4096):
         with tempfile.TemporaryDirectory() as directory:
