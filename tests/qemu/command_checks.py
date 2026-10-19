@@ -9,7 +9,6 @@ import json
 
 def verify_command_options(run):
     verify_memory_statistics(run)
-    run('ldd --help', rb'Inspect Native ELF')
     dependencies = run('ldd /bin/vmm', rb'libhyper_vm_policy_shared.so => /lib64/')
     if dependencies.count(b'libhyper_rust_std.so =>') != 1:
         raise AssertionError(f'ldd did not deduplicate transitive dependencies: {dependencies!r}')

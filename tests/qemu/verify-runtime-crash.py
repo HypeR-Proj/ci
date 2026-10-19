@@ -19,7 +19,9 @@ def main():
     parser.add_argument('--isolation-only', action='store_true')
     args = parser.parse_args()
     command = native_command(args.qemu, args.image, args.initramfs)
-    failures = (b'HypeR: fatal', b'kernel panic', b'HypeR system-startup: critical service ',
+    failures = (b'HypeR: fatal', b'kernel panic', b'HypeR KERNEL PANIC', b'HypeR crash console',
+                b'Native process fault process=console-raw ',
+                b'HypeR system-startup: critical service ',
                 b'[HypeR bootstrap stage 1][init] critical service ',
                 b'HypeR system-startup: VM fleet configuration rejected',
                 b'HypeR system-startup: bootstrap failed',

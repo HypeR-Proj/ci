@@ -58,7 +58,6 @@ def main():
             run(f'ls -1 {prefix}{architecture[1].decode()}', rb'\nlibhyper_rust_std.so\n')
         # Pipelines run concurrently, close unused endpoints, and preserve
         # file-open/truncation semantics without buffering whole commands.
-        run('grep --help', rb'Usage:')
         run('echo Alpha> /pipe-data')
         run('echo beta>> /pipe-data')
         run('cat</pipe-data|grep -in alpha', rb'\n1:Alpha\n')

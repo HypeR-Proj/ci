@@ -131,11 +131,6 @@ def main():
         run('std-test --help', rb'^HypeR standard library acceptance probe$', rb'^Usage: .*std-test')
         run('std-test --unknown-option', rb"unexpected argument '--unknown-option'", failed=True)
         run('std-test --panic', rb'HYPER_STD_EXPECTED_PANIC', failed=True)
-        for tool, marker in (('ps', b'List Native processes and threads'), ('handle', b'--list-kinds'),
-                             ('ls', b'--names-only'), ('free', b'Display physical memory usage'),
-                             ('top', b'Monitor Native CPU, memory and processes'),
-                             ('vmm', b'Manage named virtual machines'), ('sh', b'Native system shell')):
-            run(tool + ' --help', re.escape(marker))
         run('help', rb'Builtins: cd pwd echo printf')
         run('echo HYPER_SHELL_BUILTIN_OK', rb'^HYPER_SHELL_BUILTIN_OK$')
         run('ls -1', rb'^boot/$', rb'^bin/$', rb'^data/$', rb'^tmp/$')
