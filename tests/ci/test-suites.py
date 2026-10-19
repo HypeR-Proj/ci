@@ -52,10 +52,15 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
         self.assertEqual({call[1] for call in calls}, {
             'test-board-storage', 'test-boot-system', 'test-alpine-rootfs',
             'test-board-business', 'test-board-broker', 'test-userspace-device',
+            'test-product-config',
         })
         for call in calls:
+            if call[1] == 'test-product-config':
+                self.assertFalse(any(arg.startswith(('STACK_AUDIT=', 'CARGO_FEATURES='))
+                                     for arg in call))
+                continue
             self.assertIn('STACK_AUDIT=1', call)
-            self.assertIn('CARGO_FEATURES=--features kernel-stack-audit', call)
+            self.assertIn('CARGO_FEATURES=--features kernel-test,kernel-stack-audit', call)
             self.assertIn('IO_VM_PACKAGE=/fixture/io-vm', call)
             config = next(arg.split('=', 1)[1] for arg in call if arg.startswith('CONFIG_FILE='))
             self.assertIn('CONFIG_KERNEL_STACK_SIZE_KB=16', Path(config).read_text().splitlines())
@@ -72,6 +77,26 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
     def test_local_probe_builds_its_own_images(self):
         calls = self.run_suite('native-shell')
         self.assertEqual(calls, [['make', 'test-shell', 'ARCH=aarch64']])
+
+    def test_gicv3_trap_probe_explicitly_enables_master_test_gate(self):
+        calls = [call for call in self.run_suite('native-vm') if call[0] == 'make']
+        feature_builds = [call for call in calls
+                          if any(arg.startswith('CARGO_FEATURES=') for arg in call)]
+        self.assertEqual(len(feature_builds), 1)
+        self.assertIn('CARGO_FEATURES=--features kernel-test,kernel-vgic-tc-test',
+                      feature_builds[0])
+
+    def test_feature_matrix_dispatches_real_compiler_checks(self):
+        self.assertEqual(self.run_suite('kernel-configurations'), [
+            ['python3', '-B', 'kernel/tests/ci/check-features.py'],
+        ])
+
+    def test_minimal_product_boot_has_no_kernel_test_features(self):
+        calls = [call for call in self.run_suite('board-product-config') if call[0] == 'make']
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1], 'test-product-config')
+        self.assertIn('IO_VM_PACKAGE=/fixture/io-vm', calls[0])
+        self.assertFalse(any('kernel-test' in arg or 'STACK_AUDIT=' in arg for arg in calls[0]))
 
     def test_mmio_compatibility_has_its_own_network_lifecycle_suite(self):
         for suite, target in [('io-network', 'test-board-network'),

@@ -8,6 +8,7 @@ import importlib.util
 from itertools import repeat
 from pathlib import Path
 import tempfile
+import sys
 import unittest
 from unittest.mock import Mock, patch
 
@@ -15,6 +16,38 @@ spec = importlib.util.spec_from_file_location(
     'boot_system', Path(__file__).with_name('verify-boot-system.py'))
 boot = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(boot)
+
+
+class RecoveryConsoleTests(unittest.TestCase):
+    def test_kernel_record_cannot_split_the_recovery_diagnostic(self):
+        # Replay the main-branch failure: recovery actually completed, but a
+        # stack-audit record interrupted init's emergency Console write.
+        raw = (
+            b'[    0.414414][HypeR bootstrap stage 1][init] system init'
+            b'<6>[    0.425119] HypeR STACK-AUDIT kind=user owner=io-runtime\n'
+            b' unavailable; retaining core supervision and recovery shell\n'
+            b'[    0.486403][HypeR bootstrap stage 1][fallback-sh] recovery console ready\n'
+            b'fallback-sh$ '
+        )
+        script = (
+            'import select,sys,time\n'
+            f'sys.stdout.buffer.write({raw!r}); sys.stdout.flush()\n'
+            'for command, result in [(b"pwd\\n", b"/\\n"), '
+            '(b"help\\n", b"Recovery shell:\\n")]:\n'
+            '    if not select.select([sys.stdin], [], [], 3)[0]: sys.exit(2)\n'
+            '    assert sys.stdin.buffer.readline() == command\n'
+            '    sys.stdout.buffer.write(b"\\n" + result + b"fallback-sh$ ")\n'
+            '    sys.stdout.flush()\n'
+            'time.sleep(30)\n'
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / 'recovery.log'
+            argv = ['verify-boot-system.py', '--qemu', 'fixture', '--image', 'image',
+                    '--initramfs', 'archive', '--log', str(log), '--recovery']
+            with patch.object(sys, 'argv', argv), patch.object(
+                    boot, 'native_command', return_value=[sys.executable, '-u', '-c', script]):
+                boot.main()
+            self.assertIn(raw, log.read_bytes())
 
 
 class RetirementEvidenceTests(unittest.TestCase):

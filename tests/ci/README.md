@@ -69,13 +69,15 @@ and the one-time Pages/required-check setup.
 | `io-vm` | Pinned I/O appliance, cross-VM storage reset and standby acceptance on GICv2/GICv3 |
 | `io-network` | Default physical/guest PCI storage and network lifecycle, with physical SMMUv3 translation |
 | `io-network-mmio` | Dedicated physical/guest MMIO compatibility: storage, network, driver reset and VM restart |
-| `board-storage` | Serial aggregate of the six board suites below; all use 16 KiB kernel thread stacks and stack watermarks |
+| `board-storage` | Serial aggregate of the seven board suites below; storage/guest suites use 16 KiB stacks and stack watermarks, while product selection boots an uninstrumented kernel |
 | `board-storage-media` | Configuration storage, cold restart and Native shell |
 | `board-boot-system` | Independent root, supervision handoff and disk-independent/provider failure recovery |
 | `board-alpine-rootfs` | Alpine ext4 root, write/sync/restart and checksums |
 | `board-business` | Managed guest start/stop/restart and physical block operations |
 | `board-broker` | Broker fairness, endpoint loss, active disks and Native storage |
 | `board-userspace-device` | Native physical device backend through MMIO/IRQ capabilities |
+| `board-product-config` | Minimal kernel and userspace product, omitted FAT/fleet components and complete bootstrap retirement |
+| `kernel-configurations` | Production feature combinations, master-only compilation and rejected unguarded test selectors |
 | `aarch64-build` | Serial aggregate of the three AArch64 image build suites below |
 | `aarch64-production` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity and image ABI/instruction checks |
 | `aarch64-self-test` | Separate kernel-self-test image and image ABI/instruction checks |
@@ -94,7 +96,7 @@ Rust std, applications or guest payload. No cross-commit build/test result cache
 is trusted. The artifact consists of the two images and their manifest; mutable
 Cargo output and disks are never shared.
 
-Feature-specific Native tests, each of the six board acceptance suites, and
+Feature-specific Native tests, each of the seven board acceptance suites, and
 RISC-V VM/retirement tests run independently and build their own prerequisites.
 This preserves the forced GICv3 trap variant, minimum stacks and failure-injection
 features without mixing their outputs with the ordinary fixture. The board broker
@@ -119,7 +121,20 @@ time still includes runner queueing and artifact transfer; compare workflow
 start-to-finish and longest-job duration when measuring a change.
 
 The architecture QEMU runtime suites deliberately build with
-`kernel-self-test` and use an empty initramfs. They do not select a guest.
+`kernel-test,kernel-self-test` and use an empty initramfs. They do not select a guest.
+The master `kernel-test` feature is absent from production defaults and does
+not select a test by itself. Every test selector also requires this explicit
+master gate, including production-boot fault and stack-audit fixtures.
+The separate `kernel-configurations` job compiles an empty production feature
+set, the master gate alone, each optional production capability and every
+supported selector/master pair. It also compiles selectors without the master
+in the binary, core and HAL crates and requires the intended admission error.
+An unrelated compiler failure cannot satisfy these negative cases. Cargo's
+resolved default graph is checked for accidental test activation.
+Every feature declared by the kernel, core and HAL crates must also be classified
+as production functionality or an explicitly covered test selector.
+The script suite validates product allowlists, child-program requirements,
+generated service omissions and removal of stale installation artifacts.
 Production images instead mount the firmware initramfs and start Native
 `/init`, then mount an independent system volume before the root and supervision
 handoff. The separate `native` suite assembles a synthetic no-device fixture
@@ -310,7 +325,7 @@ errors or a broken public interface cannot count as a successful privacy test.
 There are no per-rule shell wrappers.
 
 Ownership traits and consuming IRQ API signatures are checked against the real
-types in `kernel/tests/kernel/type_contracts.rs` whenever `kernel-self-test` is
+types in `kernel/tests/kernel/type_contracts.rs` whenever both `kernel-test` and `kernel-self-test` are
 compiled, including the AArch64, RISC-V and x86-64 build checks.
 
 See [validation coverage](../../kernel/tests/VALIDATION.md) for subsystem

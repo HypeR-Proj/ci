@@ -73,14 +73,19 @@ def main():
         run("IFS=: read -r a b c <<< ':middle::tail:'; printf '<%s><%s><%s>\\n' \"$a\" \"$b\" \"$c\"",
             rb'\n<><middle><:tail:>\n')
         # All 32 workers sleep together before input arrives. Their descriptor
-        # servers plus the redirected output exceed wait-many's 64 items.
+        # servers plus the redirected output exceed wait-many's 64 items. The
+        # final worker owns terminal control but reads a pipe: it must not
+        # change terminal settings and cancel the first worker's stdin read.
         stages = ['{ read -p "PIPE_BOUNDARY: " value; echo "$value"; }']
         stages += ['{ read value; echo "$value"; }'] * 31
         session.send(('exec 3<<<held; { ' + ' | '.join(stages)
                       + '; } >/tmp/shell-long-pipe; cat /tmp/shell-long-pipe; exec 3<&-\r').encode())
         session.await_text(rb'\nPIPE_BOUNDARY: ', timeout=120)
         session.send(b'LONG_PIPE_OK\r')
-        session.await_text(rb'\nLONG_PIPE_OK\nhyper-sh\$ ', timeout=120)
+        result = session.await_text(
+            rb'\nLONG_PIPE_OK\nhyper-sh\$ |\nsh: operation interrupted\n', timeout=120)
+        if b'sh: operation interrupted' in result:
+            raise AssertionError('pipeline worker cancelled the shared terminal reader')
         run('scope() { true | { local value=inner; return 7; }; echo RETURN=$?; }; scope',
             rb'\nRETURN=7\n')
         run('printf abc > /tmp/glob-alpha; printf def > /tmp/glob-beta; echo /tmp/glob-*',

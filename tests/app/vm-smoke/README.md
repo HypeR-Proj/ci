@@ -25,7 +25,7 @@ state across deactivation. It also sets 32 SPIs active, deactivates them with
 DIR in reverse order, and checks every intermediate active bitmap and retained
 pending bit. GICv3 additionally checks PMR, CTLR and idle RPR, including the TC
 compatibility trap on hardware without TDIR. Run with GICv2 and GICv3 to cover
-both LR backends. A kernel built with `kernel-vgic-tc-test` forces the GICv3 TC
+both LR backends. A kernel built with `kernel-test,kernel-vgic-tc-test` forces the GICv3 TC
 path even when QEMU advertises TDIR, so running the same fixture against the
 production and TC-test images covers both trap policies.
 

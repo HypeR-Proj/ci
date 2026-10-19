@@ -55,6 +55,7 @@ case "${1:-}" in
         run_kernel_suite quality
         ;;
     scripts)
+        python3 -B kernel/tests/ci/test-features.py
         python3 -B svc/terminal-service/tests/linux-formatting.py
         python3 -B tests/ci/test-install-tools.py
         python3 -B tests/ci/test-native-fixture.py
@@ -63,6 +64,7 @@ case "${1:-}" in
         python3 -B tests/build/developer-entrypoints.py
         python3 tests/build/incremental.py
         python3 -B tests/build/app-deployment.py
+        python3 -B tests/build/system-config.py
         python3 -B tests/build/native-libraries.py
         python3 -B tests/build/io-vm-run.py
         python3 -B tests/build/io-vm-package.py
@@ -75,6 +77,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-io-vm.py
         python3 -B tests/qemu/test-stack.py
         python3 -B tests/qemu/test-boot-system.py
+        python3 -B tests/qemu/test-product-config.py
         python3 -B tests/qemu/test-session.py
         python3 -B tests/qemu/test-lifecycle-stress.py
         python3 -B tests/qemu/test-power-crash.py
@@ -90,6 +93,9 @@ case "${1:-}" in
         find tests kernel/tests kernel/tools scripts sdk/toolchain -type f \
             \( -name '*.sh' -o -name hyper-clang -o -name hyper-cargo \) -print0 |
             xargs -0 shellcheck --severity=warning
+        ;;
+    kernel-configurations)
+        python3 -B kernel/tests/ci/check-features.py
         ;;
     native)
         # Separate processes keep dispatch state local to each suite. Local
@@ -162,7 +168,7 @@ case "${1:-}" in
             QEMU_MACHINE=virt,virtualization=on,gic-version=2
         # The TC-test image forces the GICv3 common-register trap even on
         # QEMU CPUs with TDIR, covering the compatibility DIR/PMR/CTLR/RPR path.
-        make -C kernel image ARCH=aarch64 CARGO_FEATURES='--features kernel-vgic-tc-test'
+        make -C kernel image ARCH=aarch64 CARGO_FEATURES='--features kernel-test,kernel-vgic-tc-test'
         make -o image test-vm-smoke ARCH=aarch64 QEMU_CPUS=4
         cp target/app/aarch64/vm-smoke-4.log target/app/aarch64/native-gicv3-tc.log
         ;;
@@ -246,9 +252,15 @@ case "${1:-}" in
         ;;
     board-storage)
         for shard in board-storage-media board-boot-system board-alpine-rootfs \
-            board-business board-broker board-userspace-device; do
+            board-business board-broker board-userspace-device board-product-config; do
             sh tests/ci/run.sh "$shard"
         done
+        ;;
+    board-product-config)
+        package=$(python3 -B scripts/fetch-io-vm.py \
+            --reference "${IO_VM_REFERENCE:-}" --platform qemu)
+        make test-product-config ARCH=aarch64 IO_VM_PACKAGE="$package" \
+            CONFIG_FILE="$root/kernel/configs/qemu_aarch64_defconfig"
         ;;
     board-storage-media|board-boot-system|board-alpine-rootfs|board-business|board-broker|board-userspace-device)
         package=$(python3 -B scripts/fetch-io-vm.py \
@@ -266,7 +278,7 @@ case "${1:-}" in
         prepare_aarch64_stack16_config
         make "$target" ARCH=aarch64 IO_VM_PACKAGE="$package" \
             CONFIG_FILE="$stack_config" \
-            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-stack-audit'
+            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-test,kernel-stack-audit'
         ;;
     riscv64-native)
         sh tests/ci/run.sh riscv64-sdk

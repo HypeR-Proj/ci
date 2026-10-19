@@ -15,6 +15,7 @@ import time
 
 from session import Session, native_command
 from shell_status import checked, status
+from guest_console import append_console_output
 
 PROVIDER_REJECTIONS = {'missing-io-runtime': 'io-runtime', 'missing-fs-erofs': 'fs-erofs'}
 
@@ -348,7 +349,10 @@ def main():
         # These are irreversible ownership markers: neither may appear during
         # recovery, even after the candidate exits and I/O is exercised.
         failures += (b'core supervision transferred', b'core supervision adopted')
-    with Session(launch, args.log, failures=failures) as session:
+    # Kernel diagnostics may interrupt even emergency bootstrap writes. Keep
+    # the raw archive, but rejoin userspace text before matching its messages.
+    with Session(launch, args.log, failures=failures,
+                 output_filter=append_console_output) as session:
         if args.missing_worker:
             session.await_text(rb'EROFS recognized for /system, but filesystem worker is unavailable', 240)
         if args.recovery or args.missing_worker or args.failed_handoff:
