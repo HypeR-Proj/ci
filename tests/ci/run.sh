@@ -60,6 +60,7 @@ case "${1:-}" in
         python3 -B tests/ci/test-install-tools.py
         python3 -B tests/ci/test-native-fixture.py
         python3 -B tests/ci/test-suites.py
+        python3 -B tests/profiling/test-flamegraph.py
         python3 -B tests/build/kernel-version.py
         python3 -B tests/build/developer-entrypoints.py
         python3 tests/build/incremental.py
@@ -100,7 +101,7 @@ case "${1:-}" in
     native)
         # Separate processes keep dispatch state local to each suite. Local
         # runs remain serial because fixtures reuse the same output paths.
-        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack native-stack-16k; do
+        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack native-stack-16k native-pmu; do
             sh tests/ci/run.sh "$shard"
         done
         ;;
@@ -134,6 +135,17 @@ case "${1:-}" in
         ;;
     native-apps)
         run_native_probe test-apps test-editor test-less
+        ;;
+    native-pmu)
+        make test-pmu ARCH=aarch64
+        QEMU_MACHINE=virt,virtualization=on,gic-version=2 \
+            make -o image -o native-initramfs test-pmu ARCH=aarch64 \
+                PMU_LOG=target/app/aarch64/pmu-gicv2.log
+        QEMU_CPU=max,pmu=off python3 -B tests/qemu/verify-pmu.py qemu-system-aarch64 \
+            kernel/target/aarch64-unknown-none-softfloat/kernel/hyper.img \
+            target/app/aarch64/initramfs.cpio target/app/aarch64/pmu-unavailable.log \
+            --kernel kernel/target/aarch64-unknown-none-softfloat/kernel/hyper \
+            --nm "$(sh scripts/find-llvm-tool.sh llvm-nm)" --unsupported
         ;;
     native-stress)
         for cpus in 1 4; do

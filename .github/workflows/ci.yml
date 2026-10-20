@@ -188,6 +188,8 @@ jobs:
             name: Guest SMP / host overcommit
           - suite: native-retirement-stack
             name: Power retirement and stack limits
+          - suite: native-pmu
+            name: PMUv3 sampling and flame graphs
           - suite: native-stack-16k
             name: Native boot / 16 KiB kernel stacks
     steps:
@@ -211,6 +213,9 @@ jobs:
           name: aarch64-${{ matrix.suite }}-${{ matrix.gic || 3 }}-logs
           path: |
             target/app/aarch64/*.log
+            target/app/aarch64/pmu-*.jsonl
+            target/app/aarch64/pmu-*.folded
+            target/app/aarch64/pmu-*.svg
             target/app/aarch64/services.*/*.log
             target/app/aarch64/retirement.*/**/*.log
             target/app/aarch64/service-failure.*/**/*.log
