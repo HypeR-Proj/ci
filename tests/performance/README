@@ -176,3 +176,48 @@ after normal boot is not a claim of entirely cold storage: the formal init and
 other services may already have loaded common libraries. Logs, raw samples,
 artifact hashes and the exact QEMU command accompany the result. No performance
 threshold is added to CI.
+
+Native hot-path regression measurements
+
+hotpaths.c promotes the focused RPi5 probes into a reproducible, manual fixture.
+It is not built or deployed by any default application profile. Build against
+the installed SDK after `make sdk` (select HYPER_CLANG/HYPER_LD as for other SDK
+C consumers):
+
+  target/sdk/aarch64/bin/hyper-clang -O2 -g -march=armv8-a \
+    -Wall -Wextra -Werror -DBENCH_CUSTOM_ENTRY \
+    tests/performance/hyper.c tests/performance/hotpaths.c \
+    -lhyper-std -o /tmp/hotpaths
+
+Deploy that executable with the matching SDK libraries using a custom product
+or copy it into a writable Native filesystem. Run `hotpaths allocmap`,
+`hotpaths alloc-parallel 10`, `hotpaths syscall`, `hotpaths scheduler`,
+`hotpaths memory` and `hotpaths latency`. The optional scale is 1..20; longer
+allocation runs allow the scheduler to establish parallelism. Each PROBE row
+contains name, repetition, work units and elapsed nanoseconds. There is no
+console output inside the measured loops. Threaded totals include joins and
+thread teardown/heap trimming; they are application-level costs.
+
+allocmap retains 0/1/32/64 MiB while repeatedly allocating/freeing 64 KiB. Each
+allocation exceeds the ordinary 64 KiB heap region once headers are included,
+so bounded spare-region reuse cannot hide its map/unmap cost. alloc-parallel
+uses 1/2/4/8 workers and batches of 64 small allocations. Also record process
+memory before/after idle/exit; throughput alone cannot justify retaining memory.
+Each allocation worker retains one small block outside its measured loop to
+keep empty-heap teardown from dominating the allocator contention comparison.
+
+latency emits 512 raw atomic request/reply times and a clock-pair control.
+`hotpaths read-latency PATH BYTES` opens an existing file read-only, then emits
+512 deterministic random 4 KiB read times within the supplied page-aligned size
+(at least 128 KiB). It never creates, truncates or writes the file. The samples
+include the entire synchronous Native filesystem path, cache hits and scheduling;
+they do not separate RPC queueing from physical device wait. Analyze percentiles
+on the host and correlate with PMU captures rather than equating CPU samples
+with disk wait or wake-to-run time. The empty clock control is diagnostic; do not
+blindly subtract it from every sample. Failed/short I/O aborts the run.
+
+Use the same machine, configuration, workload count, dataset and warm/cold state
+for before/after comparisons. Preserve kernel ELF and executable/library hashes.
+QEMU is useful for correctness and within-QEMU comparisons, not RPi5 speedup
+claims. No timing thresholds are added to CI, and no scheduler policy or storage
+flush/durability behavior is changed by these probes.

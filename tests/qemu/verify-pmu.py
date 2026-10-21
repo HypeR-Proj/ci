@@ -6,7 +6,9 @@
 import argparse
 import json
 from pathlib import Path
+import re
 import sys
+import time
 
 from command import Shell
 from guest_console import append_console_output
@@ -15,6 +17,17 @@ from session import Session, native_command
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts/profiling'))
 from flamegraph import Symbols, captures, svg
+
+
+def await_disarmed(shell):
+    # Wait for the autonomous deadline path, without issuing a stop syscall.
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        status = shell.check('perf status')
+        if b'running=false armed=0x0' in status:
+            return
+        shell.session.pump(0.1)
+    raise AssertionError(f'capture did not automatically disarm: {status!r}')
 
 
 def main():
@@ -38,7 +51,31 @@ def main():
             if b'not supported' not in result.output.lower() and b'NotSupported' not in result.output and b'Status(-4)' not in result.output:
                 raise AssertionError(f'expected unsupported PMU: {result.output!r}')
             return
-        shell.check('perf status')
+        initial = shell.check('perf status')
+        if b'running=false armed=0x0' not in initial:
+            raise AssertionError(f'PMU armed before a capture was requested: {initial!r}')
+        # Start/stop control must work promptly even at the slowest sampling
+        # period, without waiting for a PMU overflow to reconcile the request.
+        for _ in range(3):
+            shell.check('perf start --seconds 1 --period 1000000000')
+            shell.check('perf stop')
+            status = shell.check('perf status')
+            if b'running=false armed=0x0' not in status:
+                raise AssertionError(f'explicit stop left a CPU armed: {status!r}')
+        # Cross the cancelled capture's original deadline while its successor
+        # remains active. A late timer callback must not close the successor.
+        shell.check('perf start --seconds 30 --period 1000000000')
+        session.pump(1.2)
+        status = shell.check('perf status')
+        cpus = re.search(rb'CPUs=(\d+)', status)
+        if cpus is None:
+            raise AssertionError(f'missing CPU count: {status!r}')
+        mask = (1 << int(cpus.group(1))) - 1
+        if f'running=true armed=0x{mask:x}'.encode() not in status:
+            raise AssertionError(f'IPI start did not arm every CPU: {status!r}')
+        shell.check('perf stop')
+        shell.check('perf start --seconds 1 --period 1000000000')
+        await_disarmed(shell)
         shell.check('perf start --seconds 5 --period 1000000')
         shell.run('perf start').require('second capture must be busy', failed=True)
         shell.run('perf start --period 1').require('unbounded sample rate must be rejected', failed=True)
