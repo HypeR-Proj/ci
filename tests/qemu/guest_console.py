@@ -12,7 +12,7 @@ HOST_LOG = re.compile(rb'<[0-7]>\[[ \t]*[0-9]+\.[0-9]+\] [^\n]*\n')
 GUEST_LOG = re.compile(rb'\[[ \t]*[0-9]+\.[0-9]+\] [^\n]*\n')
 FAILURE_MARKERS = (
     b'HypeR: fatal', b'kernel panic', b'Kernel panic', b'HypeR KERNEL PANIC',
-    b'HypeR crash monitor', b'kernel startup failed',
+    b'HypeR crash monitor', b'kernel startup failed', b'watchdog: BUG: soft lockup',
 )
 
 

@@ -5,13 +5,63 @@
 """Regression tests for guest SMP placement and multiplexed console output."""
 
 import importlib.util
+import io
 from pathlib import Path
 import unittest
+from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location(
     'guest_smp', Path(__file__).with_name('verify-guest-smp.py'))
 guest_smp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(guest_smp)
+
+
+class FailureObservationTests(unittest.TestCase):
+    def session(self):
+        return Mock(failures=(b'Kernel panic',), output_filter=guest_smp.append_console_output,
+                    pending=bytearray(b'old hyper-sh$ prompt'))
+
+    def test_unresponsive_host_does_not_replace_failure_or_leave_checks_disabled(self):
+        session = self.session()
+        session.await_text.side_effect = TimeoutError('host unavailable')
+        with patch.object(guest_smp, 'Shell') as shell, patch('sys.stderr', io.StringIO()):
+            with self.assertRaisesRegex(RuntimeError, 'original guest failure'):
+                try:
+                    raise RuntimeError('original guest failure')
+                except RuntimeError:
+                    guest_smp.capture_failure_state(session, True)
+                    raise
+        shell.assert_not_called()
+        session.send.assert_called_once_with(b'\x1dd')
+        session.await_text.assert_called_once_with(rb'hyper-sh\$ ', timeout=10)
+        self.assertEqual(session.pending, b'')
+        self.assertEqual(session.failures, (b'Kernel panic',))
+        self.assertIs(session.output_filter, guest_smp.append_console_output)
+
+    def test_capture_reads_host_state_after_detach_without_restarting_guest(self):
+        session = self.session()
+        output = io.StringIO()
+        with patch.object(guest_smp, 'Shell') as shell, patch('sys.stderr', output):
+            shell.return_value.run.return_value = Mock(status=0, output=b'observed\n')
+            guest_smp.capture_failure_state(session, True)
+        self.assertEqual([call.args[0] for call in shell.return_value.run.call_args_list],
+                         ['vmm status alpine', 'ps --threads', 'top -b -n 2',
+                          'journalctl -n 60'])
+        self.assertTrue(all(call.kwargs == {'timeout': 10}
+                            for call in shell.return_value.run.call_args_list))
+        self.assertEqual(output.getvalue().count('observed\n'), 4)
+        session.send.assert_called_once_with(b'\x1dd')
+        self.assertIs(session.output_filter, guest_smp.append_console_output)
+
+    def test_failed_observation_stops_collection_and_restores_checks(self):
+        session = self.session()
+        with patch.object(guest_smp, 'Shell') as shell, patch('sys.stderr', io.StringIO()):
+            shell.return_value.run.side_effect = TimeoutError('command unavailable')
+            guest_smp.capture_failure_state(session, False)
+        session.send.assert_called_once_with(b'\x03\n')
+        shell.return_value.run.assert_called_once_with('vmm status alpine', timeout=10)
+        self.assertEqual(session.failures, (b'Kernel panic',))
+        self.assertIs(session.output_filter, guest_smp.append_console_output)
 
 
 class HostPlacementTests(unittest.TestCase):
@@ -114,6 +164,18 @@ class ConsoleOutputTests(unittest.TestCase):
                 pending = bytearray()
                 for chunk in (data[:split], data[split:]):
                     guest_smp.append_console_output(pending, chunk, filter_guest_logs=True)
+
+    def test_guest_filter_reports_lockup_instead_of_timing_out_on_prompt(self):
+        data = (b'[ 110.641] watchdog: BUG: soft lockup - CPU#3 stuck for 21s! '
+                b'[migration/3:33]\r\n~ # ')
+        interleaved = data.replace(b'soft lockup', b'soft ' + self.warning + b'lockup')
+        for record in (data, interleaved):
+            for split in range(len(record) + 1):
+                with self.subTest(record=record, split=split), self.assertRaisesRegex(
+                        RuntimeError, 'kernel failure'):
+                    pending = bytearray()
+                    for chunk in (record[:split], record[split:]):
+                        guest_smp.append_console_output(pending, chunk, filter_guest_logs=True)
 
     def test_guest_boot_diagnostics_are_preserved(self):
         data = b'[   63.704984] CPU1: Booted secondary processor\r\n~ # '

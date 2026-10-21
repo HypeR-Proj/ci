@@ -11,6 +11,7 @@ import re
 import sys
 import time
 
+from command import Shell
 from session import Session, native_command
 
 from guest_console import append_console_output
@@ -20,6 +21,39 @@ from guest_console import append_console_output
 # is still progressing (observed initrd release at guest t=172.6s on reboot).
 # Keep a fixed total boot deadline; ordinary commands retain 90 seconds.
 GUEST_BOOT_TIMEOUT_SECONDS = 300
+
+
+def capture_failure_state(session, console_attached):
+    """Collect host observations after failure without restarting the guest.
+
+    The caller must preserve its original exception. Disable stream failure
+    checks only during this bounded, best-effort collection: an already
+    observed guest watchdog must not prevent detachment and host inspection.
+    The raw serial archive and structured command artifacts retain the evidence.
+    """
+    failures, output_filter = session.failures, session.output_filter
+    session.failures, session.output_filter = (), None
+    try:
+        # The failure marker can arrive before the rest of its stack trace.
+        # Archive a bounded raw tail before detaching the guest console.
+        session.pump(0.5)
+        session.pending.clear()
+        if console_attached:
+            session.send(b'\x1dd')
+        else:
+            # Discard a partial host command before requesting a fresh prompt.
+            session.send(b'\x03\n')
+        session.await_text(rb'hyper-sh\$ ', timeout=10)
+        shell = Shell(session)
+        for command in ('vmm status alpine', 'ps --threads',
+                        'top -b -n 2', 'journalctl -n 60'):
+            result = shell.run(command, timeout=10)
+            sys.stderr.write(f'\nSMP failure observation: {command} (exit={result.status})\n')
+            sys.stderr.write(result.output.decode(errors='replace'))
+    except Exception as error:
+        sys.stderr.write(f'\nSMP failure observations unavailable: {error}\n')
+    finally:
+        session.failures, session.output_filter = failures, output_filter
 
 
 def verify_vcpu_startup(log, guest_cpus, host_cpus):
@@ -57,6 +91,8 @@ def main():
     Path(logfile).parent.mkdir(parents=True, exist_ok=True)
     with Session(command, logfile, cleanup_timeout=5,
                  output_filter=partial(append_console_output, filter_guest_logs=True)) as session:
+        console_attached = False
+
         def await_text(pattern, timeout=90):
             return session.await_text(pattern, timeout, match_only=True)
 
@@ -64,6 +100,7 @@ def main():
             session.send(command + b'\n')
 
         def attach():
+            nonlocal console_attached
             # A reboot creates a fresh runtime asynchronously. Status polling
             # here is a test deadline, not the runtime notification mechanism.
             for _ in range(90):
@@ -76,6 +113,7 @@ def main():
                     send(b'vmm console alpine')
                     result = await_text(rb'Connected to alpine\.|hyper-sh\$ ')
                     if result.startswith(b'Connected'):
+                        console_attached = True
                         # Reattachment need not replay an already consumed
                         # shell prompt; request a fresh empty command response.
                         send(b'')
@@ -115,6 +153,7 @@ def main():
             await_text(rb'~ # ')
 
         def migrate_guest_cpus(cycle):
+            nonlocal console_attached
             if host_cpus < 2:
                 return
             # Leave a guest timer pending across detachment and migration.
@@ -124,6 +163,7 @@ def main():
             await_text(rb'~ # ')
             session.send(b'\x1dd')
             await_text(rb'hyper-sh\$ ')
+            console_attached = False
             targets = migration_targets(cycle)
             for cpu, target in targets.items():
                 send(f'vmm affinity alpine {cpu} {target}'.encode())
@@ -190,6 +230,7 @@ def main():
                 if host_cpus > 1:
                     session.send(b'\x1dd')
                     await_text(rb'hyper-sh\$ ')
+                    console_attached = False
                     # Hotplug and sustained progress must preserve every
                     # accepted affinity despite periodic automatic balancing.
                     verify_host_affinity(host_status(), migration_targets(cycle))
@@ -197,11 +238,13 @@ def main():
             for _ in range(2):
                 send(b'reboot')
                 await_text(rb'\[vmm\] virtual machine disconnected')
+                console_attached = False
                 await_text(rb'hyper-sh\$ ')
                 attach()
                 online('SMP_AFTER_REBOOT', f'0-{guest_cpus - 1}')
             send(b'poweroff')
             await_text(rb'\[vmm\] virtual machine disconnected')
+            console_attached = False
             await_text(rb'hyper-sh\$ ')
             wait_state(b'stopped')
             _user, guest = memory_owners()
@@ -218,6 +261,7 @@ def main():
             # a stalled console even when no prompt has arrived yet.
             session.log.flush()
             sys.stderr.write(Path(logfile).read_bytes()[-16384:].decode(errors='replace'))
+            capture_failure_state(session, console_attached)
             raise
 
 

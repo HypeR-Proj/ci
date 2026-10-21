@@ -104,6 +104,12 @@ features without mixing their outputs with the ordinary fixture. The board broke
 keeps its full fairness/lifecycle sequence in one runner because later assertions
 depend on earlier transitions. Runtime diagnostics remain separate artifacts.
 
+Guest SMP acceptance treats Linux soft-lockup watchdog reports as failures before
+filtering ordinary guest printk output. After failure it attempts bounded,
+read-only host observations: VM status, threads, CPU usage and recent journal
+records. The serial log and `.log.commands` artifacts preserve this evidence;
+collection neither restarts the guest nor replaces the original test failure.
+
 Use `sh tests/ci/run.sh native-console` to build and run a single probe locally,
 or set `CI_ARCH=riscv64` for the RISC-V fixture. `CI_NATIVE_FIXTURE` is optional;
 when supplied, it must point to a validated artifact for the current commit and
