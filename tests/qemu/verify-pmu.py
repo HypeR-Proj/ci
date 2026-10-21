@@ -108,6 +108,19 @@ def main():
         status = shell.check('perf status')
         if b'running=false armed=0x0' not in status:
             raise AssertionError(f'capture did not automatically disarm: {status!r}')
+        # Once disarmed, ordinary timer/UART/device IRQs and Native activity
+        # must leave every retained sample unchanged, including late overflow.
+        shell.check('perf dump --output /tmp/stopped-before.jsonl')
+        frozen = shell.check('cat /tmp/stopped-before.jsonl')
+        for command in ('ps', 'free', 'echo PMU_STOPPED_IRQ_ACTIVITY'):
+            shell.check(command)
+        session.pump(1)
+        shell.check('perf dump --output /tmp/stopped-after.jsonl')
+        later = shell.check('cat /tmp/stopped-after.jsonl')
+        before_rows = [json.loads(line) for line in frozen.splitlines() if line.startswith(b'{')]
+        after_rows = [json.loads(line) for line in later.splitlines() if line.startswith(b'{')]
+        if not before_rows or before_rows != after_rows:
+            raise AssertionError('ordinary IRQ activity changed a stopped capture')
         shell.check('perf record --seconds 3 --output /tmp/command.jsonl -- /bin/echo PMU_COMMAND_OK')
         shell.run('perf record --seconds 3 --output /tmp/failed.jsonl -- /bin/cat /missing-pmu-input').require('failed workload', failed=True)
         shell.run('perf record --seconds 3 --output /missing-directory/pmu.jsonl -- /bin/echo discarded').require('failed export', failed=True)
