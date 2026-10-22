@@ -18,6 +18,45 @@ boot = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(boot)
 
 
+class BootDisplayTests(unittest.TestCase):
+    ROW = b'  \x1b[32m[RUNNING]\x1b[0m /fs-backend  Filesystem mount service  \x1b[2mstart 41.91 ms\x1b[0m\r\n'
+    REST = (
+        b'  [RUNNING] /vm-manager Virtual machine fleet start 90.60 ms\r\n'
+        b'  [START  ] /bootstrap-retire Retire bootstrap services\r\n'
+        b'INFO: /bootstrap-retire generation=1 exited successfully (status 0); releasing resources; process=0x123\r\n'
+        b'  [DONE   ] /bootstrap-retire Retire bootstrap services total 355.03 ms\r\n'
+        b'  >> bootstrap retired +1.600s\r\n'
+        b'HypeR: startup complete\r\n'
+        b'hyper-sh$ '
+    )
+
+    def test_current_display_accepts_color_crlf_and_variable_timing(self):
+        boot.check_boot_display(self.ROW + self.REST)
+        boot.check_boot_display((self.ROW + self.REST).replace(b'41.91', b'1234.56'))
+
+    def test_stack_audit_can_interrupt_any_byte_in_a_status_row(self):
+        record = b'<6>[    0.425119] HypeR STACK-AUDIT kind=user owner=component-manager\r\n'
+        for offset in range(len(self.ROW) + 1):
+            with self.subTest(offset=offset):
+                boot.check_boot_display(self.ROW[:offset] + record + self.ROW[offset:] + self.REST)
+
+    def test_filter_must_not_hide_kernel_failure(self):
+        with self.assertRaises(RuntimeError):
+            boot.check_boot_display(b'<0>[ 1.000000] HypeR KERNEL PANIC\n' + self.ROW + self.REST)
+
+    def test_missing_duplicate_and_incorrect_duration_are_rejected(self):
+        for row in (b'', self.ROW * 2, self.ROW.replace(b'start 41.91 ms', b'41.91 ms'),
+                    self.ROW.replace(b'start', b'total'), self.ROW.replace(b'41.91', b'41.9')):
+            with self.subTest(row=row), self.assertRaises(AssertionError):
+                boot.check_boot_display(row + self.REST)
+        with self.assertRaises(AssertionError):
+            boot.check_boot_display(self.ROW + self.REST.replace(b'total 355.03 ms', b'start 355.03 ms'))
+
+    def test_timing_on_next_line_cannot_complete_a_broken_row(self):
+        with self.assertRaises(AssertionError):
+            boot.check_boot_display(self.ROW.replace(b'start 41.91 ms', b'\r\nstart 41.91 ms') + self.REST)
+
+
 class RecoveryConsoleTests(unittest.TestCase):
     def test_kernel_record_cannot_split_the_recovery_diagnostic(self):
         # Replay the main-branch failure: recovery actually completed, but a

@@ -285,7 +285,12 @@ scheduler interleavings.
 part of `board-storage`. It creates an isolated disk, checks supervision handoff,
 the final namespace, shell/tool capabilities, VM start/stop and writable/read-only
 unmount/remount behavior, then boots the same archive without storage controllers
-and requires the static recovery shell to remain usable. A third boot uses
+and requires the static recovery shell to remain usable. Normal boot also checks
+that provider startup rows are not repeated, start/total durations retain two
+decimal places, and retirement completes before the shell prompt. These display
+checks reassemble interleaved kernel diagnostics before parsing ANSI output;
+the `scripts` suite covers stack-audit insertion inside status rows and escape
+sequences without hiding fatal diagnostics. A third boot uses
 a copied bootstrap policy selecting an exiting init candidate; it verifies
 namespace rollback, live storage services, and static recovery mount operations.
 Two further boots use separate system-image copies missing the formal I/O runtime

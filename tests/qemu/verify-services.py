@@ -136,7 +136,13 @@ def run(args):
                         return output
                 vm.pump(0.1)
             raise AssertionError(f'{name} did not reach {expected}: {output!r}')
-        state('/tests/plain', 'completed')
+        plain = state('/tests/plain', 'completed')
+        if b'terminated: ProcessExited { status: 0 }' not in plain:
+            raise AssertionError(f'normal exit lost its kernel termination reason: {plain!r}')
+        completed = journal.message('/component-manager', '/tests/plain generation=1 exited successfully')
+        reports = [r['text'] for r in completed if '/tests/plain generation=1 ' in r['text']]
+        if len(reports) != 1 or not reports[0].startswith('INFO: ') or 'status 0' not in reports[0]:
+            raise AssertionError(f'normal completion has no informational report: {completed!r}')
         state('/tests/observer', 'completed')
         state('/tests/ipc', 'completed')
         if b'interactive-ready' not in command('componentctl status /session-manager'):

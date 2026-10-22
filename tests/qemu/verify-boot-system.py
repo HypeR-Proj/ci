@@ -199,6 +199,31 @@ def require_order(evidence, markers):
         raise AssertionError('filesystem mounts crossed the init handoff boundary')
 
 
+def check_boot_display(output):
+    """Validate presentation without relying on timing values or column widths."""
+    # The CI stack-audit kernel can print inside a row or its ANSI sequence.
+    # Reassemble only complete kernel records; the shared filter rejects fatal
+    # diagnostics before removing anything. The caller keeps the raw archive.
+    pending = bytearray()
+    append_console_output(pending, output)
+    boot = re.sub(rb'\x1b\[[0-9;]*[A-Za-z]', b'', pending)
+    require_order(boot, (
+        b'[START  ] /bootstrap-retire',
+        b'[DONE   ] /bootstrap-retire',
+        b'>> bootstrap retired',
+        b'HypeR: startup complete',
+        b'hyper-sh$ ',
+    ))
+    for label, component, timing in (
+        (b'RUNNING', b'fs-backend', b'start'),
+        (b'RUNNING', b'vm-manager', b'start'),
+        (b'DONE   ', b'bootstrap-retire', b'total'),
+    ):
+        rows = re.findall(rb'\[' + label + rb'\] /' + component + rb'[ \t]+([^\r\n]*)', boot)
+        if len(rows) != 1 or not re.search(timing + rb' [0-9]+\.[0-9]{2} ms[ \t]*$', rows[0]):
+            raise AssertionError(f'repeated or untimed startup row for {component!r}: {rows!r}')
+
+
 def check_handoff_order(evidence):
     require_order(evidence, (
         b'EROFS mounted at /system',
@@ -420,14 +445,7 @@ def main():
 
         normal = not (recovery or args.recovery or args.missing_data_worker or args.manager_case)
         if normal:
-            boot = re.sub(rb'\x1b\[[0-9;]*[A-Za-z]', b'', args.log.read_bytes())
-            require_order(boot, (
-                b'[START  ] /bootstrap-retire',
-                b'[DONE   ] /bootstrap-retire',
-                b'>> bootstrap retired',
-                b'HypeR: startup complete',
-                b'hyper-sh$ ',
-            ))
+            check_boot_display(args.log.read_bytes())
             retired_bootstrap(session, run, args.log)
             for name in ('io-runtime', 'fs-backend', 'console-raw'):
                 run(f'componentctl status /{name}', rb'/' + name.encode() + rb'\s+running')
