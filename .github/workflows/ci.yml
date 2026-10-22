@@ -278,7 +278,7 @@ jobs:
           path: |
             target/board-tests/**/*.log
             target/board-tests/**/*.log.commands/**
-            target/board-tests/**/product.json
+            target/board-tests/**/product.config
             target/board-tests/**/accept.json
             target/ci/aarch64-stack16.config
           if-no-files-found: ignore
@@ -375,7 +375,7 @@ jobs:
             pa_bits: '[0-9][0-9]'
             gic_version: 2
           - id: gicv3-compact-address-space
-            name: GICv3, compact address space
+            name: GICv3, compact address space and 16384 Thread slots
             variant: compact
             cpu: max
             cpus: 4
@@ -458,5 +458,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
+      - name: Install image build tools
+        uses: ./.github/actions/tools
+        with:
+          packages: device-tree-compiler
       - name: Compile and link x86-64
         run: sh tests/ci/run.sh x86_64-build

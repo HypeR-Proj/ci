@@ -83,10 +83,10 @@ def prepare(args):
             source['image'] = '/svc/storage-probe'
             source['capabilities'] = [grant for grant in source['capabilities']
                                       if grant['purpose'] != 'vm.creation-authority']
-        product = args.output / f'{case}-product.json'
-        product.write_text(json.dumps({
-            'version': 1,
-            'system': {'storage-providers': [{'component': '/io-runtime', 'image': '/svc/io-runtime'}]},
+        product = args.output / f'{case}-product.config'
+        policy = args.output / f'{case}-boot-policy.json'
+        policy.write_text(json.dumps({
+            'storage-providers': [{'component': '/io-runtime', 'image': '/svc/io-runtime'}],
             'boot-profiles': {'default': {
                 'version': 1, 'services': '/etc/hyper/services.json',
                 'io': {'kind': 'service' if synthetic else 'io-vm', 'service': 'io-runtime',
@@ -95,6 +95,7 @@ def prepare(args):
                             'system-init': '/svc/component-manager'},
             }},
         }, indent=2) + '\n')
+        product.write_text('CONFIG_BOOT_POLICY=' + json.dumps(str(policy.resolve())) + '\n')
         if case in ('critical-exit', 'critical-exit-after-ready'):
             next(item for item in graph['services']
                  if item['name'] == 'vm-manager')['critical'] = True

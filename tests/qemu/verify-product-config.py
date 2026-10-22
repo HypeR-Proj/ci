@@ -20,21 +20,17 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from native_components import load_registry
 import system_config
+sys.path.insert(0, str(ROOT / 'tests/build'))
+from product_fixture import trimmed_product, write_product
 
 
-def prepare(config, output):
-    """Add only the command reporter to the example's explicit allowlist."""
-    product = system_config.load(config)
-    source = product.value
-    section = source['system']
-    section['include'] = sorted(set(section['include']) | {'test-report'})
-    section['exclude'] = [name for name in section['exclude'] if name != 'test-report']
-    system_config.ProductConfig(source).select(load_registry(ROOT / 'mk/components.mk')['entries'])
-    source = {'SPDX-FileCopyrightText': '2026 roolrz', 'SPDX-License-Identifier': 'Apache-2.0', **source}
+def prepare(output):
+    """Generate a test-only selection from the scenario's required programs."""
+    entries = load_registry(ROOT / 'mk/components.mk')['entries']
+    source = trimmed_product(entries, reporter=True)
+    system_config.ProductConfig(source).select(entries)
     output.parent.mkdir(parents=True, exist_ok=True)
-    data = json.dumps(source, indent=2) + '\n'
-    if not output.exists() or output.read_text() != data:
-        output.write_text(data)
+    write_product(output, source)
 
 
 def program_inventory(output, expected, directory):
@@ -61,7 +57,7 @@ def run(args):
     names = {entry['staged'] for entry in programs}
     required = {'test-report', 'sh', 'componentctl', 'journalctl', 'ls', 'cat', 'free', 'ps', 'mount-system'}
     if not required <= names or {'fs-fat-system', 'vm-manager', 'vm-runtime', 'vmm'} & names:
-        raise ValueError('product runtime test requires the minimal example and test-report')
+        raise ValueError('product runtime test requires the trimmed fixture and test-report')
     args.log.parent.mkdir(parents=True, exist_ok=True)
     command = [sys.executable, '-B', str(ROOT / 'scripts/run-io-vm.py'), '--qemu', args.qemu,
                '--image', str(args.image), '--initramfs', str(args.initramfs),
@@ -117,7 +113,6 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     actions = parser.add_subparsers(dest='action', required=True)
     prepare_parser = actions.add_parser('prepare')
-    prepare_parser.add_argument('--config', type=Path, default=ROOT / 'configs/minimal.json')
     prepare_parser.add_argument('--output', type=Path, required=True)
     run_parser = actions.add_parser('run')
     run_parser.add_argument('--qemu', required=True)
@@ -126,7 +121,7 @@ def main():
         run_parser.add_argument('--' + name, type=Path, required=True)
     args = parser.parse_args()
     if args.action == 'prepare':
-        prepare(args.config, args.output)
+        prepare(args.output)
     else:
         run(args)
 

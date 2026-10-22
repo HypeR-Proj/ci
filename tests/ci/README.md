@@ -10,8 +10,10 @@ GitHub Actions and the project build/test system. Kernel-only compiler checks
 and architecture suites live under `kernel/tests/ci`; this dispatcher enters
 the kernel component before running them. All suites are directly runnable
 locally.
-The `quality` suite requires ripgrep, while the `scripts` suite requires
-ShellCheck. The shared `tools` action reuses available runner commands and
+The `quality` suite requires ripgrep, and the `scripts` suite requires
+ShellCheck. Both use Python's standard `curses` module for menuconfig tests;
+these drive a private PTY and do not require an interactive CI job. The shared
+`tools` action reuses available runner commands and
 installs missing Ubuntu 24.04 or Debian 13 packages. It caches only downloaded
 `.deb` archives; APT still refreshes authenticated package indexes and validates
 the selected archives. Cache keys include the distribution/version, package set,
@@ -35,8 +37,8 @@ and the one-time Pages/required-check setup.
 
 | Suite | Required contract |
 | --- | --- |
-| `quality` | Parsed workspace declarations, resolved Cargo graph, HAL privacy compilation, formatting, host and Loom concurrency tests (including optional heap profiling), Kconfig, and kallsyms tests |
-| `scripts` | Incremental build, deployment, board/package/rootfs, developer-entrypoint and QEMU transport Python tests; ShellCheck for test, acquisition and SDK scripts |
+| `quality` | Parsed workspace declarations, resolved Cargo graph, HAL privacy compilation, formatting, host and Loom concurrency tests (including optional heap profiling), Kconfig/menuconfig validation and PTY interaction, and kallsyms tests |
+| `scripts` | Incremental build, deployment, product menu selection/PTY navigation, board/package/rootfs, developer-entrypoint and QEMU transport Python tests; ShellCheck for test, acquisition and SDK scripts |
 | `native` | Serial local aggregate of all AArch64 Native suites below |
 | `native-sdk` | SDK publication/consumer checks, portable runtime and app tests, and service-manifest validation |
 | `native-gicv3` | Serial aggregate of the GICv3 boot, interactive, failure and VM suites |
@@ -82,7 +84,7 @@ and the one-time Pages/required-check setup.
 | `aarch64-build` | Serial aggregate of the three AArch64 image build suites below |
 | `aarch64-production` | Clippy, representative VA/PA/IPA configuration builds, canonical build, stripped-image identity and image ABI/instruction checks |
 | `aarch64-self-test` | Separate kernel-self-test image and image ABI/instruction checks |
-| `aarch64-compact` | Self-test image with 42-bit VA / 40-bit PA and image ABI/instruction checks |
+| `aarch64-compact` | Self-test image with 42-bit VA / 40-bit PA, 16384 scheduler Thread slots and image ABI/instruction checks |
 | `aarch64-qemu` | Standalone kernel mechanism self-tests and the AArch64 feature markers described below |
 | `riscv64-qemu` | RISC-V kernel startup, SMP admission, and standalone mechanism self-tests |
 | `x86_64-build` | Clippy and successful canonical/stripped image compilation; no runtime requirement yet |

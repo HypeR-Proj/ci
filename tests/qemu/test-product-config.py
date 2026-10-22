@@ -16,18 +16,19 @@ spec.loader.exec_module(scenario)
 
 class ProductScenarioTests(unittest.TestCase):
     def test_preparation_adds_only_the_reporter_and_keeps_content_identity(self):
-        source = scenario.ROOT / 'configs/minimal.json'
-        original = scenario.system_config.load(source).value
+        entries = scenario.load_registry(scenario.ROOT / 'mk/components.mk')['entries']
+        original = scenario.system_config.ProductConfig(scenario.trimmed_product(entries))
         with tempfile.TemporaryDirectory() as directory:
-            output = Path(directory) / 'product.json'
-            scenario.prepare(source, output)
+            output = Path(directory) / 'product.config'
+            scenario.prepare(output)
             configured = scenario.system_config.load(output).value
-            self.assertEqual(set(configured['system']['include']) - set(original['system']['include']),
+            self.assertEqual(set(configured['system']['include']) - set(original.value['system']['include']),
                              {'test-report'})
             configured['system']['include'].remove('test-report')
-            self.assertEqual(configured, original)
+            restored = scenario.system_config.ProductConfig(configured)
+            self.assertEqual(restored.select(entries), original.select(entries))
             first = output.stat().st_mtime_ns
-            scenario.prepare(source, output)
+            scenario.prepare(output)
             self.assertEqual(output.stat().st_mtime_ns, first)
 
     def test_executable_inventory_rejects_missing_extra_and_duplicate_entries(self):
