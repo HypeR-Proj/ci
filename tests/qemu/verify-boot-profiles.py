@@ -115,6 +115,9 @@ def run(args, archive, selector, name, *, reject=False, recovery=False):
     command = native_command(args.qemu, args.image, archive)
     index = command.index('-append') + 1
     command[index] += (' ' + selector) if selector else ''
+    remaining = b'' if name == 'default' else b'probe=one probe=two unknown-flag value=a=b'
+    if not reject and not recovery:
+        command[index] += ' nokaslr ' + remaining.decode()
     log = args.output / (name + '.log')
     with Session(command, log, output_filter=append_console_output) as session:
         if reject:
@@ -140,6 +143,11 @@ def run(args, archive, selector, name, *, reject=False, recovery=False):
                 if b'core supervision adopted' in log.read_bytes():
                     raise AssertionError('recovery-only profile handed off supervision')
             else:
+                if remaining:
+                    session.await_text(
+                        rb'HypeR component-manager: unrecognized boot arguments: ' + remaining + rb'\n',
+                        timeout=120,
+                    )
                 session.await_text(rb'HypeR: startup complete', timeout=180)
                 session.await_text(rb'hyper-sh\$ ', timeout=30)
                 shell = Shell(session)
@@ -161,6 +169,10 @@ def run(args, archive, selector, name, *, reject=False, recovery=False):
                         raise AssertionError(f'storage provider not supervised: {components!r}')
                 if b'bootstrap retired; boot archive detached' not in log.read_bytes():
                     raise AssertionError('no-I/O-VM profile did not retire bootstrap')
+                reports = [line for line in log.read_bytes().splitlines()
+                           if b'unrecognized boot arguments:' in line]
+                if len(reports) != (1 if remaining else 0):
+                    raise AssertionError(f'unexpected boot-argument reports: {reports!r}')
     print(f'Boot profile {name} passed: {log}', flush=True)
 
 
