@@ -6,8 +6,9 @@ SPDX-License-Identifier: Apache-2.0
 # Native acceptance applications
 
 These programs exercise Native interfaces inside HypeR. Their source is separate
-from production applications; they use the formal `app/Cargo.toml` workspace and
-lockfile so the tested SDK and userspace dependencies remain coherent.
+from production applications. Formal probes use the `app/Cargo.toml` workspace
+and lockfile; standalone bootstrap probes are built statically by the stage-1
+workspace and never enter a product deployment.
 
 | Program | Selection | Purpose |
 | --- | --- | --- |
@@ -16,6 +17,7 @@ lockfile so the tested SDK and userspace dependencies remain coherent.
 | [terminal-probe](terminal-probe/) | Development profile; `make test-terminal` | Exercise terminal modes, editing, flow control and foreground lease restoration. |
 | [retirement-probe](retirement-probe/) | Development profile; `make test-process-retirement` | Stop real children and verify private memory/register observation, endpoint closure, authority limits and revocation. |
 | [lifecycle-stress](lifecycle-stress/) | Development profile; `make test-lifecycle-stress` | Seeded concurrent handle churn, capability transfer and process termination; see [fuzz/stress commands](../stress/README.md). |
+| [profile-storage](profile-storage.rs) | `make test-boot-profiles` | Transfer an opaque storage capability between independently supervised predecessor/successor processes, then retire bootstrap without an I/O VM. The fixture prepares an independent RAM root; it does not emulate a block driver. |
 
 The standalone init fixtures have no component registration and are built only
 by their test targets. `terminal-probe` declares development-only packaging in

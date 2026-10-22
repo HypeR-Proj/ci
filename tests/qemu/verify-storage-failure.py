@@ -14,6 +14,7 @@ import time
 from session import Session, native_command
 from command import Shell
 from journal import Journal
+from cpio_fixture import replace_file
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -70,14 +71,30 @@ def prepare(args):
                     '-o', str(late_manager)], check=True)
     empty_fleet = args.output / 'empty-fleet.json'
     empty_fleet.write_text(json.dumps({'format': 'hyper.vm-config', 'virtual-machines': []}) + '\n')
-    invalid_image = args.output / 'not-elf'
-    invalid_image.write_bytes(b'Invalid optional provider image\n')
     subprocess.run([str(args.sdk / 'bin/hyper-clang'), '-std=c17', '-Wall',
                     '-Wextra', '-Werror', '-static', str(ROOT / 'tests/native/root-switch.c'),
                     '-o', str(args.output / 'root-observer')], check=True)
     for case in (args.case,) if args.case else CASES:
         manifest = args.output / f'{case}.json'
         graph = services(board, ROOT)
+        source = next(item for item in graph['services'] if item['name'] == 'io-runtime')
+        synthetic = case != 'missing-controller'
+        if synthetic:
+            source['image'] = '/svc/storage-probe'
+            source['capabilities'] = [grant for grant in source['capabilities']
+                                      if grant['purpose'] != 'vm.creation-authority']
+        product = args.output / f'{case}-product.json'
+        product.write_text(json.dumps({
+            'version': 1,
+            'system': {'storage-providers': [{'component': '/io-runtime', 'image': '/svc/io-runtime'}]},
+            'boot-profiles': {'default': {
+                'version': 1, 'services': '/etc/hyper/services.json',
+                'io': {'kind': 'service' if synthetic else 'io-vm', 'service': 'io-runtime',
+                       'successor': '/io-runtime'},
+                'handoff': {'system-root': '/system', 'put-old': '/boot',
+                            'system-init': '/svc/component-manager'},
+            }},
+        }, indent=2) + '\n')
         if case in ('critical-exit', 'critical-exit-after-ready'):
             next(item for item in graph['services']
                  if item['name'] == 'vm-manager')['critical'] = True
@@ -94,6 +111,9 @@ def prepare(args):
             provider = args.output / 'root-observer'
         elif case in ('root-switch-failure', 'handoff-failure'):
             provider = args.output / 'provider-4'
+        elif case == 'launch-failure':
+            # Admit a valid static provider first; damage its packed bytes below.
+            provider = args.output / 'provider-0'
         elif case == 'critical-exit':
             # Reach the committed system-init handoff without waiting for the
             # storage deadline; the critical system service then exits itself.
@@ -109,17 +129,19 @@ def prepare(args):
             '--output', str(composition),
             '--initramfs', str(args.output / f'{case}.cpio'),
             '--services', str(manifest),
+            '--system-config', str(product),
             '--deployment', str(ROOT / 'mk/components.mk'), '--profile', 'system',
             '--apps', str(args.apps), '--boot-apps', str(args.boot_apps or args.apps),
             '--sdk', str(args.sdk), '--std', str(args.output),
             '--arch', 'aarch64', '--replace', f'init={args.fixture_init}', *replacements,
             '--boot-components', *args.boot_components, '--',
-            '0755', 'boot:svc/io-runtime', str(provider.resolve()),
+            '0755', 'boot:' + source['image'].lstrip('/'), str(provider.resolve()),
             '0755', 'boot:bin/recovery-echo', str(static_echo),
             '0755', 'system:bin/test-report', str(args.apps / 'test-report'),
             '0644', 'etc/hyper/board.json', str(board_path),
             '0644', 'etc/hyper/io-clients.conf', str(clients),
             '0644', 'etc/hyper/storage.json', str(storage),
+            *(['0644', 'vm/io.itb', str(args.io_image.resolve())] if not synthetic else []),
             *(['0644', 'system:etc/hyper/vms.json', str(empty_fleet)]
               if case in ('critical-exit-after-ready', 'missing-system-shell') else []),
         ], check=True)
@@ -137,18 +159,16 @@ def prepare(args):
         if case in ('handoff-failure', 'root-switch-failure'):
             boot_entries = composition / 'native-system/boot.entries.json'
             entries = json.loads(boot_entries.read_text())
-            record, = (entry for entry in entries if entry[1] == 'etc/hyper/init.json')
+            record, = (entry for entry in entries if entry[1] == 'etc/hyper/boot-profiles/default.json')
             policy = json.loads(Path(record[2]).read_text())
             if case == 'handoff-failure':
-                policy['system-init'] = '/bin/echo'
+                policy['handoff']['system-init'] = '/bin/echo'
             else:
-                policy['put-old'] = '/missing-root-mountpoint'
-            changed = composition / 'failure-init.json'
+                policy['handoff']['put-old'] = '/missing-root-mountpoint'
+            changed = composition / 'failure-profile.json'
             changed.write_text(json.dumps(policy, indent=2) + '\n')
             record[2] = str(changed.resolve())
             boot_entries.write_text(json.dumps(entries, indent=2) + '\n')
-        elif case == 'launch-failure':
-            inject_invalid_provider(composition, invalid_image)
         elif case == 'missing-system-shell':
             (composition / 'system-root/bin/sh').unlink()
         subprocess.run([
@@ -156,17 +176,9 @@ def prepare(args):
             '--composition', str(composition), '--output', str(args.output / f'{case}.cpio'),
             '--packer', args.packer, '--strip', args.strip,
         ], check=True)
-
-
-def inject_invalid_provider(composition, invalid_image):
-    # Inject only after normal composition enforces the bootstrap ELF contract.
-    manifest = composition / 'native-system/boot.entries.json'
-    entries = json.loads(manifest.read_text())
-    selected = [entry for entry in entries if entry[1] == 'svc/io-runtime']
-    if len(selected) != 1 or selected[0][0] != '0755':
-        raise AssertionError('expected one executable bootstrap I/O provider')
-    selected[0][2] = str(invalid_image)
-    manifest.write_text(json.dumps(entries, indent=2) + '\n')
+        if case == 'launch-failure':
+            replace_file(args.output / f'{case}.cpio', 'svc/storage-probe',
+                         b'Invalid optional provider image\n')
 
 
 def shell(session, command, *, recovery=False):
@@ -360,6 +372,7 @@ def main():
         prepare_parser.add_argument('--' + name, type=Path, required=True)
     prepare_parser.add_argument('--boot-apps', type=Path)
     prepare_parser.add_argument('--fixture-init', type=Path, required=True)
+    prepare_parser.add_argument('--io-image', type=Path, required=True)
     prepare_parser.add_argument('--boot-components', nargs='+', required=True)
     for name in ('packer', 'strip'):
         prepare_parser.add_argument('--' + name, required=True)

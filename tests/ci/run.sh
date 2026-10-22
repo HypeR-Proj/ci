@@ -66,6 +66,7 @@ case "${1:-}" in
         python3 tests/build/incremental.py
         python3 -B tests/build/app-deployment.py
         python3 -B tests/build/system-config.py
+        python3 -B tests/build/boot-profiles.py
         python3 -B tests/build/native-libraries.py
         python3 -B tests/build/io-vm-run.py
         python3 -B tests/build/io-vm-package.py
@@ -159,6 +160,7 @@ case "${1:-}" in
         make test-services ARCH=aarch64
         make test-process-retirement ARCH=aarch64
         make test-service-failure ARCH=aarch64
+        make test-boot-profiles ARCH=aarch64
         ;;
     native-fleet)
         make image native-initramfs ARCH=aarch64

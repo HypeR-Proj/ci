@@ -50,15 +50,15 @@ def prepare_handoff(argv):
     parser.add_argument('--strip', required=True)
     args = parser.parse_args(argv)
     entries = json.loads(args.entries.read_text())
-    candidates = [record for record in entries if record[1] == 'etc/hyper/init.json']
+    candidates = [record for record in entries if record[1] == 'etc/hyper/boot-profiles/default.json']
     if len(candidates) != 1:
-        parser.error('boot entry manifest must contain exactly one init policy')
+        parser.error('boot entry manifest must contain exactly one default boot profile')
     record = candidates[0]
     policy = json.loads(Path(record[2]).read_text())
-    policy['system-init'] = '/bin/echo'
+    policy['handoff']['system-init'] = '/bin/echo'
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
-    policy_path = output.parent / 'handoff-init.json'
+    policy_path = output.parent / 'handoff-profile.json'
     policy_path.write_text(json.dumps(policy, indent=2) + '\n')
     record[2] = str(policy_path)
     entries_path = output.parent / 'handoff.entries.json'

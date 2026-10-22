@@ -45,6 +45,7 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
             'test-fleet-config', 'test-storage-failure', 'test-filesystem-failure',
             'test-runtime-crash', 'test-vm-smoke', 'test-editor', 'test-less',
             'test-service-failure', 'test-process-retirement', 'test-lifecycle-stress',
+            'test-boot-profiles',
         })
 
     def test_board_shards_keep_minimum_stacks_and_instrumentation(self):

@@ -43,7 +43,11 @@ fn main() -> ExitCode {
     // startup capabilities. Only the independent mount owns the copied files.
     match hyper_bootstrap_stage1_init::runtime::run(&mut startup) {
         Ok(()) => ExitCode::SUCCESS,
-        Err(_) => ExitCode::FAILURE,
+        Err(error) => {
+            use std::io::Write;
+            let _ = write!(std::io::stderr(), "{}", error.diagnostic());
+            ExitCode::FAILURE
+        }
     }
 }
 
