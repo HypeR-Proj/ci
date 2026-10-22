@@ -5,6 +5,7 @@
 """Prove runtime-loss retirement at deterministic guest power boundaries."""
 
 import importlib.util
+from functools import partial
 from pathlib import Path
 import re
 import sys
@@ -17,6 +18,10 @@ spec = importlib.util.spec_from_file_location(
     'guest_smp', Path(__file__).with_name('verify-guest-smp.py'))
 guest_smp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(guest_smp)
+
+# Match shell replies across interleaved Linux printk records. Session retains
+# the raw log, and the shared filter rejects panic/lockup before removing logs.
+CONSOLE_OUTPUT = partial(guest_smp.append_console_output, filter_guest_logs=True)
 
 
 def await_power_loss(session, mode, after):
@@ -36,7 +41,7 @@ def main():
     command = native_command(qemu, image, initramfs)
     Path(logfile).parent.mkdir(parents=True, exist_ok=True)
     with Session(command, logfile, cleanup_timeout=5,
-                 output_filter=guest_smp.append_console_output) as session:
+                 output_filter=CONSOLE_OUTPUT) as session:
         pending = session.pending
 
         def await_text(pattern, timeout=90):
