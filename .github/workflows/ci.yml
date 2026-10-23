@@ -375,7 +375,7 @@ jobs:
             pa_bits: '[0-9][0-9]'
             gic_version: 2
           - id: gicv3-compact-address-space
-            name: GICv3, compact address space and 16384 Thread slots
+            name: GICv3, compact address space and dynamic Thread growth
             variant: compact
             cpu: max
             cpus: 4

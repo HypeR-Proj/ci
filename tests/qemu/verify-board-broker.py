@@ -173,6 +173,25 @@ def run(args):
                     raise TimeoutError('disk sessions failed to stop after admission endpoint loss')
                 time.sleep(0.1)
             shell('echo BOARD-BROKER-ISOLATION-PASS')
+        except BaseException:
+            # The panic marker precedes the register dump and backtrace. Keep
+            # collecting raw evidence briefly before terminating QEMU, as the
+            # shared Session transport does, preserving the original failure.
+            deadline = time.monotonic() + 0.5
+            try:
+                while (remaining := deadline - time.monotonic()) > 0:
+                    events = selector.select(min(0.05, remaining))
+                    if not events and child.poll() is not None:
+                        break
+                    for key, _ in events:
+                        data = os.read(key.fd, 65536)
+                        if not data:
+                            selector.unregister(key.fileobj)
+                            break
+                        log.write(data); log.flush()
+            except OSError:
+                pass  # Preserve the test failure if the transport has closed.
+            raise
         finally:
             child.stdin.close()
             if child.poll() is None:

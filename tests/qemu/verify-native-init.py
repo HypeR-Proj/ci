@@ -17,6 +17,24 @@ from journal import Journal
 from session import Session, native_command
 
 
+TOP_SUMMARY = (rb'top - ([0-9]+) CPUs\nCPU: user-thread ([0-9]+)\.([0-9]{2})%'
+               rb' kthread ([0-9]+)\.([0-9]{2})% vcpu ([0-9]+)\.([0-9]{2})%'
+               rb' idle ([0-9]+)\.([0-9]{2})%\n')
+
+
+def verify_top_summary(output, cpus):
+    """Require a populated elapsed-runtime sample, including every CPU category."""
+    match = re.search(TOP_SUMMARY, output)
+    if match is None or int(match[1]) != cpus:
+        raise AssertionError(f'top CPU summary is missing or has the wrong CPU count: {output!r}')
+    shares = [int(match[index]) * 100 + int(match[index + 1])
+              for index in (2, 4, 6, 8)]
+    # top truncates four percentages independently to hundredths. A live sample
+    # must account for the whole interval, with at most three lost basis points.
+    if any(share > 10_000 for share in shares) or not 9_997 <= sum(shares) <= 10_000:
+        raise AssertionError(f'top CPU sample is empty or inconsistent: {shares!r}')
+
+
 def main():
     qemu, image, initramfs, cpu, cpus, memory, bootargs = sys.argv[1:]
     verify_vm = os.environ.get('HYPER_TEST_VM', '1')
@@ -125,7 +143,7 @@ def main():
         for name, output in ((b'dynamic', dynamic), (b'static', static)):
             for marker in (b'HYPER_STD_OK hello ' + name, b'HYPER_STD_TLS_DROP_OK',
                            b'HYPER_STD_FP_THREADS_OK', b'HYPER_COW_OK', b'HYPER_STD_STDERR_OK',
-                           b'HYPER_STD_THREAD_NAMES_OK'):
+                           b'HYPER_STD_THREAD_NAMES_OK', b'HYPER_STD_SCHEDULING_OK'):
                 if output.count(marker) != 1:
                     raise AssertionError(f'std {name!r}: missing/duplicate {marker!r}: {output!r}')
         run('std-test --help', rb'^HypeR standard library acceptance probe$', rb'^Usage: .*std-test')
@@ -144,7 +162,7 @@ def main():
             rb'^Owners:\s+kernel=' + maybe + rb' user=' + value + rb' guest=' + value
             + rb' buffered/cached=' + maybe + rb' other=' + value + rb'$')
         vm.send(b'top\n')
-        wait(rb'top - [0-9]+ CPUs\s+ticks=[0-9]+ Hz')
+        verify_top_summary(wait(TOP_SUMMARY), int(cpus))
         wait(rb'Press q or Ctrl-C to quit\.')
         vm.send(b'q')
         wait(rb'hyper-sh\$ ')
