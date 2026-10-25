@@ -104,7 +104,7 @@ case "${1:-}" in
     native)
         # Separate processes keep dispatch state local to each suite. Local
         # runs remain serial because fixtures reuse the same output paths.
-        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack native-stack-16k native-pmu; do
+        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack native-stack-16k native-pmu native-trace; do
             sh tests/ci/run.sh "$shard"
         done
         ;;
@@ -138,6 +138,10 @@ case "${1:-}" in
         ;;
     native-apps)
         run_native_probe test-apps test-editor test-less
+        ;;
+    native-trace)
+        make test-trace ARCH=aarch64
+        make -o image -o native-initramfs test-trace ARCH=aarch64 QEMU_CPUS=1
         ;;
     native-pmu)
         make test-pmu ARCH=aarch64
