@@ -270,6 +270,15 @@ jobs:
           packages: clang cmake cpio lld llvm make qemu-system-arm dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler
       - name: Verify board deployment and runtime contracts
         run: sh tests/ci/run.sh "${{ matrix.suite }}"
+      - name: Capture low-stack call chains after storage failure
+        if: failure() && matrix.suite == 'board-storage-media'
+        timeout-minutes: 3
+        run: |
+          python3 -B tests/qemu/watch-stack.py \
+            --image kernel/target/aarch64-unknown-none-softfloat/kernel/hyper.img \
+            --elf kernel/target/aarch64-unknown-none-softfloat/kernel/hyper \
+            --config target/ci/aarch64-stack16.config \
+            --output target/board-tests/stack-watch
       - name: Clean up AArch64 QEMU
         if: always()
         run: sh tests/ci/cleanup-qemu.sh aarch64
@@ -283,6 +292,7 @@ jobs:
             target/board-tests/**/*.log.commands/**
             target/board-tests/**/product.config
             target/board-tests/**/accept.json
+            target/board-tests/stack-watch/report.json
             target/ci/aarch64-stack16.config
           if-no-files-found: ignore
           retention-days: 7
