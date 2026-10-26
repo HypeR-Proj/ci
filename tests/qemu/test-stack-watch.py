@@ -6,7 +6,9 @@
 
 import importlib.util
 from pathlib import Path
+import socket
 import struct
+import time
 import unittest
 
 spec = importlib.util.spec_from_file_location('stack_watch', Path(__file__).with_name('watch-stack.py'))
@@ -50,12 +52,47 @@ class StackWatchTests(unittest.TestCase):
             with self.subTest(packet=packet), self.assertRaises(error):
                 watch.Remote(Stream(packet)).receive()
 
+    def test_continue_ack_does_not_hide_completion_or_deadline(self):
+        class Suspended(Stream):
+            def recv(self, size):
+                if not self.packet:
+                    raise socket.timeout()
+                return super().recv(size)
+
+            def sendall(self, data):
+                super().sendall(data)
+                if data == b'\x03':
+                    payload = b'T05thread:01;'
+                    self.packet += b'$' + payload + b'#' + f'{sum(payload) % 256:02x}'.encode()
+
+            def gettimeout(self):
+                return 5
+
+            def settimeout(self, timeout):
+                self.timeout = timeout
+
+        for complete in [True, False]:
+            stream = Suspended(b'+')
+            deadline = time.monotonic() + (10 if complete else -1)
+            self.assertEqual(watch.Remote(stream).resume(deadline, lambda: complete),
+                             'T05thread:01;')
+            self.assertIn(b'\x03', stream.sent)
+            self.assertEqual(stream.timeout, 5)
+
     def test_stack_geometry_rejects_guards_unused_tails_and_other_regions(self):
         bottom = watch.ARENA + 20 * watch.STRIDE + watch.GUARD
         self.assertEqual(watch.stack_bounds(bottom + 2000), (bottom, bottom + watch.STACK_SIZE))
         for address in [0, bottom - 1, bottom + watch.STACK_SIZE,
                         watch.ARENA + watch.SLOT_COUNT * watch.STRIDE + watch.GUARD]:
             self.assertIsNone(watch.stack_bounds(address))
+
+    def test_booted_layout_must_match_configured_geometry(self):
+        watch.check_boot_layout(b'guarded kernel stacks: thread 16 KiB,\n'
+                                b'AArch64 address space: 48-bit VA')
+        for record in [b'guarded kernel stacks: thread 32 KiB,',
+                       b'AArch64 address space: 42-bit VA']:
+            with self.subTest(record=record), self.assertRaises(ValueError):
+                watch.check_boot_layout(record)
 
     def test_unwind_never_follows_outside_the_stopped_stack(self):
         memory = Memory({'m1020,10': struct.pack('<QQ', 0x1040, 0x9000).hex(),

@@ -15,7 +15,6 @@ import json
 import os
 from pathlib import Path
 import re
-import select
 import shutil
 import socket
 import struct
@@ -38,24 +37,30 @@ class Remote:
     def __init__(self, stream):
         self.stream = stream
 
-    def read(self, count):
+    def read(self, count, on_idle=None):
         data = bytearray()
         while len(data) < count:
-            part = self.stream.recv(count - len(data))
+            try:
+                part = self.stream.recv(count - len(data))
+            except socket.timeout:
+                if on_idle is None:
+                    raise
+                on_idle()
+                continue
             if not part:
                 raise EOFError('QEMU closed its GDB socket')
             data.extend(part)
         return bytes(data)
 
-    def receive(self):
-        while self.read(1) != b'$':
+    def receive(self, on_idle=None):
+        while self.read(1, on_idle) != b'$':
             pass  # Ignore acknowledgements preceding a response packet.
         packet = bytearray()
-        while (byte := self.read(1)) != b'#':
+        while (byte := self.read(1, on_idle)) != b'#':
             packet.extend(byte)
             if len(packet) > 262144:
                 raise ValueError('oversized GDB response')
-        checksum = int(self.read(2), 16)
+        checksum = int(self.read(2, on_idle), 16)
         if sum(packet) % 256 != checksum:
             raise ValueError('GDB response checksum mismatch')
         self.stream.sendall(b'+')
@@ -68,6 +73,28 @@ class Remote:
     def request(self, command):
         self.send(command)
         return self.receive()
+
+    def resume(self, deadline, finished):
+        """Wait for a stop, including when an acknowledgement arrives first."""
+        interrupted = None
+
+        def idle():
+            nonlocal interrupted
+            now = time.monotonic()
+            if interrupted is not None:
+                if now - interrupted >= 5:
+                    raise TimeoutError('QEMU did not acknowledge diagnostic interruption')
+            elif finished() or now >= deadline:
+                self.stream.sendall(b'\x03')
+                interrupted = now
+
+        previous = self.stream.gettimeout()
+        self.stream.settimeout(.1)
+        try:
+            self.send('vCont;c')
+            return self.receive(idle)
+        finally:
+            self.stream.settimeout(previous)
 
     def watch(self, address, enable):
         answer = self.request(f'{"Z" if enable else "z"}2,{address:x},{WATCH_SIZE:x}')
@@ -83,6 +110,17 @@ def stack_bounds(sp):
         return None
     bottom = ARENA + slot * STRIDE + GUARD
     return bottom, bottom + STACK_SIZE
+
+
+def check_boot_layout(serial):
+    # A config file alone cannot prove which image was actually booted. Refuse
+    # stale artifacts before interpreting SPs with the configured geometry.
+    stacks = re.search(rb'guarded kernel stacks: thread (\d+) KiB,', serial)
+    if stacks and int(stacks[1]) != STACK_SIZE // 1024:
+        raise ValueError(f'booted image has {int(stacks[1])} KiB stacks; expected 16 KiB')
+    width = re.search(rb'AArch64 address space: (\d+)-bit VA', serial)
+    if width and int(width[1]) != 48:
+        raise ValueError('booted image does not use 48-bit AArch64 addressing')
 
 
 def unwind(remote, fp, sp, top):
@@ -196,15 +234,18 @@ def run(args, report):
         remote.request('qSupported')
         remote.request('?')
         for slot in range(SLOT_COUNT):
+            if time.monotonic() >= deadline:
+                raise TimeoutError('deadline while installing stack watchpoints')
             remote.watch(ARENA + slot * STRIDE + GUARD, True)
         minimum = WATCH_SIZE + 1
+
+        def finished():
+            check_boot_layout(serial)
+            return done.is_set()
+
         for _ in range(100000):
-            remote.send('vCont;c')
-            while not select.select([stream], [], [], .1)[0]:
-                if done.is_set() or time.monotonic() >= deadline:
-                    stream.sendall(b'\x03')
-                    break
-            stop = remote.receive()
+            stop = remote.resume(deadline, finished)
+            check_boot_layout(serial)
             if done.is_set() or time.monotonic() >= deadline:
                 report['stop_reason'] = 'workload-complete' if done.is_set() else 'deadline'
                 break
