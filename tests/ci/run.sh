@@ -87,6 +87,7 @@ case "${1:-}" in
         python3 -B tests/qemu/test-lifecycle-stress.py
         python3 -B tests/qemu/test-power-crash.py
         python3 -B tests/qemu/test-command.py
+        python3 -B tests/qemu/test-trace.py
         python3 -B tests/qemu/test-console.py
         python3 -B tests/qemu/test-console-hotplug.py
         python3 -B tests/qemu/test-fleet-config.py
@@ -142,7 +143,7 @@ case "${1:-}" in
         ;;
     native-trace)
         make test-trace ARCH=aarch64
-        make -o image -o native-initramfs test-trace ARCH=aarch64 QEMU_CPUS=1
+        make -o image test-trace ARCH=aarch64 QEMU_CPUS=1
         ;;
     native-pmu)
         make test-pmu ARCH=aarch64

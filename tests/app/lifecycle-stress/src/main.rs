@@ -3,6 +3,8 @@
 
 //! Exercise real syscall cancellation, transfer and handle-page reclamation.
 
+mod trace;
+
 use hyper_os::{
     Error, Status,
     capability_channel::{CapabilityChannel, CapabilityDisposition, CapabilityReceiveSlot},
@@ -416,6 +418,9 @@ fn worker(control: &OwnedHandle<ByteChannelObject>, action: impl FnOnce() -> Res
 
 fn run() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("trace") && args.len() == 2 {
+        return trace::run();
+    }
     if args.get(1).map(String::as_str) == Some("child") {
         return child(args.get(2).ok_or("missing child seed")?.parse()?);
     }

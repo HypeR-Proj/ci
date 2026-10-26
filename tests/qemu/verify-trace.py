@@ -4,13 +4,14 @@
 
 """Validate privileged static trace capture and actual exported event payloads."""
 import argparse
-import json
 from pathlib import Path
 import time
 
 from command import Shell
 from guest_console import append_console_output
-from session import Session, native_command
+from session import Session
+from trace_artifacts import TraceArtifacts, boot_command
+from trace_validation import validate_capture
 
 
 def main():
@@ -19,10 +20,14 @@ def main():
     parser.add_argument('image')
     parser.add_argument('initramfs')
     parser.add_argument('logfile', type=Path)
+    parser.add_argument('--disk', type=Path, required=True)
+    parser.add_argument('--board', type=Path, required=True)
     args = parser.parse_args()
-    with Session(native_command(args.qemu, args.image, args.initramfs), args.logfile,
+    artifacts = TraceArtifacts(args.disk, args.board, args.logfile.with_suffix('.artifacts'))
+    names = ('frozen.jsonl', 'later.jsonl', 'trace.json', 'ipc.json', 'command.jsonl', 'remote.json', 'failed.json', 'expiry.json')
+    with Session(boot_command(args.qemu, args.image, args.initramfs, args.disk, args.board), args.logfile,
                  output_filter=append_console_output) as session:
-        session.await_text(rb'HypeR session: console ready\n', timeout=180)
+        session.await_text(rb'HypeR: startup complete\n', timeout=240)
         session.await_text(rb'hyper-sh\$ ')
         shell = Shell(session)
         if b'running=false' not in shell.check('perf trace status'):
@@ -47,49 +52,34 @@ def main():
             if time.monotonic() > deadline:
                 raise AssertionError('trace did not stop autonomously')
             session.pump(0.1)
-        shell.check('perf trace dump --format jsonl -o /tmp/frozen.jsonl')
-        frozen = shell.check('cat /tmp/frozen.jsonl')
-        rows = [json.loads(line) for line in frozen.splitlines() if line.strip()]
-        if not rows[1:-1] or any(event['cpu'] != 0 for event in rows[1:-1]):
-            raise AssertionError('empty trace or CPU filter ignored')
-        first_generation = rows[0]['generation']
-        if not rows[-1]['loss']:
-            raise AssertionError('tiny ring did not report overwritten events')
+        shell.check('perf trace dump --format jsonl --no-names -o /tmp/frozen.jsonl')
         shell.run('perf trace dump --generation 0 -o /tmp/stale.json').require('stale generation', failed=True)
         shell.run('perf trace dump --fail-on-loss -o /tmp/loss.json').require('loss policy', failed=True)
         shell.check('echo TRACE_STOPPED; ps; free')
-        shell.check('perf trace dump --format jsonl -o /tmp/later.jsonl')
-        if shell.check('cat /tmp/later.jsonl') != frozen:
-            raise AssertionError('stopped records changed')
+        shell.check('perf trace dump --format jsonl --no-names -o /tmp/later.jsonl')
         shell.check('perf trace record --duration-ms 1000 --categories scheduler,syscall,ipc --max-events 128 -o /tmp/trace.json')
-        payload = json.loads(shell.check('cat /tmp/trace.json', timeout=120))
-        if payload['metadata']['generation'] <= first_generation:
-            raise AssertionError('capture generation reused')
-        events = payload['traceEvents']
-        observed = {event['name'] for event in events}
-        if not {'sched_switch', 'syscall_enter', 'syscall_exit'} <= observed:
-            raise AssertionError(f'missing real instrumentation: {observed}')
-        metadata = payload['metadata']
-        loss = metadata['limited'] or any(row['overwritten'] or row['incomplete'] for row in metadata['losses'])
-        if loss and metadata['cross_cpu_spans']:
-            raise AssertionError('lossy capture inferred cross-CPU durations')
-        # The collector must not feed itself by tracing the trace-read method.
-        if any(event['name'] == 'syscall_enter' and event.get('args', {}).get('operation') in (260, 261, 262)
-               and event['args'].get('kind') == 19 for event in events):
-            raise AssertionError('trace control recursively generated syscall events')
-        args.logfile.with_suffix('.json').write_text(json.dumps(payload) + '\n')
         shell.run('perf trace dump -o /tmp/trace.json').require('overwrite requires opt-in', failed=True)
+        # Bounded lossless workload: two hops, duplex queues, explicit parents,
+        # real blocked waits, and repeated protocol IDs on distinct connections.
+        # One bounded command excludes serial control traffic and keeps the
+        # collector off live rings. Continuous recording is tested separately.
+        ipc_result = shell.run('perf trace record --snapshot --duration-ms 30000 --categories ipc,scheduler --poll-ms 1 --no-names --fail-on-loss --max-events 16384 -o /tmp/ipc.json -- /bin/lifecycle-stress trace', timeout=120)
         # This checks exit semantics, not command latency. Leave room for slow
         # TCG runners; command completion still stops the recording immediately.
         shell.check('perf trace record --duration-ms 30000 --categories syscall --max-events 16384 --format jsonl -o /tmp/command.jsonl -- /bin/echo TRACE_COMMAND_OK')
-        command_rows = [json.loads(line) for line in shell.check('cat /tmp/command.jsonl', timeout=120).splitlines() if line.strip()]
-        exits = [row['args'] for row in command_rows[1:-1]
-                 if row['event'] == 'syscall_exit' and row['args']['returned'] == 0]
-        if not exits or any(row['status'] != 0 for row in exits):
-            raise AssertionError(f'successful workload exit lost its status: {exits}')
         shell.run('perf trace record --duration-ms 1000 --max-events 32 -o /tmp/failed.json -- /bin/cat /missing-trace-input').require('workload failure', failed=True)
         if b'running=false' not in shell.check('perf trace status'):
             raise AssertionError('collector left recording enabled')
+        # Export happens outside all measured intervals. Serial carries command
+        # status only; no trace body is printed or hex-framed by test-report.
+        remote_result = shell.run('perf trace record --snapshot --duration-ms 30000 --categories ipc,scheduler --no-names --poll-ms 1 --fail-on-loss --max-events 32768 -o /tmp/remote.json -- /bin/touch /data/trace-created', timeout=180)
+        shell.check('perf trace record --snapshot --duration-ms 50 --categories syscall --no-names --fail-on-loss -o /tmp/expiry.json')
+        TraceArtifacts.save(shell, names)
+    files = artifacts.extract(session, names)
+    # Preserve both raw files before propagating strict capture failures.
+    ipc_result.require('bounded IPC snapshot')
+    remote_result.require('bounded filesystem snapshot')
+    validate_capture(files, args.logfile)
     print('Trace lifecycle, CPU filtering, loss and Perfetto export acceptance passed')
 
 
