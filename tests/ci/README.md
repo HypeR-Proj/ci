@@ -48,13 +48,14 @@ and the one-time Pages/required-check setup.
 | `native-terminal` | Terminal modes, transformations and flow control |
 | `native-apps` | Native command-line applications plus editor/pager terminal interaction |
 | `native-trace` | One/four-CPU disk-backed trace capture, authority, filtering, expiry, loss, nested IPC/remote filesystem flows, and raw artifact extraction after unmount/QEMU exit |
+| `native-scheduler` | One/four-CPU scheduler benchmark correctness, same/cross-CPU IPC, loaded periodic wakeups, statistical accounting and capability failures; no latency thresholds |
 | `native-pmu` | Opt-in PMUv3 overflow sampling on every CPU, bounded capture and exact-ELF flame-graph export on GICv2/GICv3 |
 | `native-shell` | Shell language, editing, completion and redirection |
 | `native-services` | Service readiness, scoped control, captured stdio, query and restart limits; bounded postmortem retention, terminal disconnect, early progress, failed-console recovery, runtime failure reporting and boot-profile selection/adoption |
 | `native-fleet` | Fleet configuration admission and error handling |
 | `native-storage-recovery` | Storage readiness and handoff failure recovery |
 | `native-filesystem` | Filesystem RPC and provider failure |
-| `native-runtime-crash` | Guest runtime failure and isolation in both fleet orders |
+| `native-runtime-crash` | Guest runtime failure and isolation in both fleet orders; console handoff also injects 250 ms receiver delay |
 | `native-vm` | VM smoke on both GIC backends and forced GICv3 common-register traps |
 | `native-gicv2` | GICv2 Native boot on one/four CPUs, console and runtime-crash recovery |
 | `native-smp-stack` | Serial aggregate of the three SMP suites and `native-retirement-stack` |

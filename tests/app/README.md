@@ -17,6 +17,7 @@ workspace and never enter a product deployment.
 | [terminal-probe](terminal-probe/) | Development profile; `make test-terminal` | Exercise terminal modes, editing, flow control and foreground lease restoration. |
 | [retirement-probe](retirement-probe/) | Development profile; `make test-process-retirement` | Stop real children and verify private memory/register observation, endpoint closure, authority limits and revocation. |
 | [lifecycle-stress](lifecycle-stress/) | Development profile; `make test-lifecycle-stress` | Seeded concurrent handle churn, capability transfer and process termination; `lifecycle-stress trace` exercises bounded two-hop RPC tracing; see [fuzz/stress commands](../stress/README.md). |
+| [scheduler-bench](scheduler-bench/) | `SYSTEM_APP_SCHED_BENCH`; `make test-scheduler-bench` | Native periodic wakeup, wait/wake, same/cross-CPU IPC, fairness, yield and thread-entry benchmarks; [manual and metric definitions](../../docs/usage/diagnostics/scheduler-bench.md). |
 | [profile-storage](profile-storage.rs) | `make test-boot-profiles` | Transfer an opaque storage capability between independently supervised predecessor/successor processes, then retire bootstrap without an I/O VM. The fixture prepares an independent RAM root; it does not emulate a block driver. |
 
 The standalone init fixtures have no component registration and are built only

@@ -245,7 +245,7 @@ jobs:
       matrix:
         # Trace capture uses the real PCI storage backend and needs SMMUv3
         # stage 2, just like the other disk-backed acceptance workloads.
-        suite: [board-storage-media, board-boot-system, board-alpine-rootfs, board-business, board-broker, board-userspace-device, board-product-config, native-trace]
+        suite: [board-storage-media, board-boot-system, board-alpine-rootfs, board-business, board-broker, board-userspace-device, board-product-config, native-trace, native-scheduler]
     permissions:
       contents: read
       packages: read
@@ -291,6 +291,7 @@ jobs:
             target/board-tests/**/*.log.commands/**
             target/board-tests/**/product.config
             target/board-tests/**/accept.json
+            target/board-tests/scheduler.*/results/*
             target/board-tests/stack-watch/report.json
             target/app/aarch64/trace-*.log
             target/app/aarch64/trace-*.json

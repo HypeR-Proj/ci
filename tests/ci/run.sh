@@ -88,6 +88,8 @@ case "${1:-}" in
         python3 -B tests/qemu/test-power-crash.py
         python3 -B tests/qemu/test-command.py
         python3 -B tests/qemu/test-trace.py
+        python3 -B tests/performance/scheduler/test_report.py
+        python3 -B tests/performance/scheduler/test_capacity.py
         python3 -B tests/qemu/test-console.py
         python3 -B tests/qemu/test-console-hotplug.py
         python3 -B tests/qemu/test-fleet-config.py
@@ -106,7 +108,7 @@ case "${1:-}" in
     native)
         # Separate processes keep dispatch state local to each suite. Local
         # runs remain serial because fixtures reuse the same output paths.
-        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack native-stack-16k native-pmu native-trace; do
+        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack native-stack-16k native-pmu native-trace native-scheduler; do
             sh tests/ci/run.sh "$shard"
         done
         ;;
@@ -144,6 +146,10 @@ case "${1:-}" in
     native-trace)
         make test-trace ARCH=aarch64
         make -o image test-trace ARCH=aarch64 QEMU_CPUS=1
+        ;;
+    native-scheduler)
+        make test-scheduler-bench ARCH=aarch64 QEMU_CPUS=4
+        make -o image test-scheduler-bench ARCH=aarch64 QEMU_CPUS=1
         ;;
     native-pmu)
         make test-pmu ARCH=aarch64

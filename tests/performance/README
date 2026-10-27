@@ -3,6 +3,9 @@ SPDX-License-Identifier: Apache-2.0
 
 AArch64 QEMU TCG performance baseline
 
+For the Native scheduler latency/contention suite, see scheduler/README.md.
+Its separate --functional mode checks correctness in CI without timing gates.
+
 Manual local measurements only. Do not add these workloads to QEMU CI or use
 their timings as CI thresholds. Cross-architecture TCG and shared runner CPU
 availability make GitHub performance numbers unsuitable for this comparison.

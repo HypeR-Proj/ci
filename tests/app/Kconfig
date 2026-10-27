@@ -43,4 +43,11 @@ config SYSTEM_APP_TEST_REPORT
     help
         Build and deploy hyper-test-report at /bin/test-report.
 
+config SYSTEM_APP_SCHED_BENCH
+    bool "sched-bench (/bin/sched-bench)"
+    default n
+    help
+        Build the optional Native scheduling benchmark suite.
+        Periodic wakeup, handoff, contention and thread-start measurements.
+
 endmenu

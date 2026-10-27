@@ -24,11 +24,13 @@ image = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(image)
 
 
-def prepare_board(output):
+def prepare_board(output, data_mib=64):
     """No Alpine disk/downloads: just the existing minimal I/O VM and two volumes."""
+    if not 64 <= data_mib <= 8192:
+        raise ValueError('fixture data volume must be 64..8192 MiB')
     document = json.loads((ROOT / 'boards/qemu-minimal.json').read_text())
     document['disk']['partitions'].append({
-        'label': 'hyper-data', 'size-mib': 64, 'filesystem': 'fat', 'content': 'data',
+        'label': 'hyper-data', 'size-mib': data_mib, 'filesystem': 'fat', 'content': 'data',
     })
     Board.parse(document)
     output.write_text(json.dumps(document, indent=2) + '\n')
@@ -86,4 +88,6 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Prepare a minimal disk-backed trace fixture')
     parser.add_argument('--board-output', type=Path, required=True)
-    prepare_board(parser.parse_args().board_output)
+    parser.add_argument('--data-mib', type=int, default=64)
+    args = parser.parse_args()
+    prepare_board(args.board_output, args.data_mib)
