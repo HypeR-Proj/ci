@@ -6,6 +6,8 @@
 
 from pathlib import Path
 import tempfile
+import json
+import sys
 import unittest
 from unittest.mock import Mock, patch
 
@@ -83,6 +85,48 @@ class TraceArtifactTests(unittest.TestCase):
         for name in ('../escape', '/absolute', '..', 'sub/file', 'sub\\file'):
             with self.assertRaises(ValueError):
                 self.store.check_name(name)
+
+
+class PerfettoOwnershipTests(unittest.TestCase):
+    @staticmethod
+    def artifact(pid=100, owner='vm-io'):
+        # An independent minimal protobuf fixture exercises the identity schema,
+        # including Perfetto's implicit process-leader TID namespace.
+        def integer(value):
+            result = bytearray()
+            while value > 127:
+                result.append((value & 127) | 128)
+                value >>= 7
+            return bytes(result) + bytes([value])
+
+        def field(number, value):
+            if isinstance(value, int):
+                return integer(number << 3) + integer(value)
+            if isinstance(value, str):
+                value = value.encode()
+            return integer((number << 3) | 2) + integer(len(value)) + value
+
+        metadata = json.dumps({'vm_threads': {'0x123': {'name': 'io', 'vcpu': 0}},
+                               'exported_threads': {'0x123': 1}})
+        descriptor = field(1, 1) + field(14, metadata)
+        process = field(1, pid) + field(3, owner)
+        thread = field(1, 1) + field(2, pid) + field(3, 'vcpu/0') + field(5, 0)
+        tree = field(1, process) + field(2, thread)
+        return (field(1, field(8, 0) + field(60, descriptor))
+                + field(1, field(8, 0) + field(122, tree)))
+
+    def test_process_leader_cannot_steal_scheduler_thread(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'profiling'))
+        from perfetto_proto import inspect
+        self.assertEqual(len(inspect(self.artifact())['threads']), 1)
+        with self.assertRaisesRegex(ValueError, 'collide'):
+            inspect(self.artifact(pid=1))
+
+    def test_vcpu_owner_must_match_vm_observation(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'profiling'))
+        from perfetto_proto import inspect
+        with self.assertRaisesRegex(ValueError, 'incorrect vCPU owner'):
+            inspect(self.artifact(owner='kernel'))
 
 
 if __name__ == '__main__':

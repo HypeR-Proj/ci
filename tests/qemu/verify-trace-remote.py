@@ -27,7 +27,7 @@ def main():
         session.await_text(rb'HypeR: startup complete\n', timeout=240)
         session.await_text(rb'hyper-sh\$ ')
         shell = Shell(session)
-        capture_result = shell.run('perf trace record --snapshot --duration-ms 30000 --categories ipc,scheduler --no-names --poll-ms 1 --fail-on-loss --max-events 32768 -o /tmp/remote.json -- /bin/touch /data/trace-created', timeout=180)
+        capture_result = shell.run('perf trace record --raw-events --format chrome --snapshot --duration-ms 30000 --categories ipc,scheduler --no-names --poll-ms 1 --fail-on-loss --max-events 32768 -o /tmp/remote.json -- /bin/touch /data/trace-created', timeout=180)
         TraceArtifacts.save(shell, ('remote.json',))
     files = artifacts.extract(session, ('remote.json',))
     capture_result.require('bounded filesystem snapshot')

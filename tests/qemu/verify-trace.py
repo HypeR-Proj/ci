@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--board', type=Path, required=True)
     args = parser.parse_args()
     artifacts = TraceArtifacts(args.disk, args.board, args.logfile.with_suffix('.artifacts'))
-    names = ('frozen.jsonl', 'later.jsonl', 'trace.json', 'ipc.json', 'command.jsonl', 'remote.json', 'failed.json', 'expiry.json')
+    names = ('frozen.jsonl', 'later.jsonl', 'trace.json', 'ipc.json', 'command.jsonl', 'remote.json', 'failed.json', 'expiry.json', 'lanes.pftrace', 'native.pftrace')
     with Session(boot_command(args.qemu, args.image, args.initramfs, args.disk, args.board), args.logfile,
                  output_filter=append_console_output) as session:
         session.await_text(rb'HypeR: startup complete\n', timeout=240)
@@ -52,33 +52,39 @@ def main():
             if time.monotonic() > deadline:
                 raise AssertionError('trace did not stop autonomously')
             session.pump(0.1)
-        shell.check('perf trace dump --format jsonl --no-names -o /tmp/frozen.jsonl')
-        shell.run('perf trace dump --generation 0 -o /tmp/stale.json').require('stale generation', failed=True)
-        shell.run('perf trace dump --fail-on-loss -o /tmp/loss.json').require('loss policy', failed=True)
+        shell.check('perf trace dump --raw-events --format jsonl --no-names -o /tmp/frozen.jsonl')
+        shell.run('perf trace dump --raw-events --format chrome --generation 0 -o /tmp/stale.json').require('stale generation', failed=True)
+        shell.run('perf trace dump --raw-events --format chrome --fail-on-loss -o /tmp/loss.json').require('loss policy', failed=True)
         shell.check('echo TRACE_STOPPED; ps; free')
-        shell.check('perf trace dump --format jsonl --no-names -o /tmp/later.jsonl')
-        shell.check('perf trace record --duration-ms 1000 --categories scheduler,syscall,ipc --max-events 128 -o /tmp/trace.json')
-        shell.run('perf trace dump -o /tmp/trace.json').require('overwrite requires opt-in', failed=True)
+        shell.check('perf trace dump --raw-events --format jsonl --no-names -o /tmp/later.jsonl')
+        shell.check('perf trace record --raw-events --format chrome --duration-ms 1000 --categories scheduler,syscall,ipc --max-events 128 -o /tmp/trace.json')
+        shell.run('perf trace dump --raw-events --format chrome -o /tmp/trace.json').require('overwrite requires opt-in', failed=True)
         # Bounded lossless workload: two hops, duplex queues, explicit parents,
         # real blocked waits, and repeated protocol IDs on distinct connections.
         # One bounded command excludes serial control traffic and keeps the
         # collector off live rings. Continuous recording is tested separately.
-        ipc_result = shell.run('perf trace record --snapshot --duration-ms 30000 --categories ipc,scheduler --poll-ms 1 --no-names --fail-on-loss --max-events 16384 -o /tmp/ipc.json -- /bin/lifecycle-stress trace', timeout=120)
+        ipc_result = shell.run('perf trace record --raw-events --format chrome --snapshot --duration-ms 30000 --categories ipc,scheduler,irq --poll-ms 1 --no-names --fail-on-loss --max-events 16384 -o /tmp/ipc.json -- /bin/lifecycle-stress trace', timeout=120)
         # This checks exit semantics, not command latency. Leave room for slow
         # TCG runners; command completion still stops the recording immediately.
-        shell.check('perf trace record --duration-ms 30000 --categories syscall --max-events 16384 --format jsonl -o /tmp/command.jsonl -- /bin/echo TRACE_COMMAND_OK')
-        shell.run('perf trace record --duration-ms 1000 --max-events 32 -o /tmp/failed.json -- /bin/cat /missing-trace-input').require('workload failure', failed=True)
+        # Live reads can contend with the terminal syscall's nonblocking writer.
+        # Require a complete snapshot before asserting that its exit was recorded.
+        command_result = shell.run('perf trace record --raw-events --snapshot --no-names --fail-on-loss --duration-ms 30000 --categories syscall --max-events 16384 --format jsonl -o /tmp/command.jsonl -- /bin/echo TRACE_COMMAND_OK', timeout=120)
+        shell.run('perf trace record --raw-events --format chrome --duration-ms 1000 --max-events 32 -o /tmp/failed.json -- /bin/cat /missing-trace-input').require('workload failure', failed=True)
         if b'running=false' not in shell.check('perf trace status'):
             raise AssertionError('collector left recording enabled')
         # Export happens outside all measured intervals. Serial carries command
         # status only; no trace body is printed or hex-framed by test-report.
-        remote_result = shell.run('perf trace record --snapshot --duration-ms 30000 --categories ipc,scheduler --no-names --poll-ms 1 --fail-on-loss --max-events 32768 -o /tmp/remote.json -- /bin/touch /data/trace-created', timeout=180)
-        shell.check('perf trace record --snapshot --duration-ms 50 --categories syscall --no-names --fail-on-loss -o /tmp/expiry.json')
+        remote_result = shell.run('perf trace record --raw-events --format chrome --snapshot --duration-ms 30000 --categories ipc,scheduler --no-names --poll-ms 1 --fail-on-loss --max-events 32768 -o /tmp/remote.json -- /bin/touch /data/trace-created', timeout=180)
+        shell.check('perf trace record --raw-events --format chrome --snapshot --duration-ms 50 --categories syscall --no-names --fail-on-loss -o /tmp/expiry.json')
+        shell.check('perf trace record --duration-ms 250 --categories scheduler --max-events 16384 -o /tmp/lanes.pftrace')
+        native_result = shell.run('perf trace record --snapshot --duration-ms 30000 --categories ipc,scheduler --poll-ms 1 --fail-on-loss --max-events 16384 -o /tmp/native.pftrace -- /bin/lifecycle-stress trace', timeout=120)
         TraceArtifacts.save(shell, names)
     files = artifacts.extract(session, names)
-    # Preserve both raw files before propagating strict capture failures.
+    # Preserve all raw files before propagating strict capture failures.
     ipc_result.require('bounded IPC snapshot')
+    command_result.require('bounded command exit snapshot')
     remote_result.require('bounded filesystem snapshot')
+    native_result.require('native Perfetto IPC snapshot')
     validate_capture(files, args.logfile)
     print('Trace lifecycle, CPU filtering, loss and Perfetto export acceptance passed')
 
