@@ -161,9 +161,43 @@ def main():
             rb'^Reserved: ' + value + rb'  Managed: ' + value + rb'  Allocated: ' + value + rb'$',
             rb'^Owners:\s+kernel=' + maybe + rb' user=' + value + rb' guest=' + value
             + rb' buffered/cached=' + maybe + rb' other=' + value + rb'$')
-        vm.send(b'top\n')
-        verify_top_summary(wait(TOP_SUMMARY), int(cpus))
-        wait(rb'Press q or Ctrl-C to quit\.')
+        # A 60-second refresh delay must never delay the first (or only) frame.
+        output = shell.check('top -b -n 1 -d 60', timeout=min(10, budget()))
+        verify_top_summary(output, int(cpus))
+        if output.count(b'top - ') != 1 or b'since boot' not in output or b'\x1b' in output:
+            raise AssertionError(f'invalid immediate batch frame: {output!r}')
+        output = shell.check('top -b -n 2 -d 0.1 -H', timeout=min(10, budget()))
+        if output.count(b'top - ') != 2 or b'interval' not in output or b'TID (KOID)' not in output:
+            raise AssertionError(f'invalid repeated thread frames: {output!r}')
+
+        def top_frame(pattern):
+            # Resize/control notifications may redraw an older retained frame.
+            # Keep one deadline while waiting for the requested view's footer.
+            deadline = time.monotonic() + min(10, budget())
+            while time.monotonic() < deadline:
+                output = vm.await_text(rb'h help q quit', timeout=deadline - time.monotonic())
+                if re.search(pattern, output):
+                    return
+            raise AssertionError(f'missing top frame {pattern!r}')
+
+        vm.send(b'top -d 60\n')
+        top_frame(rb'CPU: user-thread')
+        vm.send(b'H')
+        top_frame(rb'TID \(KOID\)')
+        vm.send(b'I')
+        top_frame(rb'task CPU: whole machine')
+        vm.send(b'T')
+        top_frame(rb'Time \|')
+        vm.send(b'h')
+        top_frame(rb'interactive help')
+        vm.send(b' ')  # dismiss help without taking a new sample
+        top_frame(rb'since boot')
+        vm.send(b' ')  # explicitly sample now, without waiting 60 seconds
+        top_frame(rb'interval')
+        vm.send(b'd')
+        vm.await_text(rb'Delay seconds', timeout=min(10, budget()))
+        vm.send(b'0.5\r')
+        top_frame(rb'delay 0.5s')
         vm.send(b'q')
         wait(rb'hyper-sh\$ ')
         run('echo HYPER_NATIVE_ECHO_OK', rb'^HYPER_NATIVE_ECHO_OK$')

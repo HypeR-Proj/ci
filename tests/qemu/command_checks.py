@@ -61,7 +61,7 @@ def verify_command_options(run):
         raise AssertionError(f'invalid ps rows: {processes!r}')
     koid = row[1].decode()
     run(f'ps -p {koid} -T', rb'thread\s+0x[0-9a-f]{16}')
-    run(f'top -b -n 1 -d 0.1 -p {koid} --sort name --limit 1', row[1] + rb'\s+[\d.]+%\s+\d+\s+shell')
+    run(f'top -b -n 1 -d 0.1 -p {koid} --sort name --limit 1', row[1] + rb'\s+[\d.]+%\s+\d+:\d{2}\.\d{2}\s+\d+\s+running\s+shell')
     samples = run('free -m -c 2 -s 0.1')
     if len(re.findall(rb'\nMem:.*MiB', samples)) != 2:
         raise AssertionError(f'free did not report two MiB samples: {samples!r}')
