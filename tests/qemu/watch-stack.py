@@ -204,12 +204,14 @@ def run(args, report):
                 if len(serial) > 1048576:
                     done.set()
                     return
-                # Two filesystem commands extend boot coverage without a large
-                # benchmark. The final marker distinguishes output from echo.
+                # Replay the relevant bounded workload on the disk snapshot.
+                # The final marker distinguishes output from echo.
                 count = bytes(serial).count(b'hyper-sh$ ')
                 if count > prompts:
                     prompts = count
-                    line = b'ls /bin\n' if prompts <= 2 else b'echo HYPER_STACK_WATCH_DONE\n'
+                    commands = args.command or ['ls /bin', 'ls /bin']
+                    line = ((commands[prompts - 1] + '\n').encode() if prompts <= len(commands)
+                            else b'echo HYPER_STACK_WATCH_DONE\n')
                     try:
                         child.stdin.write(line)
                         child.stdin.flush()
@@ -306,6 +308,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--timeout', type=float, default=90)
     parser.add_argument('--minimum-remaining', type=int, default=2048)
+    parser.add_argument('--command', action='append',
+                        help='Shell command to replay after boot; repeat for an ordered workload')
     args = parser.parse_args()
     if not args.qemu or args.timeout <= 0 or not 0 < args.minimum_remaining <= WATCH_SIZE:
         parser.error('QEMU, a positive timeout and reserve within 1..4096 are required')

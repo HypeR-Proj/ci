@@ -61,6 +61,7 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
                                      for arg in call))
                 continue
             self.assertIn('STACK_AUDIT=1', call)
+            self.assertIn('STACK_MINIMUM_REMAINING=4096', call)
             self.assertIn('CARGO_FEATURES=--features kernel-test,kernel-stack-audit', call)
             self.assertIn('IO_VM_PACKAGE=/fixture/io-vm', call)
             config = next(arg.split('=', 1)[1] for arg in call if arg.startswith('CONFIG_FILE='))

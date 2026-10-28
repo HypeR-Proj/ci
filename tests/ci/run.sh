@@ -303,10 +303,13 @@ case "${1:-}" in
         esac
         # Keep the real storage path at the minimum supported thread-stack
         # size, with stack watermark checks, on every independent runner.
+        # Storage acceptance requires 4 KiB reserve so ordinary loader growth
+        # cannot immediately consume the general 2 KiB minimum reserve.
         prepare_aarch64_stack16_config
         make "$target" ARCH=aarch64 IO_VM_PACKAGE="$package" \
             CONFIG_FILE="$stack_config" \
-            STACK_AUDIT=1 CARGO_FEATURES='--features kernel-test,kernel-stack-audit'
+            STACK_AUDIT=1 STACK_MINIMUM_REMAINING=4096 \
+            CARGO_FEATURES='--features kernel-test,kernel-stack-audit'
         ;;
     riscv64-native)
         sh tests/ci/run.sh riscv64-sdk

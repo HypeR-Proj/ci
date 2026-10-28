@@ -277,6 +277,9 @@ jobs:
             --image kernel/target/aarch64-unknown-none-softfloat/kernel/hyper.img \
             --elf kernel/target/aarch64-unknown-none-softfloat/kernel/hyper \
             --config target/ci/aarch64-stack16.config \
+            --minimum-remaining 4096 \
+            --command '/bin/storage-probe write' \
+            --command 'cp /etc/hyper/components.json /data/copied-components.json' \
             --output target/board-tests/stack-watch
       - name: Clean up AArch64 QEMU
         if: always()
