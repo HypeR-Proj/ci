@@ -127,8 +127,11 @@ fn run() -> Result<(), String> {
             .take(hyper_service::filesystem::BLOCK)
             .map_err(|e| format!("{e:?}"))?,
     );
+    let queue = block
+        .create_queue(hyper_os::block::QueueConfig::default())
+        .map_err(|e| format!("{e:?}"))?;
     let mut probe = Probe::default();
-    let completed = hyper_fs_service::serve(&mut startup, &mut probe)?;
+    let completed = hyper_fs_service::serve(&mut startup, &mut probe, queue)?;
     if probe.fault_on_stop {
         // Namespace detach succeeded, but the manager must retain the reason
         // when this process dies before returning its exclusive volume owner.

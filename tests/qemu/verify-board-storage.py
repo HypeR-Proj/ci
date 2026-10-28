@@ -79,6 +79,15 @@ def boot(args, mode):
             child.stdin.flush()
             await_text(b'BOARD-STORAGE: ' + mode.encode() + b' PASS\n', timeout=600)
             await_text(rb'hyper-sh\$ ')
+            if args.require_block_queue:
+                # The provider reports through its supervisor's journal stream.
+                # Query the durable record instead of depending on boot serial
+                # interleaving or whether a splash renderer consumed the line.
+                child.stdin.write(checked('journalctl -n 100'))
+                child.stdin.flush()
+                journal = await_text(rb'hyper-sh\$ ')
+                if status(journal) != 0 or b'BLOCK-QUEUE: PASS ' not in journal:
+                    raise RuntimeError(f'Native block queue probe missing: {journal!r}')
             child.stdin.write(checked('cp /etc/hyper/components.json /data/copied-components.json'))
             child.stdin.flush()
             copied = await_text(rb'hyper-sh\$ ')
@@ -179,6 +188,8 @@ def main():
     parser.add_argument('--maximum-stack-used', type=int)
     parser.add_argument('--require-userspace-device', action='store_true',
                         help='require the generic userspace MMIO/IRQ worker')
+    parser.add_argument('--require-block-queue', action='store_true',
+                        help='require bounded async queue acceptance from the FAT provider')
     parser.add_argument('--verify-only', action='store_true',
                         help='inspect an existing acceptance disk without rewriting its payload')
     for name in ('image', 'initramfs', 'disk', 'board', 'log'):

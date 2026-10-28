@@ -75,7 +75,7 @@ and the one-time Pages/required-check setup.
 | `io-network` | Default physical/guest PCI storage and network lifecycle, with physical SMMUv3 translation |
 | `io-network-mmio` | Dedicated physical/guest MMIO compatibility: storage, network, driver reset and VM restart |
 | `board-storage` | Serial aggregate of the seven board suites below; storage/guest suites use 16 KiB stacks and stack watermarks, while product selection boots an uninstrumented kernel |
-| `board-storage-media` | Configuration storage, cold restart and Native shell |
+| `board-storage-media` | Async block queue admission, merge/completion/rights/close checks, configuration storage, cold restart and Native shell |
 | `board-boot-system` | Independent root, supervision handoff and disk-independent/provider failure recovery |
 | `board-alpine-rootfs` | Alpine ext4 root, write/sync/restart and checksums |
 | `board-business` | Managed guest start/stop/restart and physical block operations |

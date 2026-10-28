@@ -170,6 +170,7 @@ impl Worker {
         hyper_os::filesystem::mount(
             channel.as_handle_ref(),
             buffer.as_handle_ref(),
+            None,
             root.as_handle_ref(),
             path,
             false,
@@ -814,7 +815,7 @@ fn run() -> Result<bool> {
             snapshot: Some(vec![0x5a; 8192]),
             directories: directory_volume::DirectoryVolume::default(),
         };
-        let _completion = hyper_fs_service::serve(&mut startup, &mut volume)?;
+        let _completion = hyper_fs_service::serve_buffered(&mut startup, &mut volume)?;
         Ok(false)
     } else if std::env::args().nth(1).as_deref() == Some("--protector") {
         hold_protection(&mut startup)?;
