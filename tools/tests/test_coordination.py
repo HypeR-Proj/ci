@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import io
+import json
 import os
 import subprocess
 import tempfile
@@ -13,10 +14,19 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import configure
 import gate
+import refresh
 import workspace
 
 
 class CoordinationTests(unittest.TestCase):
+    def candidate_state(self, main='a' * 40, head='b' * 40, tree='c' * 40,
+                        merged=False, members=None):
+        return {'r0': {'defaultBranchRef': {'name': 'main', 'target': {'oid': main, 'tree': {'oid': tree}}},
+                       'pr': {'state': 'MERGED' if merged else 'OPEN', 'headRefOid': head,
+                              'merged': merged, 'mergeCommit': {'oid': main, 'tree': {'oid': tree}} if merged else None},
+                       'members': {'nodes': members if members is not None else [],
+                                   'pageInfo': {'hasNextPage': False}}}}
+
     def test_truncated_read_response_is_retried(self):
         with patch.object(workspace.subprocess, 'check_output', side_effect=['{', '{"ok": true}']) as call, patch.object(workspace.time, 'sleep'):
             self.assertEqual(workspace.api('repos/example'), {'ok': True})
@@ -127,10 +137,7 @@ class CoordinationTests(unittest.TestCase):
                 workspace.checkout_one(root / 'workspace', 'kernel', record)
             self.assertEqual((root / 'workspace/kernel/source').read_text(), 'selected')
             snapshot = {'target': 'kernel#1', 'projects': {'kernel': record}}
-            with patch.object(workspace, 'api', side_effect=[
-                {'commit': {'sha': revisions[0]}},
-                {'head': {'sha': revisions[2]}, 'state': 'open'},
-            ]), self.assertRaisesRegex(ValueError, 'PR changed'):
+            with patch.object(workspace, 'graphql', return_value=self.candidate_state(main=revisions[0], head=revisions[2])), patch.object(workspace.time, 'sleep'), self.assertRaisesRegex(ValueError, 'PR changed'):
                 workspace.verify_current(snapshot)
 
     def test_topic_search_reads_all_pages(self):
@@ -140,7 +147,7 @@ class CoordinationTests(unittest.TestCase):
 
     def test_base_change_invalidates_tested_candidate(self):
         snapshot = {'target': 'kernel#1', 'projects': {'kernel': {'base': 'a' * 40, 'head': 'b' * 40, 'pr': 1}}}
-        with patch.object(workspace, 'api', return_value={'commit': {'sha': 'c' * 40}}):
+        with patch.object(workspace, 'graphql', return_value=self.candidate_state(main='c' * 40)), patch.object(workspace.time, 'sleep'):
             with self.assertRaisesRegex(ValueError, 'stale'):
                 workspace.verify_current(snapshot)
 
@@ -153,20 +160,76 @@ class CoordinationTests(unittest.TestCase):
     def test_verified_topic_member_may_be_merged_without_invalidating_peers(self):
         record = {'base': 'a' * 40, 'head': 'b' * 40, 'pr': 1, 'merge_tree': 'c' * 40}
         snapshot = {'target': 'topic:test', 'projects': {'kernel': record}}
-        responses = [{'commit': {'sha': 'd' * 40}},
-                     {'merged': True, 'head': {'sha': 'b' * 40}, 'merge_commit_sha': 'd' * 40},
-                     {'tree': {'sha': 'c' * 40}}, []]
-        with patch.object(workspace, 'api', side_effect=responses):
+        with patch.object(workspace, 'graphql', return_value=self.candidate_state(main='d' * 40, merged=True)):
             self.assertEqual(workspace.verify_current(snapshot), {'kernel'})
 
     def test_merged_topic_member_with_different_contents_is_stale(self):
         record = {'base': 'a' * 40, 'head': 'b' * 40, 'pr': 1, 'merge_tree': 'c' * 40}
         snapshot = {'target': 'topic:test', 'projects': {'kernel': record}}
-        responses = [{'commit': {'sha': 'd' * 40}},
-                     {'merged': True, 'head': {'sha': 'b' * 40}, 'merge_commit_sha': 'd' * 40},
-                     {'tree': {'sha': 'e' * 40}}]
-        with patch.object(workspace, 'api', side_effect=responses), self.assertRaisesRegex(ValueError, 'stale'):
+        with patch.object(workspace, 'graphql', return_value=self.candidate_state(main='d' * 40, tree='e' * 40, merged=True)), patch.object(workspace.time, 'sleep'), self.assertRaisesRegex(ValueError, 'stale'):
             workspace.verify_current(snapshot)
+
+    def topic_snapshot(self):
+        return {'identity': 'candidate', 'target': 'topic:test', 'projects': {
+            'kernel': {'base': 'a' * 40, 'head': 'b' * 40, 'pr': 1, 'merge_tree': 'c' * 40}}}
+
+    def test_unchanged_open_topic_remains_valid(self):
+        state = self.candidate_state(members=[{'number': 1, 'headRefOid': 'b' * 40}])
+        with patch.object(workspace, 'graphql', return_value=state) as read:
+            self.assertEqual(workspace.verify_current(self.topic_snapshot()), set())
+        self.assertEqual(read.call_count, 1)
+
+    def test_changed_dependency_without_a_pr_is_stale(self):
+        snapshot = {'target': 'main', 'projects': {'kernel': {'base': 'a' * 40}}}
+        with patch.object(workspace, 'graphql', return_value=self.candidate_state(main='d' * 40)), patch.object(workspace.time, 'sleep'), self.assertRaisesRegex(ValueError, 'stale'):
+            workspace.verify_current(snapshot)
+
+    def test_merge_overlapping_a_read_is_confirmed_with_fresh_state(self):
+        # The first response saw the old main but the PR had already left the
+        # open-topic list. The second response observes the completed merge.
+        partial = self.candidate_state()
+        completed = self.candidate_state(main='d' * 40, merged=True)
+        with patch.object(workspace, 'graphql', side_effect=[partial, completed]) as read, patch.object(workspace.time, 'sleep'):
+            self.assertEqual(workspace.verify_current(self.topic_snapshot()), {'kernel'})
+        self.assertEqual(read.call_count, 2)
+
+    def test_real_topic_changes_are_not_accepted_after_a_retry(self):
+        state = self.candidate_state(members=[{'number': 2, 'headRefOid': 'b' * 40}])
+        with patch.object(workspace, 'graphql', return_value=state) as read, patch.object(workspace.time, 'sleep'), self.assertRaisesRegex(ValueError, 'topic membership'):
+            workspace.verify_current(self.topic_snapshot())
+        self.assertEqual(read.call_count, 2)
+
+    def test_unexpected_additional_topic_member_is_stale(self):
+        state = self.candidate_state(members=[{'number': 1, 'headRefOid': 'b' * 40},
+                                             {'number': 2, 'headRefOid': 'e' * 40}])
+        with patch.object(workspace, 'graphql', return_value=state), patch.object(workspace.time, 'sleep'), self.assertRaisesRegex(ValueError, 'topic membership'):
+            workspace.verify_current(self.topic_snapshot())
+
+    def test_topic_removal_is_stale(self):
+        with patch.object(workspace, 'graphql', return_value=self.candidate_state()), patch.object(workspace.time, 'sleep'), self.assertRaisesRegex(ValueError, 'topic membership'):
+            workspace.verify_current(self.topic_snapshot())
+
+    def test_graphql_failure_does_not_invalidate_green_checks(self):
+        with patch.object(workspace.subprocess, 'check_output', return_value=json.dumps({'errors': [{'message': 'unavailable'}], 'data': {}})), self.assertRaises(RuntimeError):
+            workspace.verify_current(self.topic_snapshot())
+
+    def test_unreadable_state_does_not_write_failure_over_success(self):
+        pull = {'head': {'sha': 'b' * 40}, 'base': {'repo': {'name': 'kernel'}}}
+        check = {'id': 42, 'app': {'id': refresh.APP_ID}, 'conclusion': 'success',
+                 'output': {'text': json.dumps(self.topic_snapshot())}}
+        with patch.object(workspace, 'project_names', return_value=['kernel']), patch.object(workspace, 'open_pulls', return_value=[pull]), patch.object(workspace, 'api', return_value={'check_runs': [check]}), patch.object(workspace, 'verify_current', side_effect=RuntimeError('unreadable')), patch.object(refresh, 'write_check') as write, self.assertRaises(RuntimeError):
+            refresh.refresh(Path('unused.xml'))
+        write.assert_not_called()
+
+    def test_rename_uses_canonical_repository_for_check_updates(self):
+        pull = {'head': {'sha': 'b' * 40}, 'base': {'repo': {'name': 'libc'}}}
+        check = {'id': 42, 'app': {'id': refresh.APP_ID}, 'conclusion': 'success',
+                 'output': {'text': json.dumps(self.topic_snapshot())}}
+        with patch.object(workspace, 'project_names', return_value=['lib']), patch.object(workspace, 'open_pulls', return_value=[pull]), patch.object(workspace, 'api', return_value={'check_runs': [check]}) as read, patch.object(workspace, 'verify_current', side_effect=ValueError('stale')), patch.object(refresh, 'write_check') as write:
+            refresh.refresh(Path('unused.xml'))
+        self.assertIn('/libc/', read.call_args.args[0])
+        self.assertEqual(write.call_args.args[0], 'libc')
+        self.assertEqual(write.call_args.args[2], 42)
 
     def test_pending_is_not_a_success(self):
         snapshot = {'identity': 'test', 'projects': {'kernel': {'head': 'a' * 40, 'pr': 1}}}

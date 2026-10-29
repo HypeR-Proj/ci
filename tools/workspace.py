@@ -210,38 +210,77 @@ def checkout(snapshot, workspace, candidates=None):
                 raise ValueError('invalid manifest file operation')
 
 
-def verify_current(snapshot):
+def graphql(query):
+    response = retry_github(lambda: json.loads(subprocess.check_output(
+        ['gh', 'api', 'graphql', '--input', '-'],
+        input=json.dumps({'query': query}), text=True, stderr=subprocess.PIPE)))
+    if response.get('errors'):
+        raise RuntimeError(f"GitHub could not read candidate state: {response['errors']}")
+    return response['data']
+
+
+def candidate_state_query(snapshot):
+    fields = []
+    topic = snapshot['target'].startswith('topic:')
+    for index, (name, record) in enumerate(snapshot['projects'].items()):
+        pull = (f"pr:pullRequest(number:{int(record['pr'])})"
+                '{state headRefOid merged mergeCommit{oid tree{oid}}}'
+                if 'pr' in record else '')
+        members = ('members:pullRequests(first:2,states:OPEN,baseRefName:"main",labels:['
+                   + json.dumps(snapshot['target'])
+                   + ']){nodes{number headRefOid}pageInfo{hasNextPage}}' if topic else '')
+        fields.append(f'r{index}:repository(owner:{json.dumps(ORG)},name:{json.dumps(name)})'
+                      '{defaultBranchRef{name target{oid ... on Commit{tree{oid}}}}'
+                      + pull + members + '}')
+    return 'query {' + ' '.join(fields) + '}'
+
+
+def verify_candidate_state(snapshot, data):
     applied = set()
-    for name, record in snapshot['projects'].items():
-        head = api(f'repos/{ORG}/{name}/branches/main')['commit']['sha']
-        if head != record['base']:
-            if 'pr' in record and 'merge_tree' in record:
-                pull = api(f"repos/{ORG}/{name}/pulls/{record['pr']}")
-                if (pull.get('merged') and pull['head']['sha'] == record['head']
-                        and pull.get('merge_commit_sha') == head
-                        and api(f'repos/{ORG}/{name}/git/commits/{head}')['tree']['sha'] == record['merge_tree']):
-                    applied.add(name)
-                    continue
-            raise ValueError(f'{name}: main changed; candidate verification is stale')
+    for index, (name, record) in enumerate(snapshot['projects'].items()):
+        current = data[f'r{index}']
+        if not current or not current['defaultBranchRef']:
+            raise ValueError(f'{name}: default branch is missing; verification is stale')
+        branch = current['defaultBranchRef']
+        head = branch['target']
+        if branch['name'] != 'main':
+            raise ValueError(f'{name}: default branch changed; verification is stale')
+        expected = []
         if 'pr' in record:
-            pr = api(f"repos/{ORG}/{name}/pulls/{record['pr']}")
-            if pr['head']['sha'] != record['head'] or pr['state'] != 'open':
-                raise ValueError(f'{name}: PR changed or closed')
-            if snapshot['target'].startswith('topic:') and snapshot['target'] not in [label['name'] for label in pr['labels']]:
-                raise ValueError(f'{name}: topic membership changed')
-    # Re-resolve to catch newly added topic members, including unchanged PR heads.
-    if snapshot['target'].startswith('topic:'):
-        members = {}
-        for name in snapshot['projects']:
-            for pr in open_pulls(name):
-                if snapshot['target'] in [label['name'] for label in pr['labels']]:
-                    if name in members:
-                        raise ValueError(f'{name}: topic contains multiple open PRs')
-                    members[name] = pr['head']['sha']
-        expected = {name: record['head'] for name, record in snapshot['projects'].items() if 'pr' in record and name not in applied}
-        if members != expected:
-            raise ValueError('topic membership changed; rerun verification')
+            pull = current['pr']
+            if head['oid'] == record['base']:
+                if not pull or pull['state'] != 'OPEN' or pull['headRefOid'] != record['head']:
+                    raise ValueError(f'{name}: PR changed or closed; verification is stale')
+                expected = [{'number': record['pr'], 'headRefOid': record['head']}]
+            elif (pull and pull['merged'] and pull['headRefOid'] == record['head']
+                  and pull['mergeCommit'] and pull['mergeCommit']['oid'] == head['oid']
+                  and head['tree']['oid'] == record.get('merge_tree')):
+                applied.add(name)
+            else:
+                raise ValueError(f'{name}: main changed; candidate verification is stale')
+        elif head['oid'] != record['base']:
+            raise ValueError(f'{name}: main changed; candidate verification is stale')
+        if snapshot['target'].startswith('topic:'):
+            members = current['members']
+            if members['pageInfo']['hasNextPage'] or members['nodes'] != expected:
+                raise ValueError(f'{name}: topic membership changed; verification is stale')
     return applied
+
+
+def verify_current(snapshot):
+    # Read heads, PR states and topic membership together. A cache spanning
+    # separate REST requests can mix states from before and after a topic merge.
+    query = candidate_state_query(snapshot)
+    for attempt in range(2):
+        data = graphql(query)
+        try:
+            return verify_candidate_state(snapshot, data)
+        except ValueError:
+            if attempt:
+                raise
+            # A merge can still overlap one query. Confirm a rejection using
+            # a fresh response; genuine input changes continue to fail closed.
+            time.sleep(1)
 
 
 def resolve_packages(snapshot, oras='oras'):

@@ -5,7 +5,6 @@
 """Invalidate old green checks when their verified source combination changes."""
 
 import argparse
-import functools
 import json
 from pathlib import Path
 
@@ -14,14 +13,12 @@ from configure import APP_ID
 from gate import write_check
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--manifest', type=Path, required=True)
-    args = parser.parse_args()
-    workspace.api = functools.cache(workspace.api)
+def refresh(manifest):
     checked = {}
-    for name in workspace.project_names(args.manifest):
-        for pull in workspace.open_pulls(name):
+    for alias in workspace.project_names(manifest):
+        for pull in workspace.open_pulls(alias):
+            # GET follows repository rename redirects; PATCH does not.
+            name = pull['base']['repo']['name']
             checks = workspace.api(f"repos/{workspace.ORG}/{name}/commits/{pull['head']['sha']}/check-runs?check_name=system&filter=latest&per_page=100")['check_runs']
             for check in checks:
                 if check['app']['id'] != APP_ID or check.get('conclusion') != 'success':
@@ -38,6 +35,13 @@ def main():
                     write_check(name, {'name': 'system', 'status': 'completed', 'conclusion': 'failure',
                                       'output': {'title': 'System verification is stale',
                                                  'summary': checked[identity], 'text': check['output']['text']}}, check['id'])
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--manifest', type=Path, required=True)
+    args = parser.parse_args()
+    refresh(args.manifest)
 
 
 if __name__ == '__main__':
