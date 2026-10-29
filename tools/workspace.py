@@ -137,10 +137,10 @@ def checkout_one(workspace, name, record, candidates=None):
     if 'pr' in record:
         if not isinstance(record['pr'], int) or not SHA.fullmatch(record['head']):
             raise ValueError('invalid PR identity')
-        subprocess.run(['git', 'fetch', '--quiet', 'origin', f"refs/pull/{record['pr']}/head"], cwd=root, check=True)
+        subprocess.run(['git', 'fetch', '--quiet', 'origin', record['head']], cwd=root, check=True)
         fetched = subprocess.check_output(['git', 'rev-parse', 'FETCH_HEAD'], cwd=root, text=True).strip()
         if fetched != record['head']:
-            raise ValueError(f'{name}: PR changed during checkout; rerun verification')
+            raise ValueError(f'{name}: fetched object differs from the resolved candidate')
         timestamp = max(int(subprocess.check_output(['git', 'show', '-s', '--format=%ct', revision], cwd=root))
                         for revision in (record['base'], fetched))
         environment = {**os.environ, 'GIT_AUTHOR_DATE': f'@{timestamp} +0000',

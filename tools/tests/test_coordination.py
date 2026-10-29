@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import io
+import os
+import subprocess
+import tempfile
 from pathlib import Path
 import sys
 import unittest
@@ -45,6 +48,37 @@ class CoordinationTests(unittest.TestCase):
         self.assertNotEqual(snapshot['identity'], 'old')
         with patch.object(workspace.subprocess, 'check_output', return_value='main'), self.assertRaises(ValueError):
             workspace.resolve_packages(snapshot)
+
+    def test_checkout_uses_resolved_commit_when_the_pull_ref_advances(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            remote = root / 'remote'
+            remote.mkdir()
+            def git(*arguments):
+                return subprocess.check_output(['git', *arguments], cwd=remote, text=True).strip()
+            git('init', '-q')
+            git('config', 'user.name', 'Test')
+            git('config', 'user.email', 'test@example.invalid')
+            revisions = []
+            for value in ('base', 'selected', 'newer'):
+                (remote / 'source').write_text(value)
+                git('add', 'source')
+                git('-c', 'commit.gpgsign=false', 'commit', '-qm', value)
+                revisions.append(git('rev-parse', 'HEAD'))
+            git('update-ref', 'refs/pull/1/head', revisions[2])
+            record = {'base': revisions[0], 'head': revisions[1], 'pr': 1, 'path': 'kernel'}
+            environment = {'GIT_CONFIG_COUNT': '1',
+                           'GIT_CONFIG_KEY_0': 'url.' + str(remote) + '.insteadOf',
+                           'GIT_CONFIG_VALUE_0': 'https://github.com/HypeR-Proj/kernel.git'}
+            with patch.dict(os.environ, environment):
+                workspace.checkout_one(root / 'workspace', 'kernel', record)
+            self.assertEqual((root / 'workspace/kernel/source').read_text(), 'selected')
+            snapshot = {'target': 'kernel#1', 'projects': {'kernel': record}}
+            with patch.object(workspace, 'api', side_effect=[
+                {'commit': {'sha': revisions[0]}},
+                {'head': {'sha': revisions[2]}, 'state': 'open'},
+            ]), self.assertRaisesRegex(ValueError, 'PR changed'):
+                workspace.verify_current(snapshot)
 
     def test_topic_search_reads_all_pages(self):
         with patch.object(workspace, 'api', side_effect=[[{'number': n} for n in range(100)], [{'number': 101}]]) as call:
