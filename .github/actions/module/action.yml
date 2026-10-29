@@ -30,6 +30,6 @@ runs:
       env:
         COMPONENT: ${{ inputs.component }}
         GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+        PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
       run: |
         python3 .ci-control/tools/module.py --component "$COMPONENT" --candidate "$GITHUB_WORKSPACE" --directory "$RUNNER_TEMP/modules" --manifest .manifest-input/default.xml --pull-request "$PR_NUMBER"
