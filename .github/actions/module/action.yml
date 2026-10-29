@@ -24,7 +24,8 @@ runs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang cmake cpio lld llvm make python3 ripgrep shellcheck dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler
+        sudo apt-get install -y clang-19 cmake cpio lld-19 llvm-19 make python3 ripgrep shellcheck dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler
+        echo /usr/lib/llvm-19/bin >> "$GITHUB_PATH"
     - name: Run repository self tests
       shell: bash
       env:

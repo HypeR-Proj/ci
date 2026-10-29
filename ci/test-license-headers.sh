@@ -59,3 +59,29 @@ if check >/dev/null 2>&1; then
     echo 'image with incomplete sidecar accepted' >&2
     exit 1
 fi
+
+# Forks preserve upstream licensing without exempting new Native adapters.
+rm "$fixture/Test Logo.png" "$fixture/Test Logo.png.license"
+for library in musl cxx; do
+    upstream="$root/stdlib/$library"
+    [ -d "$upstream" ] || continue
+    destination="$fixture/stdlib/$library"
+    mkdir -p "$destination/hyper"
+    case "$library" in musl) notice=COPYRIGHT ;; cxx) notice=LICENSE.TXT ;; esac
+    cp "$upstream/$notice" "$destination/$notice"
+    cp "$upstream/LICENSE" "$destination/LICENSE"
+    cp "$upstream/UPSTREAM.json" "$destination/UPSTREAM.json"
+    check
+    printf 'int missing_attribution;\n' >"$destination/hyper/port.c"
+    if check >/dev/null 2>&1; then
+        echo 'unattributed Native fork adapter accepted' >&2
+        exit 1
+    fi
+    rm "$destination/hyper/port.c"
+    printf 'changed upstream license\n' >"$destination/$notice"
+    if check >/dev/null 2>&1; then
+        echo 'changed fork license accepted' >&2
+        exit 1
+    fi
+    rm -rf "$destination"
+done

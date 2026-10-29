@@ -4,6 +4,7 @@
 
 """Exercise Native file tools and independent named VM lifecycles."""
 import os
+from pathlib import Path
 import re
 import sys
 import time
@@ -48,6 +49,10 @@ def main():
         # Other services may log before the shell prints its first prompt.
         await_text(rb'HypeR session: console ready\n')
         await_text(rb'hyper-sh\$ ')
+        if (Path(__file__).resolve().parents[2] / 'stdlib/musl/component.json').is_file():
+            run('/bin/c-standard-test', rb'MUSL-NATIVE: PASS\n')
+            run('/bin/c-standard-test assert', rb'Assertion failed:.*standard C assertion probe.*test.c:[0-9]+, main', failed=True)
+            run('/bin/cxx-standard-test', rb'LIBCXX-NATIVE: PASS\n')
         if verify_vm:
             state('alpine', 'running')
         run('ls -d /lib', rb'l[rwx-]{9}\s+.* /lib@ -> lib64\n')
