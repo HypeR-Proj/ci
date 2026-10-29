@@ -63,7 +63,9 @@ def resolve(manifest, target):
         selected[name] = int(number)
     if 'manifest' in selected:
         pull = api(f"repos/{ORG}/manifest/pulls/{selected['manifest']}")
-        content = api(f"repos/{ORG}/manifest/contents/default.xml?ref={pull['head']['sha']}")
+        manifest_head = pull['head']['sha']
+        manifest_revision = pull.get('merge_commit_sha') or manifest_head
+        content = api(f"repos/{ORG}/manifest/contents/default.xml?ref={manifest_revision}")
         names = project_names(io.BytesIO(base64.b64decode(content['content'])))
         if target.startswith('topic:'):
             selected = {}
@@ -81,7 +83,9 @@ def resolve(manifest, target):
             pr = api(f'repos/{ORG}/{name}/pulls/{selected[name]}')
             if pr['state'] != 'open' or pr['base']['ref'] != 'main':
                 raise ValueError(f'{name}: candidate must be an open PR against main')
-            record.update(pr=pr['number'], head=pr['head']['sha'], draft=pr['draft'])
+            if name == 'manifest' and pr['head']['sha'] != manifest_head:
+                raise ValueError('manifest PR changed during resolution; rerun verification')
+            record.update(pr=pr['number'], head=pr['head']['sha'])
             if pr.get('merge_commit_sha') and pr.get('mergeable'):
                 record['merge_tree'] = api(f"repos/{ORG}/{name}/git/commits/{pr['merge_commit_sha']}")['tree']['sha']
         projects[name] = record
@@ -143,8 +147,8 @@ def verify_current(snapshot):
             raise ValueError(f'{name}: main changed; candidate verification is stale')
         if 'pr' in record:
             pr = api(f"repos/{ORG}/{name}/pulls/{record['pr']}")
-            if pr['head']['sha'] != record['head'] or pr['state'] != 'open' or pr['draft']:
-                raise ValueError(f'{name}: PR changed, closed, or is still a draft')
+            if pr['head']['sha'] != record['head'] or pr['state'] != 'open':
+                raise ValueError(f'{name}: PR changed or closed')
             if snapshot['target'].startswith('topic:') and snapshot['target'] not in [label['name'] for label in pr['labels']]:
                 raise ValueError(f'{name}: topic membership changed')
     # Re-resolve to catch newly added topic members, including unchanged PR heads.

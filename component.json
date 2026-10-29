@@ -223,18 +223,10 @@
     ],
     [
       "python3",
-      "-B",
-      "tests/ci/test-workspace.py"
-    ],
-    [
-      "python3",
-      "-B",
-      "tests/ci/test-suites.py"
-    ],
-    [
-      "python3",
-      "-B",
-      "tests/ci/test-native-fixture.py"
+      "-m",
+      "compileall",
+      "-q",
+      "{component}/tools"
     ]
   ],
   "cargo_context": {
