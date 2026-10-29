@@ -208,13 +208,227 @@
   },
   "SPDX-FileCopyrightText": "2026 roolrz",
   "SPDX-License-Identifier": "Apache-2.0",
-  "mounts": {},
+  "mounts": {
+    "tests": "tests"
+  },
   "packages": [],
   "tests": [
     [
       "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "{component}/tools/tests"
+    ],
+    [
+      "python3",
       "-B",
-      "tests/ci/check-workspace.py"
+      "tests/ci/test-workspace.py"
+    ],
+    [
+      "python3",
+      "-B",
+      "tests/ci/test-suites.py"
+    ],
+    [
+      "python3",
+      "-B",
+      "tests/ci/test-native-fixture.py"
     ]
-  ]
+  ],
+  "cargo_context": {
+    "tests/app/fs-failure/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {
+        "/dependencies/hyper-fs-service": "lib/fs-service",
+        "/dependencies/hyper-service": "lib/service"
+      },
+      "inherited_dependencies": {
+        "/dependencies/hyper-os": {
+          "workspace": true,
+          "features": [
+            "std"
+          ]
+        },
+        "/dependencies/hyper-rt": {
+          "workspace": true
+        },
+        "/dependencies/hyper-fs-service": {
+          "workspace": true
+        },
+        "/dependencies/hyper-service": {
+          "workspace": true
+        },
+        "/dependencies/hyper-filesystem": {
+          "workspace": true
+        }
+      }
+    },
+    "tests/app/fs-worker-probe/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {
+        "/dependencies/hyper-fs-service": "lib/fs-service",
+        "/dependencies/hyper-service": "lib/service"
+      },
+      "inherited_dependencies": {
+        "/dependencies/hyper-os": {
+          "workspace": true
+        },
+        "/dependencies/hyper-rt": {
+          "workspace": true
+        },
+        "/dependencies/hyper-filesystem": {
+          "workspace": true
+        },
+        "/dependencies/hyper-fs-service": {
+          "workspace": true
+        },
+        "/dependencies/hyper-service": {
+          "workspace": true
+        }
+      }
+    },
+    "tests/app/lifecycle-stress/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {
+        "/dependencies/hyper-service": "lib/service"
+      },
+      "inherited_dependencies": {
+        "/dependencies/hyper-os": {
+          "workspace": true
+        },
+        "/dependencies/hyper-rt": {
+          "workspace": true
+        },
+        "/dependencies/hyper-service": {
+          "workspace": true
+        }
+      }
+    },
+    "tests/app/retirement-probe/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {
+        "/dependencies/hyper-service": "lib/service"
+      },
+      "inherited_dependencies": {
+        "/dependencies/hyper-os": {
+          "workspace": true
+        },
+        "/dependencies/hyper-rt": {
+          "workspace": true
+        },
+        "/dependencies/hyper-service": {
+          "workspace": true
+        }
+      }
+    },
+    "tests/app/scheduler-bench/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {
+        "/dependencies/hyper-service": "lib/service",
+        "target.cfg(target_os = \"hyper\")/dependencies/hyper-clap-shared": "lib/clap"
+      },
+      "inherited_dependencies": {
+        "/dependencies/clap": {
+          "workspace": true
+        },
+        "/dependencies/hyper-os": {
+          "workspace": true
+        },
+        "/dependencies/hyper-rt": {
+          "workspace": true
+        },
+        "/dependencies/hyper-service": {
+          "workspace": true
+        },
+        "/dependencies/serde": {
+          "workspace": true,
+          "features": [
+            "derive"
+          ]
+        },
+        "/dependencies/serde_json": {
+          "workspace": true
+        },
+        "target.cfg(target_os = \"hyper\")/dependencies/hyper-clap-shared": {
+          "workspace": true
+        }
+      }
+    },
+    "tests/app/service-probe/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {
+        "/dependencies/hyper-component": "lib/component",
+        "/dependencies/hyper-service-ipc": "lib/service-ipc"
+      },
+      "inherited_dependencies": {
+        "/dependencies/hyper-os": {
+          "workspace": true
+        },
+        "/dependencies/hyper-rt": {
+          "workspace": true
+        },
+        "/dependencies/hyper-component": {
+          "workspace": true
+        },
+        "/dependencies/hyper-service-ipc": {
+          "workspace": true
+        }
+      }
+    },
+    "tests/app/terminal-probe/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {
+        "/dependencies/hyper-terminal": "lib/terminal"
+      },
+      "inherited_dependencies": {
+        "/dependencies/hyper-os": {
+          "workspace": true
+        },
+        "/dependencies/hyper-rt": {
+          "workspace": true
+        },
+        "/dependencies/hyper-terminal": {
+          "workspace": true
+        }
+      }
+    },
+    "tests/app/test-report/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {},
+      "inherited_dependencies": {}
+    },
+    "tests/app/vm-smoke/Cargo.toml": {
+      "workspace": null,
+      "membership": "../../../app",
+      "dependency_paths": {},
+      "inherited_dependencies": {
+        "/dependencies/hyper-os": {
+          "workspace": true
+        },
+        "/dependencies/hyper-rt": {
+          "workspace": true
+        }
+      }
+    },
+    "tests/native/io-smoke/Cargo.toml": {
+      "workspace": {},
+      "membership": null,
+      "dependency_paths": {
+        "/dependencies/hyper-vm-image": "lib/vm-image",
+        "/dependencies/hyper-vm-policy": "lib/vm-policy",
+        "/dependencies/hyper-vm-support": "lib/vm-support"
+      },
+      "inherited_dependencies": {}
+    }
+  }
 }

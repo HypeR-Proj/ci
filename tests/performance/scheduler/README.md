@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 # Native scheduler benchmark suite
 
 The Native test application lives in [`tests/app/scheduler-bench`](../../app/scheduler-bench/).
-See the [user manual](../../../docs/usage/diagnostics/scheduler-bench.md) for
+See the [user manual](https://github.com/HypeR-Proj/HypeR/blob/main/docs/usage/diagnostics/scheduler-bench.md) for
 deployment, metric definitions, capability requirements and hardware commands.
 The implementation uses HypeR interfaces; no rt-tests source is incorporated.
 

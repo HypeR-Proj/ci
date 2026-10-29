@@ -84,4 +84,4 @@ do not assert that global free memory immediately returns to an exact baseline:
 page caches, allocator caches and asynchronous reaping have separate lifetimes.
 They also do not prove DMA safety or all hardware memory orderings. Existing
 Loom, process-retirement and service-failure suites remain complementary; see
-[kernel validation](../../kernel/tests/VALIDATION.md).
+[kernel validation](https://github.com/HypeR-Proj/kernel/blob/main/tests/VALIDATION.md).

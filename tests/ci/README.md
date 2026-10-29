@@ -32,7 +32,7 @@ The separate `Documentation` workflow builds the complete Markdown, Rustdoc
 and Doxygen site on every pull request and push to `main`. Its build job checks
 documentation diagnostics and local links in the generated HTML artifact. Only
 the default-branch deployment job receives Pages write permission. See the
-[documentation build guide](../../docs/usage/development/documentation.md) for local reproduction
+[documentation build guide](https://github.com/HypeR-Proj/HypeR/blob/main/docs/usage/development/documentation.md) for local reproduction
 and the one-time Pages/required-check setup.
 
 | Suite | Required contract |
@@ -274,7 +274,7 @@ three CPUs, its wait-arbitration test races two remote resolvers through Armed
 and queued waits, then checks worker retirement; smaller configurations require
 an explicit skip marker. Host `quality` additionally runs Loom scenarios
 against production publication/admission mechanisms. See the commands and
-coverage limits in [validation coverage](../../kernel/tests/VALIDATION.md).
+coverage limits in [validation coverage](https://github.com/HypeR-Proj/kernel/blob/main/tests/VALIDATION.md).
 These are correctness tests; storage/network performance benchmarks remain
 manual and have no CI throughput or latency thresholds.
 
@@ -345,7 +345,7 @@ Ownership traits and consuming IRQ API signatures are checked against the real
 types in `kernel/tests/kernel/type_contracts.rs` whenever both `kernel-test` and `kernel-self-test` are
 compiled, including the AArch64, RISC-V and x86-64 build checks.
 
-See [validation coverage](../../kernel/tests/VALIDATION.md) for subsystem
+See [validation coverage](https://github.com/HypeR-Proj/kernel/blob/main/tests/VALIDATION.md) for subsystem
 coverage and the limits of these checks. Do not add grep/sed assertions over
 function bodies or `include_str!` tests over Rust implementations. Such checks
 freeze a spelling or statement order without executing the invariant. Use a
