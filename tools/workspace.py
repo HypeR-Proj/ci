@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import time
 import xml.etree.ElementTree as ET
 
 ORG = 'HypeR-Proj'
@@ -21,8 +22,28 @@ NAME = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.-]*\Z')
 SHA = re.compile(r'[0-9a-f]{40}\Z')
 
 
+def retry_github(operation):
+    """Retry transient transport failures; writes must reconcile before retrying."""
+    for attempt in range(3):
+        try:
+            return operation()
+        except (json.JSONDecodeError, subprocess.CalledProcessError) as error:
+            message = (getattr(error, 'stderr', None) or '').lower()
+            transient = (isinstance(error, json.JSONDecodeError)
+                         or re.search(r'http 5\d\d\b', message)
+                         or any(marker in message for marker in (
+                             'unexpected end of json input', 'unexpected eof',
+                             'connection reset', 'tls handshake timeout')))
+            if not transient or attempt == 2:
+                if message:
+                    error.add_note(message)
+                raise
+            time.sleep(2 ** attempt)
+
+
 def api(path):
-    return json.loads(subprocess.check_output(['gh', 'api', path], text=True))
+    return retry_github(lambda: json.loads(subprocess.check_output(
+        ['gh', 'api', path], text=True, stderr=subprocess.PIPE)))
 
 
 def open_pulls(name):

@@ -7,3 +7,6 @@ __pycache__/
 *.pyc
 .config
 .config.old
+
+# The manifest links build-tool unit tests from the build repository.
+/build
