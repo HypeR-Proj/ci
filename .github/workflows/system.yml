@@ -94,12 +94,46 @@ jobs:
   test:
     needs: [resolve, appliance]
     runs-on: ubuntu-24.04
+    container: debian:trixie-slim
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        suite: [native-sdk, native-boot, native-services, native-filesystem, native-vm, board-boot-system, board-storage-media]
+        suite:
+          - scripts
+          - quality
+          - kernel-configurations
+          - aarch64-build
+          - aarch64-production
+          - aarch64-self-test
+          - aarch64-compact
+          - aarch64-qemu
+          - native-sdk
+          - native-gicv3
+          - native-gicv2
+          - native-smp-stack
+          - native-stack-16k
+          - native-pmu
+          - native-trace
+          - native-scheduler
+          - board-storage
+          - io-vm
+          - io-network
+          - io-network-mmio
+          - riscv64-native
+          - riscv64-qemu
+          - x86_64-build
     steps:
+      - name: Bootstrap the supported QEMU environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get -o Acquire::Retries=2 update
+          apt-get install -y --no-install-recommends ca-certificates git python3 rustup build-essential curl xz-utils zstd unzip
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
@@ -116,8 +150,8 @@ jobs:
           path: ${{ runner.temp }}/io-package
       - name: Install build and test tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake cpio lld llvm make python3 ripgrep shellcheck dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler qemu-system-arm
+          apt-get update
+          apt-get install -y clang cmake cpio lld llvm make python3 ripgrep shellcheck dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler qemu-system-arm qemu-system-misc
       - uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4
         with:
           version: 1.3.0
@@ -130,7 +164,7 @@ jobs:
           cd "$RUNNER_TEMP/system"
           toolchain=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
           test -n "$toolchain"
-          rustup toolchain install "$toolchain" --profile minimal --component rust-src --component llvm-tools --component clippy --component rustfmt --target aarch64-unknown-none --target aarch64-unknown-none-softfloat
+          rustup toolchain install "$toolchain" --profile minimal --component rust-src --component llvm-tools --component clippy --component rustfmt --target aarch64-unknown-none --target aarch64-unknown-none-softfloat --target riscv64imac-unknown-none-elf --target riscv64gc-unknown-none-elf --target x86_64-unknown-none
           rustup default "$toolchain"
       - name: Run system acceptance
         env:

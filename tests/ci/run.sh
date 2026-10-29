@@ -18,6 +18,15 @@ run_kernel_suite() {
     (cd kernel && sh tests/ci/run.sh "$suite")
 }
 
+selected_io_package() {
+    if [ -n "${IO_VM_PACKAGE:-}" ]; then
+        printf '%s\n' "$IO_VM_PACKAGE"
+    else
+        python3 -B scripts/fetch-io-vm.py \
+            --reference "${IO_VM_REFERENCE:-}" --platform qemu
+    fi
+}
+
 prepare_aarch64_stack16_config() {
     mkdir -p target/ci
     stack_config="$root/target/ci/aarch64-stack16.config"
@@ -258,8 +267,7 @@ case "${1:-}" in
         done
         ;;
     io-vm)
-        package=$(python3 -B scripts/fetch-io-vm.py \
-            --reference "${IO_VM_REFERENCE:-}" --platform qemu)
+        package=$(selected_io_package)
         make test-io-vm ARCH=aarch64 IO_VM_PACKAGE="$package" \
             IO_VM_TEST=reset QEMU_CPUS=4 \
             QEMU_MACHINE=virt,virtualization=on,gic-version=3
@@ -272,8 +280,7 @@ case "${1:-}" in
             QEMU_CPUS=1 QEMU_MACHINE=virt,virtualization=on,gic-version=2
         ;;
     io-network|io-network-mmio)
-        package=$(python3 -B scripts/fetch-io-vm.py \
-            --reference "${IO_VM_REFERENCE:-}" --platform qemu)
+        package=$(selected_io_package)
         target=test-board-network
         if test "$1" = io-network-mmio; then target=test-board-mmio; fi
         make "$target" ARCH=aarch64 IO_VM_PACKAGE="$package"
@@ -285,14 +292,12 @@ case "${1:-}" in
         done
         ;;
     board-product-config)
-        package=$(python3 -B scripts/fetch-io-vm.py \
-            --reference "${IO_VM_REFERENCE:-}" --platform qemu)
+        package=$(selected_io_package)
         make test-product-config ARCH=aarch64 IO_VM_PACKAGE="$package" \
             CONFIG_FILE="$root/kernel/configs/qemu_aarch64_defconfig"
         ;;
     board-storage-media|board-boot-system|board-alpine-rootfs|board-business|board-broker|board-userspace-device)
-        package=$(python3 -B scripts/fetch-io-vm.py \
-            --reference "${IO_VM_REFERENCE:-}" --platform qemu)
+        package=$(selected_io_package)
         case "$1" in
             board-storage-media) target=test-board-storage ;;
             board-boot-system) target=test-boot-system ;;

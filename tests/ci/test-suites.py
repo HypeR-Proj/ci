@@ -33,6 +33,9 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
             env.pop('CI_NATIVE_FIXTURE', None)
             if 'CI_NATIVE_FIXTURE' in environment:
                 env['CI_NATIVE_FIXTURE'] = environment['CI_NATIVE_FIXTURE']
+            env.pop('IO_VM_PACKAGE', None)
+            if 'IO_VM_PACKAGE' in environment:
+                env['IO_VM_PACKAGE'] = environment['IO_VM_PACKAGE']
             subprocess.run(['sh', 'tests/ci/run.sh', suite], cwd=ROOT, env=env, check=True)
             return [json.loads(line) for line in log.read_text().splitlines()]
 
@@ -79,6 +82,16 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
     def test_local_probe_builds_its_own_images(self):
         calls = self.run_suite('native-shell')
         self.assertEqual(calls, [['make', 'test-shell', 'ARCH=aarch64']])
+
+    def test_selected_appliance_is_used_without_registry_lookup(self):
+        for suite in ('io-vm', 'io-network', 'io-network-mmio', 'board-storage'):
+            with self.subTest(suite=suite):
+                calls = self.run_suite(suite, IO_VM_PACKAGE='/candidate/io package')
+                self.assertFalse(any('scripts/fetch-io-vm.py' in call for call in calls))
+                make = [call for call in calls if call[0] == 'make']
+                self.assertTrue(make)
+                for call in make:
+                    self.assertIn('IO_VM_PACKAGE=/candidate/io package', call)
 
     def test_gicv3_trap_probe_explicitly_enables_master_test_gate(self):
         calls = [call for call in self.run_suite('native-vm') if call[0] == 'make']
