@@ -76,14 +76,33 @@ jobs:
           - aarch64-compact
           - aarch64-qemu
           - native-sdk
-          - native-gicv3
+          # Keep existing acceptance shards independent, as before migration.
+          - native-boot
+          - native-console
+          - native-terminal
+          - native-apps
+          - native-shell
+          - native-stress
+          - native-fleet
+          - native-services
+          - native-storage-recovery
+          - native-filesystem
+          - native-runtime-crash
+          - native-vm
           - native-gicv2
           - native-smp-stack
           - native-stack-16k
           - native-pmu
           - native-trace
           - native-scheduler
-          - board-storage
+          # Keep existing acceptance shards independent, as before migration.
+          - board-storage-media
+          - board-boot-system
+          - board-alpine-rootfs
+          - board-business
+          - board-broker
+          - board-userspace-device
+          - board-product-config
           - io-vm
           - io-network
           - io-network-mmio
