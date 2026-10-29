@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: Verify CI App
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  authenticate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Create scoped installation token
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ vars.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: HypeR-Proj
+          repositories: ci
+          permission-contents: read
+          permission-checks: write
+          permission-pull-requests: read
+          permission-actions: read
+      - name: Verify installation identity and check publication
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -eu
+          gh api installation/repositories --jq '.repositories[].full_name'
+          gh api repos/HypeR-Proj/ci/check-runs --method POST \
+            -f name='App authentication' \
+            -f head_sha="$EXPECTED_SHA" \
+            -f status=completed -f conclusion=success \
+            -f details_url="$RUN_URL" \
+            -f 'output[title]=CI App authentication verified' \
+            -f 'output[summary]=Installation token and Checks API verified. This is not system acceptance.' \
+            --jq '{name, conclusion, app: .app.slug}'

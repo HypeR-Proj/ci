@@ -12,10 +12,6 @@
     ".github/actions/tools/action.yml": ".github/actions/tools/action.yml",
     ".github/dependabot.yml": ".github/dependabot.yml",
     ".github/pull_request_template.md": ".github/pull_request_template.md",
-    ".github/workflows/ci.yml": ".github/workflows/ci.yml",
-    ".github/workflows/dependencies.yml": ".github/workflows/dependencies.yml",
-    ".github/workflows/documentation.yml": ".github/workflows/documentation.yml",
-    ".github/workflows/io-vm.yml": ".github/workflows/io-vm.yml",
     "tests/app/Kconfig": "tests/app/Kconfig",
     "tests/app/README.md": "tests/app/README.md",
     "tests/app/block-queue-probe.rs": "tests/app/block-queue-probe.rs",
@@ -204,7 +200,11 @@
     "tests/qemu/verify-vm-smoke.py": "tests/qemu/verify-vm-smoke.py",
     "tests/qemu/vm_fixtures.py": "tests/qemu/vm_fixtures.py",
     "tests/qemu/watch-stack.py": "tests/qemu/watch-stack.py",
-    "tests/stress/README.md": "tests/stress/README.md"
+    "tests/stress/README.md": "tests/stress/README.md",
+    "legacy/workflows/dependencies.yml": ".github/workflows/dependencies.yml",
+    "legacy/workflows/io-vm.yml": ".github/workflows/io-vm.yml",
+    "legacy/workflows/ci.yml": ".github/workflows/ci.yml",
+    "legacy/workflows/documentation.yml": ".github/workflows/documentation.yml"
   },
   "SPDX-FileCopyrightText": "2026 roolrz",
   "SPDX-License-Identifier": "Apache-2.0",
