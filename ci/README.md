@@ -32,7 +32,7 @@ The separate `Documentation` workflow builds the complete Markdown, Rustdoc
 and Doxygen site on every pull request and push to `main`. Its build job checks
 documentation diagnostics and local links in the generated HTML artifact. Only
 the default-branch deployment job receives Pages write permission. See the
-[documentation build guide](https://github.com/HypeR-Proj/HypeR/blob/main/docs/usage/development/documentation.md) for local reproduction
+[documentation build guide](https://hyper-proj.github.io/build/docs/documentation.html) for local reproduction
 and the one-time Pages/required-check setup.
 
 | Suite | Required contract |

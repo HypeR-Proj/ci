@@ -182,7 +182,7 @@ guest measurement series. Preserve that label distinction when presenting it.
 ## Power-cut durability
 
 This procedure and the physical retirement/stress procedure below are deferred
-[qualification TODOs](https://github.com/HypeR-Proj/HypeR/blob/main/docs/project/roadmap.md#deferred-hardware-qualification).
+[qualification TODOs](https://hyper-proj.github.io/HypeR/docs/project/roadmap.html#deferred-hardware-qualification).
 They have not been performed in the initial survey.
 
 Use the ordinary qualification image, not the owner-loss image below. Capture
