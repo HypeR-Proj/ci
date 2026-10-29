@@ -144,79 +144,9 @@ jobs:
             ${{ runner.temp }}/system/target/**/*.log
             ${{ runner.temp }}/system/kernel/target/**/*.log
           if-no-files-found: ignore
-  pi5:
-    needs: resolve
-    runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        profile: [native, io-bringup, sd]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: candidate
-      - name: Verify snapshot integrity
-        env:
-          EXPECTED: ${{ needs.resolve.outputs.snapshot_hash }}
-        run: echo "$EXPECTED  candidate.json" | sha256sum --check
-      - name: Install image tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake cpio lld llvm make dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler xz-utils qemu-system-arm
-      - uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4
-        with:
-          version: 1.3.0
-      - name: Check out candidate and install Rust
-        run: |
-          python3 tools/workspace.py checkout --snapshot candidate.json --directory "$RUNNER_TEMP/system"
-          python3 "$RUNNER_TEMP/system/project.py" prepare
-          cd "$RUNNER_TEMP/system"
-          toolchain=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
-          test -n "$toolchain"
-          rustup toolchain install "$toolchain" --profile minimal --component rust-src --component llvm-tools --target aarch64-unknown-none
-          rustup default "$toolchain"
-      - name: Download the resolved appliance and corresponding sources
-        if: matrix.profile != 'native'
-        run: echo "IO_VM_PACKAGE=$(python3 tools/package.py --snapshot candidate.json --workspace "$RUNNER_TEMP/system" --platform rpi5 --materials)" >> "$GITHUB_ENV"
-      - name: Build image and corresponding source assets
-        env:
-          PROFILE: ${{ matrix.profile }}
-        run: |
-          args=()
-          if [ "$PROFILE" != native ]; then
-            args+=(--io-package "$IO_VM_PACKAGE")
-          fi
-          python3 "$RUNNER_TEMP/system/pi5-images/scripts/build.py" --source "$RUNNER_TEMP/system" --profile "$PROFILE" "${args[@]}"
-      - name: Exercise generated boot payloads
-        if: matrix.profile != 'sd'
-        env:
-          PROFILE: ${{ matrix.profile }}
-        run: |
-          args=()
-          if [ "$PROFILE" = io-bringup ]; then
-            args+=(--vm-config "$RUNNER_TEMP/system/target/board/rpi5-native/bringup/vms.json")
-          fi
-          python3 "$RUNNER_TEMP/system/pi5-images/scripts/smoke.py" --profile "$PROFILE" \
-            --kernel "$RUNNER_TEMP/system/kernel/target/aarch64-unknown-none/kernel/hyper.img" \
-            --initramfs "$RUNNER_TEMP/system/target/board/rpi5-native/bootstrap.cpio" \
-            --log "$RUNNER_TEMP/pi5-smoke.log" "${args[@]}"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: always()
-        with:
-          name: pi5-${{ matrix.profile }}
-          path: |
-            ${{ runner.temp }}/system/pi5-images/dist/${{ matrix.profile }}/
-            ${{ runner.temp }}/pi5-smoke.log
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 7
   result:
     if: always() && needs.resolve.result == 'success'
-    needs: [resolve, test, pi5]
+    needs: [resolve, test]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -240,6 +170,6 @@ jobs:
       - name: Publish exact-candidate result
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          OUTCOME: ${{ needs.test.result == 'success' && needs.pi5.result == 'success' && 'success' || 'failure' }}
+          OUTCOME: ${{ needs.test.result == 'success' && 'success' || 'failure' }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: python3 tools/gate.py --snapshot candidate.json --outcome "$OUTCOME" --url "$RUN_URL"

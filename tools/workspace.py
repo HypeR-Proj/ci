@@ -226,7 +226,7 @@ def verify_current(snapshot):
 def resolve_packages(snapshot, oras='oras'):
     packages = {}
     registry = 'ghcr.io/hyper-proj/io-vm'
-    for platform in ('qemu', 'rpi5'):
+    for platform in ('qemu',):
         channel = registry + ':main-aarch64-' + platform
         digest = subprocess.check_output([oras, 'resolve', channel], text=True).strip()
         if re.fullmatch(r'sha256:[0-9a-f]{64}', digest) is None:

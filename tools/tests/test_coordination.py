@@ -38,10 +38,10 @@ class CoordinationTests(unittest.TestCase):
 
     def test_package_channels_are_resolved_once_and_bound_to_identity(self):
         snapshot = {'version': 1, 'target': 'main', 'projects': {}, 'identity': 'old'}
-        with patch.object(workspace.subprocess, 'check_output', side_effect=['sha256:' + 'a' * 64, 'sha256:' + 'b' * 64]) as call:
+        with patch.object(workspace.subprocess, 'check_output', side_effect=['sha256:' + 'a' * 64]) as call:
             workspace.resolve_packages(snapshot)
-        self.assertEqual(call.call_count, 2)
-        self.assertTrue(snapshot['io_packages']['rpi5'].endswith('@sha256:' + 'b' * 64))
+        self.assertEqual(call.call_count, 1)
+        self.assertTrue(snapshot['io_packages']['qemu'].endswith('@sha256:' + 'a' * 64))
         self.assertNotEqual(snapshot['identity'], 'old')
         with patch.object(workspace.subprocess, 'check_output', return_value='main'), self.assertRaises(ValueError):
             workspace.resolve_packages(snapshot)
