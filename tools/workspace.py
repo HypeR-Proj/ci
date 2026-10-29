@@ -35,16 +35,43 @@ def open_pulls(name):
         page += 1
 
 
-def project_names(manifest):
+def safe_path(value):
+    path = Path(value)
+    if (not value or path.is_absolute() or '..' in path.parts
+            or any(part in ('.git', '.repo') for part in path.parts)):
+        raise ValueError(f'invalid manifest path: {value!r}')
+    return path
+
+
+def project_layout(manifest):
     root = ET.parse(manifest).getroot()
-    names = [p.attrib['name'] for p in root.findall('project')]
-    if 'manifest' in names or len(names) != len(set(names)) or any(not NAME.fullmatch(n) for n in names):
-        raise ValueError('manifest contains duplicate or invalid project names')
-    return ['manifest', *names]
+    result = {}
+    paths = set()
+    for item in root.findall('project'):
+        name = item.attrib['name']
+        path = str(safe_path(item.get('path', name)))
+        if not NAME.fullmatch(name) or name in result or path in paths:
+            raise ValueError('manifest contains duplicate or invalid projects')
+        paths.add(path)
+        links = []
+        for kind in ('linkfile', 'copyfile'):
+            for link in item.findall(kind):
+                links.append({'kind': kind, 'src': str(safe_path(link.attrib['src'])),
+                              'dest': str(safe_path(link.attrib['dest']))})
+        result[name] = {'path': path, 'links': links}
+    # Compatibility while the manifest migration PR is not yet merged.
+    if 'manifest' not in result:
+        result = {'manifest': {'path': 'manifest', 'links': []}, **result}
+    return result
+
+
+def project_names(manifest):
+    return list(project_layout(manifest))
 
 
 def resolve(manifest, target):
-    names = project_names(manifest)
+    layout = project_layout(manifest)
+    names = list(layout)
     selected = {}
     if target.startswith('topic:'):
         for name in names:
@@ -66,7 +93,8 @@ def resolve(manifest, target):
         manifest_head = pull['head']['sha']
         manifest_revision = pull.get('merge_commit_sha') or manifest_head
         content = api(f"repos/{ORG}/manifest/contents/default.xml?ref={manifest_revision}")
-        names = project_names(io.BytesIO(base64.b64decode(content['content'])))
+        layout = project_layout(io.BytesIO(base64.b64decode(content['content'])))
+        names = list(layout)
         if target.startswith('topic:'):
             selected = {}
             for name in names:
@@ -78,7 +106,7 @@ def resolve(manifest, target):
     projects = {}
     for name in names:
         branch = api(f'repos/{ORG}/{name}/branches/main')
-        record = {'base': branch['commit']['sha']}
+        record = {'base': branch['commit']['sha'], **layout[name]}
         if name in selected:
             pr = api(f'repos/{ORG}/{name}/pulls/{selected[name]}')
             if pr['state'] != 'open' or pr['base']['ref'] != 'main':
@@ -94,12 +122,15 @@ def resolve(manifest, target):
     return snapshot
 
 
-def checkout_one(workspace, name, record):
+def checkout_one(workspace, name, record, candidates=None):
     if not NAME.fullmatch(name) or not SHA.fullmatch(record['base']):
         raise ValueError('invalid source identity')
-    root = workspace / name
-    if root.exists():
+    root = workspace / safe_path(record.get('path', name))
+    if root.exists() and any(root.iterdir()):
         raise ValueError(f'refusing to overwrite existing checkout: {root}')
+    if candidates and name in candidates:
+        subprocess.run(['git', 'clone', '--quiet', '--no-local', str(candidates[name]), str(root)], check=True)
+        return
     subprocess.run(['git', 'clone', '--quiet', '--filter=blob:none', '--no-checkout',
                     f'https://github.com/{ORG}/{name}.git', str(root)], check=True)
     subprocess.run(['git', 'checkout', '--quiet', '--detach', record['base']], cwd=root, check=True)
@@ -123,13 +154,39 @@ def checkout_one(workspace, name, record):
             raise ValueError(f'{name}: resolved PR merge tree changed; rerun verification')
 
 
-def checkout(snapshot, workspace):
+def checkout(snapshot, workspace, candidates=None):
+    workspace = workspace.resolve()
     workspace.mkdir(parents=True, exist_ok=True)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-        futures = [pool.submit(checkout_one, workspace, name, record)
-                   for name, record in snapshot['projects'].items()]
-        for future in futures:
-            future.result()
+    projects = snapshot['projects']
+    # Parents must be checked out before children. Clone siblings concurrently.
+    depths = sorted({len(safe_path(r.get('path', n)).parts) for n, r in projects.items()})
+    for depth in depths:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+            futures = [pool.submit(checkout_one, workspace, name, record, candidates)
+                       for name, record in projects.items()
+                       if len(safe_path(record.get('path', name)).parts) == depth]
+            for future in futures:
+                future.result()
+    destinations = set()
+    for name, record in projects.items():
+        root = workspace / safe_path(record.get('path', name))
+        for link in record.get('links', []):
+            source = root / safe_path(link['src'])
+            destination = workspace / safe_path(link['dest'])
+            if (destination in destinations or destination.exists() or destination.is_symlink()
+                    or not destination.resolve().is_relative_to(workspace)):
+                raise ValueError(f'manifest link would overwrite a source: {destination}')
+            if not source.exists() or not source.resolve().is_relative_to(root.resolve()):
+                raise ValueError(f'invalid manifest link source: {source}')
+            destinations.add(destination)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if link['kind'] == 'linkfile':
+                destination.symlink_to(os.path.relpath(source, destination.parent))
+            elif link['kind'] == 'copyfile' and source.is_file():
+                import shutil
+                shutil.copyfile(source, destination)
+            else:
+                raise ValueError('invalid manifest file operation')
 
 
 def verify_current(snapshot):
@@ -166,12 +223,28 @@ def verify_current(snapshot):
     return applied
 
 
+def resolve_packages(snapshot, oras='oras'):
+    packages = {}
+    registry = 'ghcr.io/hyper-proj/io-vm'
+    for platform in ('qemu', 'rpi5'):
+        channel = registry + ':main-aarch64-' + platform
+        digest = subprocess.check_output([oras, 'resolve', channel], text=True).strip()
+        if re.fullmatch(r'sha256:[0-9a-f]{64}', digest) is None:
+            raise ValueError('registry did not return an immutable package digest')
+        packages[platform] = registry + '@' + digest
+    snapshot['io_packages'] = packages
+    snapshot.pop('identity', None)
+    snapshot['identity'] = hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
+    return snapshot
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     select = commands.add_parser('resolve')
     select.add_argument('--manifest', type=Path, required=True)
     select.add_argument('--target', default='main')
+    select.add_argument('--packages', action='store_true')
     select.add_argument('--output', type=Path, required=True)
     fetch = commands.add_parser('checkout')
     fetch.add_argument('--snapshot', type=Path, required=True)
@@ -180,7 +253,10 @@ def main():
     verify.add_argument('--snapshot', type=Path, required=True)
     args = parser.parse_args()
     if args.command == 'resolve':
-        args.output.write_text(json.dumps(resolve(args.manifest, args.target), indent=2) + '\n')
+        snapshot = resolve(args.manifest, args.target)
+        if args.packages:
+            resolve_packages(snapshot)
+        args.output.write_text(json.dumps(snapshot, indent=2) + '\n')
     elif args.command == 'checkout':
         checkout(json.loads(args.snapshot.read_text()), args.directory)
     else:

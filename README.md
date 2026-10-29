@@ -28,3 +28,10 @@ Run coordination self tests with `python3 -m unittest discover -s tools/tests`.
 `tools/configure.py --apply REPOSITORY` applies the approved default-branch policies.
 The `legacy/workflows` directory preserves the original suite definitions as migration reference;
 those workflows are not registered as automatic system CI.
+
+The manifest owns checkout paths and links; CI checks out that exact layout,
+including proposed manifest changes, without generating a second source tree.
+System runs resolve the latest qualified QEMU and RPi5 I/O VM package digests
+once and record them in the candidate snapshot. Every test uses those immutable
+packages. Appliance source changes are qualified by the I/O VM repository's own
+kernel workflow; system acceptance never recompiles the appliance.

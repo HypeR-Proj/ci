@@ -23,10 +23,28 @@ class CoordinationTests(unittest.TestCase):
         self.assertEqual({c['context'] for c in requirements['parameters']['required_status_checks']}, {'module', 'system'})
 
     def test_manifest_rejects_path_traversal_and_duplicates(self):
-        for names in (['../outside'], ['kernel', 'kernel'], ['manifest']):
+        for names in (['../outside'], ['kernel', 'kernel']):
             xml = '<manifest>' + ''.join(f'<project name="{name}"/>' for name in names) + '</manifest>'
             with self.subTest(names=names), self.assertRaises(ValueError):
                 workspace.project_names(io.StringIO(xml))
+
+    def test_direct_paths_and_hidden_manifest_are_supported(self):
+        xml = '<manifest><project name="build" path="."/><project name="manifest" path=".workspace"/></manifest>'
+        self.assertEqual(workspace.project_layout(io.StringIO(xml))['build']['path'], '.')
+        self.assertEqual(workspace.project_names(io.StringIO(xml)), ['build', 'manifest'])
+        for value in ('../escape', '/outside', '.git/objects', '.repo/manifests'):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                workspace.project_layout(io.StringIO(f'<manifest><project name="x" path="{value}"/></manifest>'))
+
+    def test_package_channels_are_resolved_once_and_bound_to_identity(self):
+        snapshot = {'version': 1, 'target': 'main', 'projects': {}, 'identity': 'old'}
+        with patch.object(workspace.subprocess, 'check_output', side_effect=['sha256:' + 'a' * 64, 'sha256:' + 'b' * 64]) as call:
+            workspace.resolve_packages(snapshot)
+        self.assertEqual(call.call_count, 2)
+        self.assertTrue(snapshot['io_packages']['rpi5'].endswith('@sha256:' + 'b' * 64))
+        self.assertNotEqual(snapshot['identity'], 'old')
+        with patch.object(workspace.subprocess, 'check_output', return_value='main'), self.assertRaises(ValueError):
+            workspace.resolve_packages(snapshot)
 
     def test_topic_search_reads_all_pages(self):
         with patch.object(workspace, 'api', side_effect=[[{'number': n} for n in range(100)], [{'number': 101}]]) as call:
