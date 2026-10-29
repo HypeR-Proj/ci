@@ -7,20 +7,36 @@ version = "0.0.0"
 edition = "2024"
 license = "Apache-2.0"
 publish = false
+repository = "https://github.com/HypeR-Proj/ci"
 
-# The initial /init must be static, independently of the system VM runtime's
-# dynamic delivery graph. Reuse the implementation libraries, not their DSOs.
 [workspace]
 
-[dependencies]
-hyper-os = { version = "=0.0.0", features = ["std"] }
-hyper-rt = { version = "=0.0.0", features = ["std"] }
-hyper-vm-image = { path = "../../../lib/vm-image" }
-hyper-vm-policy = { path = "../../../lib/vm-policy" }
-hyper-vm-support = { path = "../../../lib/vm-support" }
+[dependencies.hyper-os]
+version = "=0.0.0"
+features = [
+    "std",
+]
 
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("hyper"))'] }
+[dependencies.hyper-rt]
+version = "=0.0.0"
+features = [
+    "std",
+]
+
+[dependencies.hyper-vm-image]
+version = "=0.0.0"
+
+[dependencies.hyper-vm-policy]
+version = "=0.0.0"
+
+[dependencies.hyper-vm-support]
+version = "=0.0.0"
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = [
+    "cfg(target_os, values(\"hyper\"))",
+]
 
 [profile.release]
 codegen-units = 1

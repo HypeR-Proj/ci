@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: HypeR module tests
+description: Resolve dependencies and run only this component's declared tests
+inputs:
+  component:
+    description: Repository name
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        repository: HypeR-Proj/ci
+        path: .ci-control
+        persist-credentials: false
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        repository: HypeR-Proj/manifest
+        path: .manifest-input
+        persist-credentials: false
+    - name: Install host build tools
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang cmake cpio lld llvm make python3 ripgrep shellcheck dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler
+    - name: Run repository self tests
+      shell: bash
+      env:
+        COMPONENT: ${{ inputs.component }}
+        GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+      run: |
+        python3 .ci-control/tools/module.py --component "$COMPONENT" --candidate "$GITHUB_WORKSPACE" --directory "$RUNNER_TEMP/modules" --manifest .manifest-input/default.xml --pull-request "$PR_NUMBER"

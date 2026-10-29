@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: Module tests
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: module-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  module:
+    name: module
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Test coordination and repository policies
+        run: |
+          python3 -m unittest discover -s tools/tests
+          python3 -m compileall -q tools
