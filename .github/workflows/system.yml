@@ -133,6 +133,11 @@ jobs:
           SUITE: ${{ matrix.suite }}
         run: |
           cd "$RUNNER_TEMP/system"
+          # Matrix jobs have separate filesystems. The QEMU probe consumes
+          # the self-test image, so build its input in this job as well.
+          if [ "$SUITE" = aarch64-qemu ]; then
+            sh tests/ci/run.sh aarch64-self-test
+          fi
           sh tests/ci/run.sh "$SUITE"
       - name: Collect diagnostics
         if: always()
