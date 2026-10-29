@@ -12,18 +12,8 @@
   "tests": [
     [
       "python3",
-      "-m",
-      "unittest",
-      "discover",
-      "-s",
-      "{component}/tools/tests"
-    ],
-    [
-      "python3",
-      "-m",
-      "compileall",
-      "-q",
-      "{component}/tools"
+      "{component}/ci/self-test.py"
     ]
-  ]
+  ],
+  "test_requires_rust": false
 }

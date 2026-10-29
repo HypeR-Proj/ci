@@ -101,10 +101,20 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
         self.assertIn('CARGO_FEATURES=--features kernel-test,kernel-vgic-tc-test',
                       feature_builds[0])
 
-    def test_feature_matrix_dispatches_real_compiler_checks(self):
-        self.assertEqual(self.run_suite('kernel-configurations'), [
-            ['python3', '-B', 'kernel/tests/ci/check-features.py'],
-        ])
+    def test_module_suites_are_not_system_entrypoints(self):
+        for suite in ('quality', 'scripts', 'kernel-configurations', 'native-sdk',
+                      'riscv64-sdk', 'aarch64-build', 'aarch64-qemu', 'x86_64-build'):
+            with self.subTest(suite=suite):
+                result = subprocess.run(['sh', 'tests/ci/run.sh', suite], cwd=ROOT,
+                                        capture_output=True)
+                self.assertEqual(result.returncode, 2)
+
+    def test_riscv_runtime_does_not_repeat_sdk_or_host_tests(self):
+        calls = [call for call in self.run_suite('riscv64-runtime') if call[0] == 'make']
+        self.assertTrue(any('test-native' in call for call in calls))
+        self.assertTrue(any('test-vm-smoke' in call for call in calls))
+        for call in calls:
+            self.assertFalse({'sdk-check', 'sdk-test', 'app-check', 'app-test', 'app-sdk-test'} & set(call))
 
     def test_minimal_product_boot_has_no_kernel_test_features(self):
         calls = [call for call in self.run_suite('board-product-config') if call[0] == 'make']
