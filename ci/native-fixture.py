@@ -8,7 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import subprocess
+import sys
 
 
 TARGETS = {
@@ -63,7 +63,10 @@ def main():
     parser.add_argument('--directory', type=Path, required=True)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+    sys.path.insert(0, str(root))
+    import project
+    project.prepare(root)
+    revision = json.loads((root / 'source-inventory.json').read_text())['identity']
     if args.action == 'pack':
         publish(root, args.directory, args.arch, revision)
     verify(args.directory, args.arch, revision)
