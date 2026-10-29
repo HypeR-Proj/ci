@@ -17,6 +17,59 @@ import workspace
 
 
 class CoordinationTests(unittest.TestCase):
+    def test_truncated_read_response_is_retried(self):
+        with patch.object(workspace.subprocess, 'check_output', side_effect=['{', '{"ok": true}']) as call, patch.object(workspace.time, 'sleep'):
+            self.assertEqual(workspace.api('repos/example'), {'ok': True})
+        self.assertEqual(call.call_count, 2)
+
+    def check_payload(self):
+        return {'name': 'system', 'head_sha': 'a' * 40, 'external_id': 'candidate',
+                'details_url': 'https://github.com/run/1', 'status': 'queued'}
+
+    def test_lost_create_response_does_not_duplicate_the_check(self):
+        checks = []
+        def create(*args, **kwargs):
+            checks.append({'id': 42, 'app': {'id': gate.APP_ID},
+                           'external_id': 'candidate', 'details_url': 'https://github.com/run/1',
+                           'status': 'queued'})
+            raise subprocess.CalledProcessError(1, ['gh'], stderr='unexpected end of JSON input')
+        with patch.object(gate, 'api', side_effect=lambda _: {'check_runs': list(checks)}), patch.object(gate.subprocess, 'check_output', side_effect=create) as call, patch.object(workspace.time, 'sleep'):
+            self.assertEqual(gate.write_check('kernel', self.check_payload()), 42)
+        self.assertEqual(call.call_count, 1)
+
+    def test_check_from_other_run_app_or_completed_attempt_is_not_reused(self):
+        check = {'id': 42, 'app': {'id': gate.APP_ID}, 'external_id': 'candidate',
+                 'details_url': 'https://github.com/run/1', 'status': 'queued'}
+        checks = [{**check, 'app': {'id': 1}}, {**check, 'external_id': 'other'},
+                  {**check, 'details_url': 'https://github.com/run/2'},
+                  {**check, 'status': 'completed'}]
+        with patch.object(gate, 'api', return_value={'check_runs': checks}), patch.object(gate.subprocess, 'check_output', return_value='{"id": 43}') as call:
+            self.assertEqual(gate.write_check('kernel', self.check_payload()), 43)
+        self.assertEqual(call.call_count, 1)
+
+    def test_persistent_transient_failure_has_a_retry_limit(self):
+        failure = subprocess.CalledProcessError(1, ['gh'], stderr='unexpected end of JSON input')
+        with patch.object(gate, 'api', return_value={'check_runs': []}), patch.object(gate.subprocess, 'check_output', side_effect=failure) as call, patch.object(workspace.time, 'sleep'):
+            with self.assertRaises(subprocess.CalledProcessError):
+                gate.write_check('kernel', self.check_payload())
+        self.assertEqual(call.call_count, 3)
+
+    def test_permission_failure_is_not_retried(self):
+        failure = subprocess.CalledProcessError(1, ['gh'], stderr='HTTP 403: Resource not accessible')
+        with patch.object(gate, 'api', return_value={'check_runs': []}), patch.object(gate.subprocess, 'check_output', side_effect=failure) as call, patch.object(workspace.time, 'sleep') as sleep:
+            with self.assertRaises(subprocess.CalledProcessError):
+                gate.write_check('kernel', self.check_payload())
+        self.assertEqual(call.call_count, 1)
+        sleep.assert_not_called()
+
+    def test_lost_update_response_retries_the_same_check(self):
+        payload = {'status': 'completed', 'conclusion': 'success'}
+        with patch.object(gate, 'api') as lookup, patch.object(gate.subprocess, 'check_output', side_effect=['', '{"id": 42}']) as call, patch.object(workspace.time, 'sleep'):
+            self.assertEqual(gate.write_check('kernel', payload, 42), 42)
+        lookup.assert_not_called()
+        self.assertEqual(call.call_count, 2)
+        self.assertEqual(call.call_args_list[0], call.call_args_list[1])
+
     def test_administrator_cannot_push_or_rewrite_default_history(self):
         history, review = configure.rulesets()
         self.assertEqual(history['bypass_actors'], [])

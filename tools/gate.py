@@ -9,16 +9,38 @@ import json
 from pathlib import Path
 import subprocess
 
-from workspace import ORG, api, verify_current
+from workspace import ORG, api, retry_github, verify_current
 from configure import APP_ID
 
 
+def matching_checks(repository, head, identity, url):
+    page = 1
+    matches = []
+    while True:
+        checks = api(f'repos/{ORG}/{repository}/commits/{head}/check-runs?check_name=system&filter=all&per_page=100&page={page}')['check_runs']
+        matches.extend(c for c in checks if c['app']['id'] == APP_ID
+                       and c.get('external_id') == identity and c.get('details_url') == url)
+        if len(checks) < 100:
+            return matches
+        page += 1
+
+
 def write_check(repository, payload, identifier=None):
-    endpoint = f'repos/{ORG}/{repository}/check-runs' + (f'/{identifier}' if identifier else '')
-    response = subprocess.check_output(
-        ['gh', 'api', endpoint, '--method', 'PATCH' if identifier else 'POST', '--input', '-'],
-        input=json.dumps(payload), text=True)
-    return json.loads(response)['id']
+    def write():
+        if identifier is None:
+            # A failed response does not prove that POST failed. Reconcile with
+            # this exact run before creating anything, including on retries.
+            matches = matching_checks(repository, payload['head_sha'],
+                                      payload['external_id'], payload['details_url'])
+            pending = [c['id'] for c in matches if c['status'] != 'completed']
+            if pending:
+                return max(pending)
+        endpoint = f'repos/{ORG}/{repository}/check-runs' + (f'/{identifier}' if identifier else '')
+        response = subprocess.check_output(
+            ['gh', 'api', endpoint, '--method', 'PATCH' if identifier else 'POST', '--input', '-'],
+            input=json.dumps(payload), text=True, stderr=subprocess.PIPE)
+        return json.loads(response)['id']
+    return retry_github(write)
 
 
 def publish(snapshot, outcome, url):
@@ -38,18 +60,10 @@ def publish(snapshot, outcome, url):
             payload['status'] = 'queued'
         else:
             payload.update(status='completed', conclusion=outcome)
-            page = 1
-            matches = []
-            while True:
-                checks = api(f"repos/{ORG}/{repository}/commits/{candidate['head']}/check-runs?check_name=system&filter=all&per_page=100&page={page}")['check_runs']
-                matches.extend(c['id'] for c in checks if c['app']['id'] == APP_ID
-                               and c.get('external_id') == snapshot['identity'] and c.get('details_url') == url)
-                if len(checks) < 100:
-                    break
-                page += 1
+            matches = matching_checks(repository, candidate['head'], snapshot['identity'], url)
             if not matches:
                 raise ValueError(f'{repository}: no pending system check for this run')
-            identifier = max(matches)
+            identifier = max(c['id'] for c in matches)
             del payload['head_sha']
         write_check(repository, payload, identifier)
 
