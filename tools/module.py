@@ -51,7 +51,7 @@ def test_component(output, name, relative):
               (name.endswith('.sh') or Path(name).name in ('hyper-clang', 'hyper-cargo'))
               and not name.startswith('legacy/')]
     if shells:
-        subprocess.run(['shellcheck', '--severity=warning', *shells], check=True)
+        subprocess.run(['shellcheck', '--severity=warning', *shells], cwd=output, check=True)
     if metadata.get('test_requires_rust', True):
         toolchain = tomllib.loads((output / 'rust-toolchain.toml').read_text())['toolchain']
         command = ['rustup', 'toolchain', 'install', toolchain['channel'], '--profile', 'minimal']

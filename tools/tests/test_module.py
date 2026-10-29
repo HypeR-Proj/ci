@@ -22,6 +22,7 @@ class ModuleTests(unittest.TestCase):
         (root / 'rust-toolchain.toml').write_text('[toolchain]\nchannel="test-nightly"\ncomponents=["rustfmt"]\ntargets=[]\n')
         (component / 'component.json').write_text(json.dumps({
             'test_requires_rust': rust, 'packages': ['owner'], 'tests': []}))
+        (component / 'probe.sh').write_text('#!/bin/sh\ntrue\n')
         (component / 'Cargo.toml').write_text('[package]\nname="owner"\nversion="0.0.0"\n')
         unrelated = root / 'app/unrelated'
         unrelated.mkdir()
@@ -40,6 +41,9 @@ class ModuleTests(unittest.TestCase):
         self.assertEqual(formatting, [['cargo', 'fmt', '--manifest-path', str(component / 'Cargo.toml'),
                                        '-p', 'owner', '--', '--check']])
         self.assertEqual(commands[-1][-2:], ['test', 'owner'])
+        shell_check = next(call for call in run.call_args_list if call.args[0][0] == 'shellcheck')
+        self.assertEqual(shell_check.kwargs['cwd'], root)
+        self.assertEqual(shell_check.args[0][-1], str(component / 'probe.sh'))
         license_check = next(call for call in run.call_args_list if call.args[0][0] == 'sh')
         self.assertEqual(license_check.kwargs['env']['HYPER_LICENSE_ROOT'], str(component))
         self.assertEqual(license_check.kwargs['env']['HYPER_LICENSE_COMPONENT'], 'owner')
