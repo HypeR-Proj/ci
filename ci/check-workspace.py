@@ -144,9 +144,12 @@ def main():
     check_apps(root)
     check_bootstrap(root)
     check_stdlib(root)
-    index = subprocess.run(['git', 'ls-files', '--stage', '-z'], cwd=root,
-                           check=True, stdout=subprocess.PIPE).stdout
-    check_index(index)
+    sys.path.insert(0, str(root))
+    import project
+    for directory, _ in project.components(root).values():
+        index = subprocess.run(['git', 'ls-files', '--stage', '-z'], cwd=directory,
+                               check=True, stdout=subprocess.PIPE).stdout
+        check_index(index)
     print('workspace dependency declarations verified')
 
 

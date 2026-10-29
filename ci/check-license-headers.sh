@@ -25,7 +25,13 @@ if vendor.exists():
         raise SystemExit('rust-fatfs requires an upstream revision and patch provenance record')
 PY
 
-git ls-files --cached --others --exclude-standard | sort -u | while IFS= read -r path; do
+{
+    if [ -f project.py ]; then
+        python3 project.py files
+    else
+        git ls-files --cached --others --exclude-standard | sort -u
+    fi
+} | while IFS= read -r path; do
     # A worktree move appears as a tracked deletion plus an untracked addition
     # before staging. Inspect the files that actually form the candidate tree.
     [ -f "$path" ] || continue
@@ -34,7 +40,11 @@ git ls-files --cached --others --exclude-standard | sort -u | while IFS= read -r
         third_party/rust-fatfs/README.md | third_party/rust-fatfs/LICENSE.txt)
             continue
             ;;
-        LICENSE | Cargo.lock | */Cargo.lock)
+        io-vm/* | pi5-images/* | tests/legacy/*)
+            # Independently licensed publishers and preserved upstream workflows.
+            continue
+            ;;
+        LICENSE | */LICENSE | */LICENSE.txt | */LICENSE-HypeR | Cargo.lock | */Cargo.lock)
             # LICENSE is the license text; Cargo owns generated lockfiles.
             continue
             ;;

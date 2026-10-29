@@ -1,38 +1,30 @@
 # SPDX-FileCopyrightText: 2026 roolrz
 # SPDX-License-Identifier: Apache-2.0
 
-bin = [
-    { name = "hyper-fs-failure", path = "src/main.rs", test = false, bench = false },
-]
+bin = [{name = "hyper-retirement-probe", path = "src/main.rs", test = false, bench = false}]
 
 [package]
-name = "hyper-fs-failure"
+name = "hyper-retirement-probe"
 version = "0.0.0"
 edition = "2024"
 license = "Apache-2.0"
 repository = "https://github.com/HypeR-Proj/ci"
 publish = false
+workspace = "../../../app"
+
+[dependencies]
 
 [dependencies.hyper-os]
-version = "=0.0.0"
-features = [
-    "std",
-]
+workspace = true
 
 [dependencies.hyper-rt]
-version = "=0.0.0"
-features = [
-    "std",
-]
-
-[dependencies.hyper-fs-service]
-version = "=0.0.0"
+workspace = true
+features = ["std"]
 
 [dependencies.hyper-service]
-version = "=0.0.0"
+workspace = true
 
-[dependencies.hyper-filesystem]
-version = "=0.0.0"
+[lints]
 
 [lints.clippy]
 doc_markdown = "deny"
@@ -51,6 +43,4 @@ unsafe_op_in_unsafe_fn = "deny"
 
 [lints.rust.unexpected_cfgs]
 level = "warn"
-check-cfg = [
-    "cfg(target_os, values(\"hyper\"))",
-]
+check-cfg = ["cfg(target_os, values(\"hyper\"))"]

@@ -17,7 +17,8 @@ checks; it does not start system tests. GitHub schedules can be delayed, so rech
 before coordinating a merge rather than treating the polling interval as an atomic guarantee.
 
 The system suite includes Native SDK/boot/services/filesystem/VM tests, board storage tests and
-RPi5 image composition. QEMU exercises Native and I/O boot payloads; it does not certify real Pi hardware.
+Native and I/O boot payloads under QEMU. Pi5 image distribution is manually dispatched
+in the pi5-images repository and never gates system verification or component merges.
 
 `CI_APP_CLIENT_ID` is an Actions variable and `CI_APP_PRIVATE_KEY` is the App PEM Actions secret.
 The App is installed on HypeR-Proj and uses contents, pull-request, checks and actions permissions.
@@ -28,3 +29,10 @@ Run coordination self tests with `python3 -m unittest discover -s tools/tests`.
 `tools/configure.py --apply REPOSITORY` applies the approved default-branch policies.
 The `legacy/workflows` directory preserves the original suite definitions as migration reference;
 those workflows are not registered as automatic system CI.
+
+The manifest owns checkout paths and links; CI checks out that exact layout,
+including proposed manifest changes, without generating a second source tree.
+System runs resolve the latest qualified QEMU I/O VM package digest
+once and record them in the candidate snapshot. Every test uses those immutable
+packages. Appliance source changes are qualified by the I/O VM repository's own
+kernel workflow; system acceptance never recompiles the appliance.

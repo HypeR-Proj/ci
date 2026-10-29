@@ -21,9 +21,6 @@ def main():
     parser.add_argument('--manifest', type=Path, required=True)
     parser.add_argument('--pull-request', type=int, default=0)
     args = parser.parse_args()
-    names = project_names(args.manifest)
-    if args.component not in names:
-        raise ValueError('component is not registered in the source manifest')
     target = 'main'
     if args.pull_request:
         pull = api(f'repos/{ORG}/{args.component}/pulls/{args.pull_request}')
@@ -32,13 +29,12 @@ def main():
             raise ValueError('a PR may belong to only one integration topic')
         target = topics[0] if topics else f'{args.component}#{args.pull_request}'
     snapshot = resolve(args.manifest, target)
-    del snapshot['projects'][args.component]
-    checkout(snapshot, args.directory)
-    destination = args.directory / args.component
-    subprocess.run(['git', 'clone', '--quiet', '--no-local', str(args.candidate), str(destination)], check=True)
-    output = args.directory / 'out/system'
-    subprocess.run([sys.executable, str(args.directory / 'build/project.py'), '--workspace', str(args.directory),
-                    'prepare'], check=True)
+    if args.component not in snapshot['projects']:
+        raise ValueError('component is not registered in the candidate manifest')
+    checkout(snapshot, args.directory, {args.component: args.candidate})
+    output = args.directory
+    project = output / 'project.py'
+    subprocess.run([sys.executable, str(project), '--workspace', str(output), 'prepare'], check=True)
     toolchain = tomllib.loads((output / 'rust-toolchain.toml').read_text())['toolchain']
     command = ['rustup', 'toolchain', 'install', toolchain['channel'], '--profile', 'minimal']
     for component in toolchain['components']:
@@ -46,7 +42,7 @@ def main():
     for target in toolchain['targets']:
         command += ['--target', target]
     subprocess.run(command, check=True)
-    subprocess.run([sys.executable, str(args.directory / 'build/project.py'), '--workspace', str(args.directory),
+    subprocess.run([sys.executable, str(project), '--workspace', str(args.directory),
                     'test', args.component], check=True)
 
 
