@@ -3,15 +3,14 @@ SPDX-FileCopyrightText: 2026 roolrz
 SPDX-License-Identifier: Apache-2.0
 -->
 
-## Summary
+## Change
 
-Describe the contract or behavior changed by this pull request.
+Describe the behavior changed.
 
-## Contract impact
+## Related changes
 
-Describe any coordinated Kernel, ABI, SDK, or Native system change and how the
-single-tree build keeps every consumer valid at this commit.
+List companion PRs and use a common `topic:` label when needed.
 
 ## Validation
 
-List the local and integration checks performed for this change.
+Record module checks and link the manually dispatched system verification.
