@@ -11,8 +11,7 @@
 #define OUTPUT_PURPOSE UINT32_C(0x80030002)
 #define DIRECTORY_RIGHTS (HYPER_NATIVE_RIGHT_READ | HYPER_NATIVE_RIGHT_INSPECT)
 
-static int same(const hyper_native_directory_info_t *a,
-		const hyper_native_directory_info_t *b)
+static int same(const hyper_native_directory_info_t *a, const hyper_native_directory_info_t *b)
 {
 	return a->filesystem_id == b->filesystem_id && a->mount_id == b->mount_id &&
 	       a->node_id == b->node_id;
@@ -39,17 +38,19 @@ int hyper_main(const hyper_startup_t *startup)
 	    hyper_startup_find_handle(startup, READY_PURPOSE, &ready) ||
 	    hyper_startup_find_handle(startup, OUTPUT_PURPOSE, &output))
 		return 1;
-	if (hyper_directory_get_info(root, &before).status)
+	if (hyper_directory_get_info(root, &before, sizeof(hyper_native_directory_info_t)).status)
 		goto fail;
 	hyper_call_result_t fixed = hyper_directory_open_directory(root, "/", 1, DIRECTORY_RIGHTS);
 	hyper_call_result_t scoped = hyper_directory_scope_create(root, root, DIRECTORY_RIGHTS);
 	if (fixed.status || scoped.status)
 		goto fail;
 	/* Existing files remain valid; a root switch must not retire the ramdisk. */
-	hyper_call_result_t file = hyper_directory_open_file(root, "/etc/hyper/board.json", 21,
-		HYPER_NATIVE_RIGHT_READ | HYPER_NATIVE_RIGHT_INSPECT);
+	hyper_call_result_t file =
+		hyper_directory_open_file(root, "/etc/hyper/board.json", 21,
+					  HYPER_NATIVE_RIGHT_READ | HYPER_NATIVE_RIGHT_INSPECT);
 	hyper_native_file_info_t file_before = {0}, file_after = {0};
-	if (file.status || hyper_file_get_info(file.value0, &file_before).status)
+	if (file.status ||
+	    hyper_file_get_info(file.value0, &file_before, sizeof(hyper_native_file_info_t)).status)
 		goto fail;
 	/* Ordinary core services must not acquire namespace administration. */
 	if (hyper_filesystem_mount_ramfs(root, "/forbidden", 10).status !=
@@ -58,7 +59,8 @@ int hyper_main(const hyper_startup_t *startup)
 	if (hyper_byte_channel_write(ready, readiness, sizeof(readiness) - 1))
 		goto fail;
 	for (unsigned int i = 0; i != 6000; ++i) {
-		if (hyper_directory_get_info(root, &after).status)
+		if (hyper_directory_get_info(root, &after, sizeof(hyper_native_directory_info_t))
+			    .status)
 			goto fail;
 		if (!same(&before, &after))
 			break;
@@ -66,15 +68,25 @@ int hyper_main(const hyper_startup_t *startup)
 			goto fail;
 	}
 	if (same(&before, &after) || after.filesystem_id == before.filesystem_id ||
-	    hyper_directory_get_info(scoped.value0, &retained).status || !same(&after, &retained) ||
-	    hyper_directory_get_info(fixed.value0, &retained).status || !same(&before, &retained))
+	    hyper_directory_get_info(scoped.value0, &retained,
+				     sizeof(hyper_native_directory_info_t))
+		    .status ||
+	    !same(&after, &retained) ||
+	    hyper_directory_get_info(fixed.value0, &retained, sizeof(hyper_native_directory_info_t))
+		    .status ||
+	    !same(&before, &retained))
 		goto fail;
-	hyper_call_result_t old = hyper_directory_open_directory(root, "/boot", 5, DIRECTORY_RIGHTS);
-	if (old.status || hyper_directory_get_info(old.value0, &retained).status ||
-	    !same(&before, &retained) || hyper_file_get_info(file.value0, &file_after).status ||
+	hyper_call_result_t old =
+		hyper_directory_open_directory(root, "/boot", 5, DIRECTORY_RIGHTS);
+	if (old.status ||
+	    hyper_directory_get_info(old.value0, &retained, sizeof(hyper_native_directory_info_t))
+		    .status ||
+	    !same(&before, &retained) ||
+	    hyper_file_get_info(file.value0, &file_after, sizeof(hyper_native_file_info_t))
+		    .status ||
 	    file_before.filesystem_id != file_after.filesystem_id ||
-	    file_before.mount_id != file_after.mount_id || file_before.node_id != file_after.node_id ||
-	    file_before.size != file_after.size)
+	    file_before.mount_id != file_after.mount_id ||
+	    file_before.node_id != file_after.node_id || file_before.size != file_after.size)
 		goto fail;
 	(void)hyper_handle_close(old.value0);
 	(void)hyper_handle_close(file.value0);
