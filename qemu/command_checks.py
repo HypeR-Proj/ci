@@ -16,14 +16,14 @@ def verify_command_options(run):
     direct = run('ldd --direct /bin/vmm', rb'\(loader\)')
     names = re.findall(rb'\n    (lib\S+) =>', direct)
     if names != [b'libhyper_vm_policy_shared.so', b'libhyper_clap_shared.so',
-                 b'libhyper_rust_std.so', b'libhyper.so']:
+                 b'libhyper_rust_std.so', b'libsystem.so']:
         raise AssertionError(f'ldd --direct did not report the ELF dependency list: {direct!r}')
     run('ldd /bin/echo', rb'libhyper_clap_shared.so => /lib64/')
     run('ldd -v /bin/vmm', rb'ELF64 (aarch64|riscv64), OS ABI 0x3f')
     run('ldd /bin/echo-static', rb'statically linked')
     run('ldd /etc/hyper/vms.json /bin/echo-static', rb'statically linked', failed=True)
     run('mkdir /missing-libraries')
-    run('ldd --library-dir /missing-libraries /bin/vmm', rb'libhyper.so => not found', failed=True)
+    run('ldd --library-dir /missing-libraries /bin/vmm', rb'libsystem.so => not found', failed=True)
     run('rmdir /missing-libraries')
     run('mkdir -v /tool-options', rb'created directory /tool-options')
     run("echo -e 'one\\n\\ntwo\\n\\n\\nthree' > /tool-options/text")
