@@ -77,6 +77,8 @@ def boot(args, mode):
             await_text(rb'hyper-sh\$ ')
             child.stdin.write(f'/bin/storage-probe {mode}\n'.encode())
             child.stdin.flush()
+            if mode == 'write':
+                await_text(rb'BOARD-STORAGE: remote recursive removal PASS\n', timeout=180)
             await_text(b'BOARD-STORAGE: ' + mode.encode() + b' PASS\n', timeout=600)
             await_text(rb'hyper-sh\$ ')
             if args.require_block_queue:
