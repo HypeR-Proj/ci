@@ -57,6 +57,14 @@ class ModuleTests(unittest.TestCase):
         self.assertFalse(any(command[0] in ('cargo', 'rustup') for command in commands))
         self.assertEqual(commands[-1][-2:], ['test', 'owner'])
 
+    def test_imported_fork_shells_are_not_treated_as_native_adapters(self):
+        root, component = self.fixture(False)
+        tracked = 'upstream/build.sh\0hyper/probe.sh\0'
+        with patch.object(runner.subprocess, 'check_output', return_value=tracked), patch.object(runner.subprocess, 'run') as run:
+            runner.test_component(root, 'lib-musl', 'app/owner')
+        checks = [call.args[0] for call in run.call_args_list if call.args[0][0] == 'shellcheck']
+        self.assertEqual(checks, [['shellcheck', '--severity=warning', str(component / 'hyper/probe.sh')]])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -21,7 +21,8 @@ for directory, notice, expected in (
     ('stdlib/musl', 'COPYRIGHT', 'f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af'),
     ('stdlib/cxx', 'LICENSE.TXT', '539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b'),
 ):
-    library = Path(directory)
+    component = os.environ.get('HYPER_LICENSE_COMPONENT')
+    library = Path('.') if component == 'lib-' + Path(directory).name else Path(directory)
     if library.exists():
         if hashlib.sha256((library / notice).read_bytes()).hexdigest() != expected:
             raise SystemExit(f'{directory}: upstream license changed; review provenance')
@@ -54,6 +55,15 @@ PY
     if [ "${HYPER_LICENSE_COMPONENT:-}" = ci ]; then
         case "$path" in legacy/*) continue ;; esac
     fi
+    case "${HYPER_LICENSE_COMPONENT:-}" in
+        lib-musl | lib-cxx)
+            case "$path" in
+                hyper/* | .github/* | README.md | CONTRIBUTING.md | SECURITY.md | \
+                Kconfig | component.json | component.mk | UPSTREAM.json | .gitignore) ;;
+                *) continue ;;
+            esac
+            ;;
+    esac
     case "$path" in
         stdlib/musl/hyper/* | stdlib/cxx/hyper/* | \
         stdlib/musl/.github/* | stdlib/cxx/.github/* | \

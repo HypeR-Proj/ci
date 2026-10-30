@@ -47,9 +47,10 @@ def test_component(output, name, relative):
                    env={**os.environ, 'HYPER_LICENSE_ROOT': str(component),
                         'HYPER_LICENSE_COMPONENT': name}, check=True)
     tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=component, text=True).split('\0')
-    shells = [str(component / name) for name in tracked if name and
-              (name.endswith('.sh') or Path(name).name in ('hyper-clang', 'hyper-cargo'))
-              and not name.startswith('legacy/')]
+    shells = [str(component / filename) for filename in tracked if filename and
+              (filename.endswith('.sh') or Path(filename).name in ('hyper-clang', 'hyper-cargo'))
+              and not filename.startswith('legacy/')
+              and (name not in ('lib-musl', 'lib-cxx') or filename.startswith('hyper/'))]
     if shells:
         subprocess.run(['shellcheck', '--severity=warning', *shells], cwd=output, check=True)
     if metadata.get('test_requires_rust', True):
