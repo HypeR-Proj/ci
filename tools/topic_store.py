@@ -5,6 +5,7 @@
 """Durable coordinator state; normal Git ref updates provide compare-and-swap."""
 
 import base64
+from datetime import datetime
 import json
 import os
 import subprocess
@@ -46,7 +47,9 @@ def verify_policy(rules, raw):
     for rule in rules:
         actors = STATE_ACTORS[rule['name']]
         recorded = policy.get('rules', {}).get(rule['name'], {})
-        if (recorded.get('id') != rule['id'] or recorded.get('updated_at') != rule['updated_at']
+        if (recorded.get('id') != rule['id']
+                or datetime.fromisoformat(recorded['updated_at'].replace('Z', '+00:00'))
+                != datetime.fromisoformat(rule['updated_at'].replace('Z', '+00:00'))
                 or recorded.get('bypass_actors') != actors
                 or ('bypass_actors' in rule and rule['bypass_actors'] != actors)):
             raise ValueError('state protections changed; an administrator must verify and reprovision them')

@@ -283,6 +283,14 @@ class StateTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 topic_store.verify_policy(rules, policy)
 
+    def test_rule_timestamps_compare_instants_across_viewer_timezones(self):
+        rules, policy = self.policy_fixture()
+        rules[0]['updated_at'] = '2026-10-30T08:00:00+08:00'
+        topic_store.verify_policy(rules, policy)
+        rules[0]['updated_at'] = '2026-10-30T08:00:00.001+08:00'
+        with self.assertRaises(ValueError):
+            topic_store.verify_policy(rules, policy)
+
     def test_missing_or_relaxed_admin_policy_is_rejected(self):
         rules, policy = self.policy_fixture()
         with self.assertRaises(ValueError):
