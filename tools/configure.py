@@ -10,6 +10,10 @@ import subprocess
 
 ORG = 'HypeR-Proj'
 APP_ID = 5526627
+STATE_ACTORS = {
+    'topic-state-writer': [{'actor_id': APP_ID, 'actor_type': 'Integration', 'bypass_mode': 'always'}],
+    'default-branch-history': [],
+}
 
 
 def api(path, payload=None, method=None):
@@ -65,6 +69,21 @@ def rulesets(repository=None):
     return result
 
 
+def record_state_policy():
+    # Scoped installation tokens cannot see bypass actors. Bind the lists
+    # verified by an administrator to the exact ruleset revisions instead.
+    endpoint = f'repos/{ORG}/ci/rulesets'
+    rules = {row['name']: row for row in api(endpoint)}
+    policy = {'version': 1, 'rules': {}}
+    for name, actors in STATE_ACTORS.items():
+        rule = api(endpoint + '/' + str(rules[name]['id']))
+        if rule.get('bypass_actors') != actors:
+            raise ValueError('administrator must verify the exact state bypass actors before polling')
+        policy['rules'][name] = {key: rule[key] for key in ('id', 'updated_at', 'bypass_actors')}
+    subprocess.run(['gh', 'variable', 'set', 'CI_TOPIC_STATE_POLICY', '--repo', f'{ORG}/ci',
+                    '--env', 'topic-control', '--body', json.dumps(policy)], check=True)
+
+
 def configure(name, state_only=False):
     if '/' in name or not name or name.startswith('.'):
         raise ValueError('expected a repository name within HypeR-Proj')
@@ -82,6 +101,8 @@ def configure(name, state_only=False):
         identifier = existing.get(rule['name'])
         path = endpoint + '/rulesets' + (f'/{identifier}' if identifier else '')
         api(path, rule, 'PUT' if identifier else 'POST')
+    if name == 'ci':
+        record_state_policy()
     print(f'{ORG}/{name}: ' + ('protected coordinator state' if state_only else 'coordinator-only PR submission; immutable default history'))
 
 

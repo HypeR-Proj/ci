@@ -6,10 +6,11 @@
 
 import base64
 import json
+import os
 import subprocess
 
 from workspace import ORG, api
-from configure import APP_ID
+from configure import STATE_ACTORS
 
 REPOSITORY = f'{ORG}/ci'
 BRANCH = 'topic-state'
@@ -36,6 +37,21 @@ def pages(path, key=None):
         page += 1
 
 
+def verify_policy(rules, raw):
+    if not raw:
+        raise ValueError('provision CI_TOPIC_STATE_POLICY in the topic-control environment with configure.py')
+    policy = json.loads(raw)
+    if policy.get('version') != 1:
+        raise ValueError('unsupported state protection policy')
+    for rule in rules:
+        actors = STATE_ACTORS[rule['name']]
+        recorded = policy.get('rules', {}).get(rule['name'], {})
+        if (recorded.get('id') != rule['id'] or recorded.get('updated_at') != rule['updated_at']
+                or recorded.get('bypass_actors') != actors
+                or ('bypass_actors' in rule and rule['bypass_actors'] != actors)):
+            raise ValueError('state protections changed; an administrator must verify and reprovision them')
+
+
 class Store:
     def __init__(self):
         rules = {row['name']: row for row in pages(f'repos/{REPOSITORY}/rulesets')}
@@ -45,9 +61,8 @@ class Store:
             raise ValueError('protect topic-state with configure.py --apply --state-only ci before polling')
         writer = api(f'repos/{REPOSITORY}/rulesets/{writer["id"]}')
         history = api(f'repos/{REPOSITORY}/rulesets/{history["id"]}')
+        verify_policy((writer, history), os.environ.get('CI_TOPIC_STATE_POLICY', ''))
         if (writer['enforcement'] != 'active' or history['enforcement'] != 'active'
-                or writer['bypass_actors'] != [{'actor_id': APP_ID, 'actor_type': 'Integration', 'bypass_mode': 'always'}]
-                or history['bypass_actors']
                 or {rule['type'] for rule in writer['rules']} != {'creation', 'update'}
                 or not {'deletion', 'non_fast_forward'} <= {rule['type'] for rule in history['rules']}
                 or any('refs/heads/topic-state' not in rule['conditions']['ref_name']['include']
