@@ -64,7 +64,7 @@ def safe_path(value):
     return path
 
 
-def project_layout(manifest):
+def project_layout(manifest, metadata=None):
     root = ET.parse(manifest).getroot()
     result = {}
     paths = set()
@@ -83,7 +83,28 @@ def project_layout(manifest):
     # Compatibility while the manifest migration PR is not yet merged.
     if 'manifest' not in result:
         result = {'manifest': {'path': 'manifest', 'links': []}, **result}
+    if metadata is None and isinstance(manifest, (str, Path)):
+        description = Path(manifest).resolve().parent / 'component.json'
+        metadata = json.loads(description.read_bytes()) if description.exists() else {}
+    for name in (metadata or {}).get('integration', {}).get('repositories', []):
+        if not isinstance(name, str) or not NAME.fullmatch(name):
+            raise ValueError('invalid integration repository')
+        if name not in result:
+            path = '.integration/' + name
+            if path in paths:
+                raise ValueError('integration checkout conflicts with a source project')
+            paths.add(path)
+            result[name] = {'path': path, 'links': [], 'integration_only': True}
     return result
+
+
+def candidate_layout(revision):
+    if not SHA.fullmatch(revision):
+        raise ValueError('manifest revision must be an exact commit')
+    content = api(f'repos/{ORG}/manifest/contents/default.xml?ref={revision}')
+    metadata = api(f'repos/{ORG}/manifest/contents/component.json?ref={revision}')
+    return project_layout(io.BytesIO(base64.b64decode(content['content'])),
+                          json.loads(base64.b64decode(metadata['content'])))
 
 
 def project_names(manifest):
@@ -113,8 +134,7 @@ def resolve(manifest, target):
         pull = api(f"repos/{ORG}/manifest/pulls/{selected['manifest']}")
         manifest_head = pull['head']['sha']
         manifest_revision = pull.get('merge_commit_sha') or manifest_head
-        content = api(f"repos/{ORG}/manifest/contents/default.xml?ref={manifest_revision}")
-        layout = project_layout(io.BytesIO(base64.b64decode(content['content'])))
+        layout = candidate_layout(manifest_revision)
         names = list(layout)
         if target.startswith('topic:'):
             selected = {}

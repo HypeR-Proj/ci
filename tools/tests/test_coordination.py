@@ -117,6 +117,25 @@ class CoordinationTests(unittest.TestCase):
         with patch.object(workspace.subprocess, 'check_output', return_value='main'), self.assertRaises(ValueError):
             workspace.resolve_packages(snapshot)
 
+    def test_documentation_repository_is_tracked_without_entering_the_source_manifest(self):
+        xml = '<manifest><project name="build" path="."/></manifest>'
+        layout = workspace.project_layout(io.StringIO(xml), {'integration': {'repositories': ['HypeR']}})
+        self.assertEqual(layout['HypeR'], {'path': '.integration/HypeR', 'links': [], 'integration_only': True})
+        for name in ('../outside', 'other/org'):
+            with self.assertRaises(ValueError):
+                workspace.project_layout(io.StringIO(xml), {'integration': {'repositories': [name]}})
+
+    def test_manifest_metadata_and_layout_are_read_at_the_same_candidate_commit(self):
+        import base64
+        documents = {'default.xml': b'<manifest><project name="build" path="."/></manifest>',
+                     'component.json': b'{"integration":{"repositories":["HypeR"]}}'}
+        def read(path):
+            self.assertTrue(path.endswith('?ref=' + 'a' * 40))
+            filename = path.split('/contents/', 1)[1].split('?')[0]
+            return {'content': base64.b64encode(documents[filename]).decode()}
+        with patch.object(workspace, 'api', side_effect=read):
+            self.assertIn('HypeR', workspace.candidate_layout('a' * 40))
+
     def test_checkout_uses_resolved_commit_when_the_pull_ref_advances(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
