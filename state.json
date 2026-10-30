@@ -1,0 +1,9 @@
+{
+  "active": null,
+  "messages": {},
+  "requests": {},
+  "retired": {
+    "topic:workspace-migration": "topics/122bd184cb51b19e9482fb39f84faa1a97629f404815392ba790d375e3148383.json"
+  },
+  "version": 1
+}

@@ -1,0 +1,600 @@
+{
+  "last_result": null,
+  "members": [
+    {
+      "closed_at": "2026-10-29T21:44:57Z",
+      "number": 221,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "build: move system components into the repo-managed workspace",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/221"
+    },
+    {
+      "closed_at": "2026-10-29T21:00:00Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/abi/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:01:34Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:02:00Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "bootstrap-retire",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/bootstrap-retire/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T18:43:27Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "build: operate directly on the manifest workspace and publish repository docs",
+      "url": "https://github.com/HypeR-Proj/build/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T19:25:58Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "ci: prepare the self-test image in the isolated QEMU job",
+      "url": "https://github.com/HypeR-Proj/ci/pull/8"
+    },
+    {
+      "closed_at": "2026-10-29T19:08:43Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "ci: recover safely from truncated check API responses",
+      "url": "https://github.com/HypeR-Proj/ci/pull/7"
+    },
+    {
+      "closed_at": "2026-10-29T18:26:56Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "ci: fetch resolved candidate commits directly",
+      "url": "https://github.com/HypeR-Proj/ci/pull/6"
+    },
+    {
+      "closed_at": "2026-10-29T18:13:36Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "docs: publish each repository independently after merge",
+      "url": "https://github.com/HypeR-Proj/ci/pull/5"
+    },
+    {
+      "closed_at": "2026-10-29T17:51:23Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "ci: test manifest workspaces with qualified appliance packages",
+      "url": "https://github.com/HypeR-Proj/ci/pull/4"
+    },
+    {
+      "closed_at": "2026-10-29T16:21:59Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "ci: enable the split workspace verification pipeline",
+      "url": "https://github.com/HypeR-Proj/ci/pull/2"
+    },
+    {
+      "closed_at": "2026-10-29T21:03:14Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:03:42Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "componentctl",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/componentctl/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:04:13Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "console-raw",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/console-raw/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:04:42Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "coreutils",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/coreutils/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:05:12Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "editor",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/editor/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:05:39Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "fit-pack",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/fit-pack/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:06:12Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "free",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/free/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:06:39Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:07:11Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:07:37Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:08:09Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "grep",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/grep/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:08:35Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "handle",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/handle/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:09:06Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:09:33Z",
+      "number": 22,
+      "pull_request": true,
+      "repository": "io-vm",
+      "state": "closed",
+      "title": "docs: own and publish appliance integration guides",
+      "url": "https://github.com/HypeR-Proj/io-vm/pull/22"
+    },
+    {
+      "closed_at": "2026-10-29T17:53:36Z",
+      "number": 21,
+      "pull_request": true,
+      "repository": "io-vm",
+      "state": "closed",
+      "title": "build: integrate appliance publication with the HypeR workspace",
+      "url": "https://github.com/HypeR-Proj/io-vm/pull/21"
+    },
+    {
+      "closed_at": "2026-10-29T21:10:06Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "journalctl",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/journalctl/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:10:32Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/journald/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:11:05Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:11:30Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "ldd",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/ldd/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:12:07Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "less",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/less/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:12:29Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-block",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-block/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:13:06Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-bootstrap-handoff",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-bootstrap-handoff/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:13:27Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-clap",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-clap/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:14:04Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-component",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-component/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:14:25Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-component-config",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-component-config/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:15:01Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-dynamic-loader",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-dynamic-loader/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:15:22Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:15:59Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-journal-client",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-journal-client/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:17:02Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:17:58Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-rust-fatfs",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-rust-fatfs/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:19:15Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:18:13Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:18:58Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-service-ipc",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-service-ipc/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:22:51Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:19:57Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-terminal",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-terminal/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:20:12Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-text-ui",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-text-ui/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:20:55Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-tool-args",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-tool-args/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:21:12Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-vm-image",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-vm-image/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:21:53Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-vm-policy",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-vm-policy/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:22:10Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-vm-support",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/lib-vm-support/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:37:32Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "build: compose the workspace directly with repo",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:23:08Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "memstat",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/memstat/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:24:05Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "perf",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/perf/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:24:46Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "pi5-images",
+      "state": "closed",
+      "title": "build: consume resolved workspace inputs for Pi 5 images",
+      "url": "https://github.com/HypeR-Proj/pi5-images/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:25:03Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "ps",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/ps/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:25:44Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:26:00Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "shell",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/shell/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:26:42Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "system-startup",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/system-startup/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:26:59Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "terminal-service",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/terminal-service/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:27:39Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:27:58Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "top",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/top/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:28:36Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "umount",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/umount/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:28:55Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "vm-manager",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/vm-manager/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:29:36Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "vm-runtime",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/vm-runtime/pull/1"
+    },
+    {
+      "closed_at": "2026-10-29T21:29:54Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "vmm",
+      "state": "closed",
+      "title": "build: use the manifest-defined workspace layout",
+      "url": "https://github.com/HypeR-Proj/vmm/pull/1"
+    }
+  ],
+  "topic": "topic:workspace-migration"
+}
