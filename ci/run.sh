@@ -13,11 +13,6 @@ usage() {
     exit 2
 }
 
-run_kernel_suite() {
-    suite=$1
-    (cd kernel && sh tests/ci/run.sh "$suite")
-}
-
 selected_io_package() {
     if [ -n "${IO_VM_PACKAGE:-}" ]; then
         printf '%s\n' "$IO_VM_PACKAGE"
@@ -53,81 +48,35 @@ run_native_probe() {
 
 case "${1:-}" in
     quality)
-        command -v rg >/dev/null 2>&1 || {
-            echo "ripgrep is required for the source-quality suite" >&2
-            exit 2
-        }
-        python3 -B tests/ci/test-workspace.py
-        python3 -B tests/ci/check-workspace.py
-        sh tests/ci/check-license-headers.sh
-        sh tests/ci/test-license-headers.sh
-        run_kernel_suite quality
+        # Compatibility for trusted workflows already deployed on main. Tests
+        # stay with their owners; the new system matrix never selects these.
+        python3 project.py test manifest
+        KERNEL_CI_SUITE=quality python3 project.py test kernel
         ;;
     scripts)
-        python3 -B kernel/tests/ci/test-features.py
-        python3 -B svc/terminal-service/tests/linux-formatting.py
-        python3 -B tests/ci/test-install-tools.py
-        python3 -B tests/ci/test-native-fixture.py
-        python3 -B tests/ci/test-suites.py
-        python3 -B tests/profiling/test-flamegraph.py
-        python3 -B tests/build/kernel-version.py
-        python3 -B tests/build/developer-entrypoints.py
-        python3 tests/build/incremental.py
-        python3 -B tests/build/app-deployment.py
-        python3 -B tests/build/system-config.py
-        python3 -B tests/build/menuconfig.py
-        python3 -B tests/build/boot-profiles.py
-        python3 -B tests/build/native-libraries.py
-        python3 -B tests/build/io-vm-run.py
-        python3 -B tests/build/io-vm-package.py
-        python3 -B tests/build/board-image.py
-        python3 -B tests/build/board-image-update.py
-        python3 -B tests/build/fetch-rpi5-boot.py
-        python3 -B tests/build/rpi5-bringup.py
-        python3 -B tests/build/guest-rootfs.py
-        python3 -B tests/qemu/test-guest-smp.py
-        python3 -B tests/qemu/test-io-vm.py
-        python3 -B tests/qemu/test-stack.py
-        python3 -B tests/qemu/test-stack-watch.py
-        python3 -B tests/qemu/test-boot-system.py
-        python3 -B tests/qemu/test-native-init.py
-        python3 -B tests/qemu/test-product-config.py
-        python3 -B tests/qemu/test-session.py
-        python3 -B tests/qemu/test-lifecycle-stress.py
-        python3 -B tests/qemu/test-power-crash.py
-        python3 -B tests/qemu/test-command.py
-        python3 -B tests/qemu/test-trace.py
-        python3 -B tests/performance/scheduler/test_report.py
-        python3 -B tests/performance/scheduler/test_capacity.py
-        python3 -B tests/qemu/test-console.py
-        python3 -B tests/qemu/test-console-hotplug.py
-        python3 -B tests/qemu/test-fleet-config.py
-        python3 -B tests/qemu/test-network.py
-        command -v shellcheck >/dev/null 2>&1 || {
-            echo "shellcheck is required for the script-quality suite" >&2
-            exit 2
-        }
-        find tests kernel/tests kernel/tools scripts sdk/toolchain -type f \
-            \( -name '*.sh' -o -name hyper-clang -o -name hyper-cargo \) -print0 |
-            xargs -0 shellcheck --severity=warning
+        for owner in ci build terminal-service; do
+            python3 project.py test "$owner"
+        done
+        KERNEL_CI_SUITE=scripts python3 project.py test kernel
         ;;
     kernel-configurations)
-        python3 -B kernel/tests/ci/check-features.py
+        KERNEL_CI_SUITE=configurations python3 project.py test kernel
+        ;;
+    native-sdk)
+        SDK_CI_ARCH=aarch64 python3 project.py test toolchain
+        ;;
+    riscv64-sdk)
+        SDK_CI_ARCH=riscv64 python3 project.py test toolchain
+        ;;
+    aarch64-build|aarch64-production|aarch64-self-test|aarch64-compact|aarch64-qemu|riscv64-qemu|x86_64-build)
+        KERNEL_CI_SUITE="$1" python3 project.py test kernel
         ;;
     native)
         # Separate processes keep dispatch state local to each suite. Local
         # runs remain serial because fixtures reuse the same output paths.
-        for shard in native-sdk native-gicv3 native-gicv2 native-smp-stack native-stack-16k native-pmu native-trace native-scheduler; do
+        for shard in native-gicv3 native-gicv2 native-smp-stack native-stack-16k native-pmu native-trace native-scheduler; do
             sh tests/ci/run.sh "$shard"
         done
-        ;;
-    native-sdk)
-        make sdk-check
-        make sdk-test
-        make app-check
-        make app-test
-        python3 -B tests/build/service-manifest.py
-        make app-sdk-test
         ;;
     native-fixture)
         arch=${CI_ARCH:-aarch64}
@@ -317,14 +266,9 @@ case "${1:-}" in
             CARGO_FEATURES='--features kernel-test,kernel-stack-audit'
         ;;
     riscv64-native)
+        # Old workflow aggregate; new system jobs select only the runtime part.
         sh tests/ci/run.sh riscv64-sdk
         sh tests/ci/run.sh riscv64-runtime
-        ;;
-    riscv64-sdk)
-        make sdk-check ARCH=riscv64
-        make app-check ARCH=riscv64
-        make app-test ARCH=riscv64
-        make app-sdk-test ARCH=riscv64
         ;;
     riscv64-runtime)
         for shard in native-boot native-console native-terminal native-apps native-shell native-stress; do
@@ -339,9 +283,6 @@ case "${1:-}" in
         make -o image test-vm-smoke ARCH=riscv64 QEMU_CPUS=1
         make -o image -o native-initramfs test-runtime-crash ARCH=riscv64
         make test-stack ARCH=riscv64
-        ;;
-    aarch64-build | aarch64-production | aarch64-self-test | aarch64-compact | aarch64-qemu | riscv64-qemu | x86_64-build)
-        run_kernel_suite "$1"
         ;;
     *)
         usage

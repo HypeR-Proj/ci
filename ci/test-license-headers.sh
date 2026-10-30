@@ -85,3 +85,8 @@ for library in musl cxx; do
     fi
     rm -rf "$destination"
 done
+# A build component contains project.py, but its module check must not expand
+# into another repository's files through that workspace inventory command.
+printf 'SPDX-FileCopyrightText: 2026 Contributor\nSPDX-License-Identifier: Apache-2.0\n' >"$fixture/Test Logo.png.license"
+printf '# SPDX-FileCopyrightText: 2026 Contributor\n# SPDX-License-Identifier: Apache-2.0\nraise SystemExit("workspace inventory must not run")\n' >"$fixture/project.py"
+HYPER_LICENSE_COMPONENT=build check

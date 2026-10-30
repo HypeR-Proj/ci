@@ -21,7 +21,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - name: Test coordination and repository policies
-        run: |
-          python3 -m unittest discover -s tools/tests
-          python3 -m compileall -q tools
+      - uses: HypeR-Proj/ci/.github/actions/module@main
+        with:
+          component: ${{ github.event.repository.name }}

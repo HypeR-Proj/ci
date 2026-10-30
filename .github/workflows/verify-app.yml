@@ -8,6 +8,8 @@ permissions:
   contents: read
 jobs:
   authenticate:
+    if: github.ref == 'refs/heads/main'
+    environment: topic-control
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

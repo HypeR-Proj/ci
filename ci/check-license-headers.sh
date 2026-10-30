@@ -15,12 +15,14 @@ trap 'rm -f "$missing"' EXIT HUP INT TERM
 # not project-authored Apache source. Pin the notice rather than rewriting it.
 python3 - <<'PY'
 import hashlib
+import os
 from pathlib import Path
 for directory, notice, expected in (
     ('stdlib/musl', 'COPYRIGHT', 'f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af'),
     ('stdlib/cxx', 'LICENSE.TXT', '539dd7aed86e8a4f12cbdd0e6c50c189c7d74847e4fecc64ce2c6ee3a01da38b'),
 ):
-    library = Path(directory)
+    component = os.environ.get('HYPER_LICENSE_COMPONENT')
+    library = Path('.') if component == 'lib-' + Path(directory).name else Path(directory)
     if library.exists():
         if hashlib.sha256((library / notice).read_bytes()).hexdigest() != expected:
             raise SystemExit(f'{directory}: upstream license changed; review provenance')
@@ -28,7 +30,7 @@ for directory, notice, expected in (
             raise SystemExit(f'{directory}: public license differs from preserved upstream notice')
         if not (library / 'UPSTREAM.json').is_file():
             raise SystemExit(f'{directory}: missing source provenance')
-vendor = Path('third_party/rust-fatfs')
+vendor = Path('.') if os.environ.get('HYPER_LICENSE_COMPONENT') == 'lib-rust-fatfs' else Path('third_party/rust-fatfs')
 if vendor.exists():
     expected = '9125b4be91e0486ca97316a7547ec0f7e15093b3eacbf4d85e4de1718e9bbfbf'
     if hashlib.sha256((vendor / 'LICENSE.txt').read_bytes()).hexdigest() != expected:
@@ -38,7 +40,7 @@ if vendor.exists():
 PY
 
 {
-    if [ -f project.py ]; then
+    if [ -f project.py ] && [ -z "${HYPER_LICENSE_COMPONENT:-}" ]; then
         python3 project.py files
     else
         git ls-files --cached --others --exclude-standard | sort -u
@@ -47,6 +49,21 @@ PY
     # A worktree move appears as a tracked deletion plus an untracked addition
     # before staging. Inspect the files that actually form the candidate tree.
     [ -f "$path" ] || continue
+    if [ "${HYPER_LICENSE_COMPONENT:-}" = lib-rust-fatfs ]; then
+        case "$path" in src/* | Cargo.toml | README.md | LICENSE.txt) continue ;; esac
+    fi
+    if [ "${HYPER_LICENSE_COMPONENT:-}" = ci ]; then
+        case "$path" in legacy/*) continue ;; esac
+    fi
+    case "${HYPER_LICENSE_COMPONENT:-}" in
+        lib-musl | lib-cxx)
+            case "$path" in
+                hyper/* | .github/* | README.md | CONTRIBUTING.md | SECURITY.md | \
+                Kconfig | component.json | component.mk | UPSTREAM.json | .gitignore) ;;
+                *) continue ;;
+            esac
+            ;;
+    esac
     case "$path" in
         stdlib/musl/hyper/* | stdlib/cxx/hyper/* | \
         stdlib/musl/.github/* | stdlib/cxx/.github/* | \
@@ -72,7 +89,7 @@ PY
             # Independently licensed publishers and preserved upstream workflows.
             continue
             ;;
-        LICENSE | */LICENSE | */LICENSE.txt | */LICENSE-HypeR | Cargo.lock | */Cargo.lock)
+        LICENSE | LICENSE.txt | LICENSE-HypeR | */LICENSE | */LICENSE.txt | */LICENSE-HypeR | Cargo.lock | */Cargo.lock)
             # LICENSE is the license text; Cargo owns generated lockfiles.
             continue
             ;;

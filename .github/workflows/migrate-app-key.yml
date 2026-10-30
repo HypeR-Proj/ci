@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: Seal App key for protected environment
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  seal:
+    if: github.ref == 'refs/heads/main' && vars.CI_APP_KEY_MIGRATION == 'enabled'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Install GitHub's documented sealed-box implementation
+        run: python3 -m pip install --disable-pip-version-check PyNaCl==1.6.2
+      - name: Encrypt directly for the topic-control environment
+        env:
+          SOURCE_KEY: ${{ secrets.CI_APP_PRIVATE_KEY }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import json
+          import os
+          from pathlib import Path
+          from nacl.public import PublicKey, SealedBox
+          # This is the public encryption key of HypeR-Proj/ci's topic-control
+          # environment. No dispatch input can replace it with an external key.
+          public_key = PublicKey(base64.b64decode('1lrZOiEFmmMFuXeLb+r3zh/iZfAkOb640YH1Ljc/AQQ='))
+          secret = os.environ['SOURCE_KEY']
+          if not secret.strip():
+              raise SystemExit('The source repository secret is unavailable')
+          encrypted = base64.b64encode(SealedBox(public_key).encrypt(secret.encode())).decode()
+          Path('sealed-secret.json').write_text(json.dumps({
+              'key_id': '3380204578043523366', 'encrypted_value': encrypted}))
+          PY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sealed-environment-secret
+          path: sealed-secret.json
+          retention-days: 1
