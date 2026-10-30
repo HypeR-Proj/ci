@@ -13,6 +13,8 @@ runs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         repository: HypeR-Proj/ci
+        # CI self-tests exercise the proposed controller with a read-only token.
+        ref: ${{ github.repository == 'HypeR-Proj/ci' && github.sha || 'main' }}
         path: .ci-control
         persist-credentials: false
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
