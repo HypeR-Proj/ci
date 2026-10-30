@@ -87,12 +87,14 @@ jobs:
           python3 tools/topics.py --manifest manifest-input/default.xml --action controls
           python3 tools/gate.py --snapshot candidate.json --outcome pending --url "$RUN_URL"
   plan:
-    needs: [resolve, pending]
-    if: always() && needs.resolve.result == 'success' && (needs.pending.result == 'success' || needs.pending.result == 'skipped')
+    needs: resolve
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
-      cases: ${{ steps.matrix.outputs.cases }}
+      standalone: ${{ steps.matrix.outputs.standalone }}
+      consumers: ${{ steps.matrix.outputs.consumers }}
+      has_standalone: ${{ steps.matrix.outputs.has_standalone }}
+      has_consumers: ${{ steps.matrix.outputs.has_consumers }}
       fixtures: ${{ steps.matrix.outputs.fixtures }}
       has_fixtures: ${{ steps.matrix.outputs.has_fixtures }}
     steps:
@@ -111,14 +113,7 @@ jobs:
         run: |
           python3 tools/workspace.py checkout --snapshot candidate.json --directory "$RUNNER_TEMP/system"
           python3 "$RUNNER_TEMP/system/test-framework/runner.py" list > matrix.json
-          python3 - <<'PYCODE'
-          import json, os
-          plan = json.load(open('matrix.json'))
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              for name in ('cases', 'fixtures'):
-                  print(name + '=' + json.dumps(plan[name], separators=(',', ':')), file=output)
-              print('has_fixtures=' + str(bool(plan['fixtures']['include'])).lower(), file=output)
-          PYCODE
+          python3 tools/system_plan.py matrix matrix.json
   fixtures:
     needs: [resolve, plan]
     if: always() && needs.resolve.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.has_fixtures == 'true'
@@ -165,76 +160,47 @@ jobs:
             ${{ env.OUT || format('{0}/system-out', runner.temp) }}/results/*.json
           if-no-files-found: ignore
   test:
-    needs: [resolve, plan, fixtures]
-    if: always() && needs.plan.result == 'success' && (needs.fixtures.result == 'success' || (needs.plan.outputs.has_fixtures == 'false' && needs.fixtures.result == 'skipped'))
-    runs-on: ubuntu-24.04
-    container: debian:trixie-slim
-    defaults:
-      run:
-        shell: bash
-    env:
-      ARCH: ${{ matrix.arch }}
-    timeout-minutes: 90
+    needs: [resolve, plan]
+    if: always() && needs.plan.result == 'success' && needs.plan.outputs.has_standalone == 'true'
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan.outputs.cases) }}
-    steps:
-      - name: Bootstrap the supported QEMU environment
-        env:
-          DEBIAN_FRONTEND: noninteractive
-        run: |
-          apt-get -o Acquire::Retries=2 update
-          apt-get install -y --no-install-recommends ca-certificates git python3 rustup build-essential curl xz-utils zstd unzip
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/system-environment
-        with:
-          snapshot-hash: ${{ needs.resolve.outputs.snapshot_hash }}
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        if: matrix.fixture != ''
-        with:
-          name: fixture-${{ matrix.fixture }}-${{ matrix.arch }}
-          path: ${{ env.OUT || format('{0}/system-out', runner.temp) }}/fixtures/${{ matrix.fixture }}-${{ matrix.arch }}
-      - name: Execute the selected system case
-        env:
-          CI_REQUIRE_FIXTURES: '1'
-        run: python3 "$RUNNER_TEMP/system/test-framework/runner.py" run "${{ matrix.id }}"
-      - name: Collect diagnostics and timings
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: test-${{ matrix.id }}
-          path: |
-            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/**/*.log
-            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/results/*.json
-          if-no-files-found: ignore
+      matrix: ${{ fromJSON(needs.plan.outputs.standalone) }}
+    uses: ./.github/workflows/system-case.yml
+    with:
+      snapshot-hash: ${{ needs.resolve.outputs.snapshot_hash }}
+      case-id: ${{ matrix.id }}
+      arch: ${{ matrix.arch }}
+      fixture: ${{ matrix.fixture }}
+  fixture-test:
+    needs: [resolve, plan, fixtures]
+    if: always() && needs.plan.result == 'success' && needs.plan.outputs.has_consumers == 'true' && needs.fixtures.result == 'success'
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.consumers) }}
+    uses: ./.github/workflows/system-case.yml
+    with:
+      snapshot-hash: ${{ needs.resolve.outputs.snapshot_hash }}
+      case-id: ${{ matrix.id }}
+      arch: ${{ matrix.arch }}
+      fixture: ${{ matrix.fixture }}
   preview-result:
     if: always() && github.ref != 'refs/heads/main'
-    needs: [resolve, plan, fixtures, test]
+    needs: [resolve, plan, fixtures, test, fixture-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
       - name: Require every planned preview stage to finish
         env:
           RESULTS: ${{ toJSON(needs) }}
-        run: |
-          python3 - <<'PYCODE'
-          import json, os
-          stages = json.loads(os.environ['RESULTS'])
-          required = ['resolve', 'plan', 'test']
-          if stages['plan']['outputs'].get('has_fixtures') == 'true':
-              required.append('fixtures')
-          failed = {name: stages[name]['result'] for name in required if stages[name]['result'] != 'success'}
-          if failed:
-              raise SystemExit('Incomplete system preview: ' + json.dumps(failed))
-          print('Every planned system preview stage passed.')
-          PYCODE
+        run: test "$(python3 tools/system_plan.py outcome)" = success
+
   result:
     if: always() && github.ref == 'refs/heads/main' && needs.resolve.result == 'success'
     environment: topic-control
-    needs: [resolve, pending, plan, fixtures, test]
+    needs: [resolve, pending, plan, fixtures, test, fixture-test]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -258,6 +224,6 @@ jobs:
       - name: Publish exact-candidate result
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          OUTCOME: ${{ needs.pending.result == 'success' && needs.plan.result == 'success' && (needs.fixtures.result == 'success' || (needs.plan.outputs.has_fixtures == 'false' && needs.fixtures.result == 'skipped')) && needs.test.result == 'success' && 'success' || 'failure' }}
+          RESULTS: ${{ toJSON(needs) }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: python3 tools/gate.py --snapshot candidate.json --outcome "$OUTCOME" --url "$RUN_URL"
+        run: python3 tools/gate.py --snapshot candidate.json --outcome "$(python3 tools/system_plan.py outcome)" --url "$RUN_URL"

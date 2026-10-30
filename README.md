@@ -38,9 +38,12 @@ Snapshot hashes are passed through trusted job outputs before downloaded artifac
 
 Run module tests from the workspace with `python3 project.py test ci`.
 This covers coordinator behavior without booting a system. The system workflow
-asks the candidate test framework for its case/fixture matrix, builds shared
-images once per architecture, then runs independent case jobs. It does not repeat
-module self-tests. See [test ownership](https://github.com/HypeR-Proj/system-tests/blob/main/ci/README.md).
+asks the candidate test framework for its case/fixture matrix. Independent cases
+start as soon as the plan is ready; only fixture consumers wait for shared images,
+built once per architecture. Publishing pending checks does not delay execution.
+Both case groups use the same reusable execution workflow, and the final gate
+requires every planned group to pass. It does not repeat module self-tests.
+See [test ownership](https://github.com/HypeR-Proj/system-tests/blob/main/ci/README.md).
 `tools/configure.py --apply REPOSITORY` enables coordinator-only default-branch submission.
 Install and validate the button listener and coordinator before enabling this restriction.
 The manifest owns source paths. CI uses that exact candidate layout, plus any

@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: Execute a system case
+on:
+  workflow_call:
+    inputs:
+      snapshot-hash:
+        type: string
+        required: true
+      case-id:
+        type: string
+        required: true
+      arch:
+        type: string
+        required: true
+      fixture:
+        type: string
+        default: ''
+permissions:
+  contents: read
+jobs:
+  execute:
+    runs-on: ubuntu-24.04
+    container: debian:trixie-slim
+    defaults:
+      run:
+        shell: bash
+    env:
+      ARCH: ${{ inputs.arch }}
+    timeout-minutes: 90
+    steps:
+      - name: Bootstrap the supported QEMU environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get -o Acquire::Retries=2 update
+          apt-get install -y --no-install-recommends ca-certificates git python3 rustup build-essential curl xz-utils zstd unzip
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/system-environment
+        with:
+          snapshot-hash: ${{ inputs.snapshot-hash }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: inputs.fixture != ''
+        with:
+          name: fixture-${{ inputs.fixture }}-${{ inputs.arch }}
+          path: ${{ env.OUT || format('{0}/system-out', runner.temp) }}/fixtures/${{ inputs.fixture }}-${{ inputs.arch }}
+      - name: Execute the selected system case
+        env:
+          CI_REQUIRE_FIXTURES: '1'
+          HYPER_CASE_ID: ${{ inputs.case-id }}
+        run: python3 "$RUNNER_TEMP/system/test-framework/runner.py" run "$HYPER_CASE_ID"
+      - name: Collect diagnostics and timings
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: test-${{ inputs.case-id }}
+          path: |
+            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/**/*.log
+            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/results/*.json
+          if-no-files-found: ignore
