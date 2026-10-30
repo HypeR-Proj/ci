@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Install GitHub's documented sealed-box implementation
-        run: python3 -m pip install --disable-pip-version-check PyNaCl==1.5.0
+        run: python3 -m pip install --disable-pip-version-check PyNaCl==1.6.2
       - name: Encrypt directly for the topic-control environment
         env:
           SOURCE_KEY: ${{ secrets.CI_APP_PRIVATE_KEY }}
