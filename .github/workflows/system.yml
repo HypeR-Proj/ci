@@ -152,7 +152,7 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: fixture-${{ matrix.id }}
-          path: ${{ runner.temp }}/system-out/fixtures/${{ matrix.id }}/
+          path: ${{ env.OUT || format('{0}/system-out', runner.temp) }}/fixtures/${{ matrix.id }}/
           if-no-files-found: error
           retention-days: 7
       - name: Collect diagnostics and timings
@@ -161,8 +161,8 @@ jobs:
         with:
           name: fixtures-${{ matrix.id }}
           path: |
-            ${{ runner.temp }}/system-out/**/*.log
-            ${{ runner.temp }}/system-out/results/*.json
+            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/**/*.log
+            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/results/*.json
           if-no-files-found: ignore
   test:
     needs: [resolve, plan, fixtures]
@@ -196,7 +196,7 @@ jobs:
         if: matrix.fixture != ''
         with:
           name: fixture-${{ matrix.fixture }}-${{ matrix.arch }}
-          path: ${{ runner.temp }}/system-out/fixtures/${{ matrix.fixture }}-${{ matrix.arch }}
+          path: ${{ env.OUT || format('{0}/system-out', runner.temp) }}/fixtures/${{ matrix.fixture }}-${{ matrix.arch }}
       - name: Execute the selected system case
         env:
           CI_REQUIRE_FIXTURES: '1'
@@ -207,8 +207,8 @@ jobs:
         with:
           name: test-${{ matrix.id }}
           path: |
-            ${{ runner.temp }}/system-out/**/*.log
-            ${{ runner.temp }}/system-out/results/*.json
+            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/**/*.log
+            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/results/*.json
           if-no-files-found: ignore
   preview-result:
     if: always() && github.ref != 'refs/heads/main'
