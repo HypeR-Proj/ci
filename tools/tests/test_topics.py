@@ -262,6 +262,45 @@ class CleanupAndDispatchTests(unittest.TestCase):
 
 
 class StateTests(unittest.TestCase):
+    def policy_fixture(self):
+        rules = [dict(name=name, id=index, updated_at='2026-10-30T00:00:00Z', bypass_actors=actors)
+                 for index, (name, actors) in enumerate(topic_store.STATE_ACTORS.items(), 1)]
+        policy = {'version': 1, 'rules': {rule['name']: {
+            key: rule[key] for key in ('id', 'updated_at', 'bypass_actors')} for rule in rules}}
+        return rules, json.dumps(policy)
+
+    def test_scoped_app_can_validate_redacted_rules_against_admin_policy(self):
+        rules, policy = self.policy_fixture()
+        for rule in rules:
+            del rule['bypass_actors']
+        topic_store.verify_policy(rules, policy)
+
+    def test_changed_rules_or_actor_lists_fail_closed(self):
+        for key, value in [('id', 999), ('updated_at', '2026-10-30T00:00:01Z'),
+                           ('bypass_actors', [])]:
+            rules, policy = self.policy_fixture()
+            rules[0][key] = value
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                topic_store.verify_policy(rules, policy)
+
+    def test_rule_timestamps_compare_instants_across_viewer_timezones(self):
+        rules, policy = self.policy_fixture()
+        rules[0]['updated_at'] = '2026-10-30T08:00:00+08:00'
+        topic_store.verify_policy(rules, policy)
+        rules[0]['updated_at'] = '2026-10-30T08:00:00.001+08:00'
+        with self.assertRaises(ValueError):
+            topic_store.verify_policy(rules, policy)
+
+    def test_missing_or_relaxed_admin_policy_is_rejected(self):
+        rules, policy = self.policy_fixture()
+        with self.assertRaises(ValueError):
+            topic_store.verify_policy(rules, '')
+        policy = json.loads(policy)
+        policy['rules']['topic-state-writer']['bypass_actors'] = []
+        del rules[0]['bypass_actors']
+        with self.assertRaises(ValueError):
+            topic_store.verify_policy(rules, json.dumps(policy))
+
     def test_unprotected_state_is_not_loaded(self):
         with patch.object(topic_store, 'pages', return_value=[]), patch.object(topic_store, 'api') as read:
             with self.assertRaisesRegex(ValueError, 'protect topic-state'):

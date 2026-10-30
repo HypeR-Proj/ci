@@ -48,6 +48,7 @@ jobs:
           permission-actions: write
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
+          CI_TOPIC_STATE_POLICY: ${{ vars.CI_TOPIC_STATE_POLICY }}
           REQUEST_ACTION: ${{ inputs.action || 'poll' }}
           REQUEST_TARGET: ${{ inputs.target }}
           REQUEST_ACTOR: ${{ github.triggering_actor }}

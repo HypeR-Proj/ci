@@ -8,7 +8,7 @@ use hyper_os::handle::{OwnedHandle, ProcessObject, Rights, RightsOffer};
 use hyper_os::startup::{self, Startup};
 use hyper_os::task::ProcessBuilder;
 use hyper_os::wait::wait_many;
-use hyper_terminal::{Settings, Terminal};
+use hyper_terminal::{EventFlags, Settings, Terminal};
 
 use crate::Result;
 
@@ -28,10 +28,13 @@ pub(super) fn run(startup: &mut Startup<'_>, parent: &mut Terminal) -> Result<()
     parent.release_child(child_id)?;
     // Restoring flow settings is asynchronous: wait for its foreground event,
     // then prove authority returned to the surviving parent, not the removed
-    // intermediate child. It must work without restarting the terminal.
+    // intermediate child. The endpoint is only a wake hint: unrelated events
+    // and hints whose flags were already consumed cannot grant authority.
     let deadline = hyper_os::time::deadline_after(std::time::Duration::from_secs(5))?.as_raw();
-    let event = parent.event_wait_item().ok_or("missing terminal events")?;
-    wait_many(&[event], deadline)?;
+    while parent.take_events()?.0 & EventFlags::FOREGROUND_CHANGED == 0 {
+        let event = parent.event_wait_item().ok_or("missing terminal events")?;
+        wait_many(&[event], deadline)?;
+    }
     parent
         .set_size(80, 24)
         .map_err(|error| format!("restore parent foreground: {error}"))?;

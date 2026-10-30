@@ -62,6 +62,11 @@ the coordinator repository last. State writes use ordinary fast-forward Git upda
 a conflicting writer cannot overwrite an existing checkpoint.
 The state branch permits creation and updates only by the App and prohibits force
 pushes and deletion. The coordinator refuses to load state without these protections.
+GitHub hides bypass actor lists from scoped App tokens. Administrator provisioning
+therefore records the verified actors, ruleset IDs and modification timestamps in
+the protected environment's `CI_TOPIC_STATE_POLICY` variable. The coordinator rejects
+missing records or changed rules and still checks their active scope and rule types.
+This does not require granting the App administration permissions.
 
 GitHub cannot atomically merge multiple repositories. A failure can therefore leave
 a partly submitted topic. The active record prevents another topic from being
@@ -101,6 +106,8 @@ After confirming the native button reaches the coordinator, an administrator run
 Before the coordinator's first poll, run
 `python3 tools/configure.py --apply --state-only ci` to protect its state branch
 without changing the current default-branch merge policy.
+This command also refreshes the administrator-verified state policy in `topic-control`;
+create that environment first, and reprovision after changing state protections.
 The App needs contents, pull requests, checks and actions write permission. Its
 Client ID is the `CI_APP_CLIENT_ID` variable. Store `CI_APP_PRIVATE_KEY` in the
 `topic-control` environment with only the `main` branch allowed, and remove any
