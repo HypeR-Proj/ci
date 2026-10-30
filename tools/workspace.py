@@ -111,52 +111,70 @@ def project_names(manifest):
     return list(project_layout(manifest))
 
 
+def read_candidates(names, target):
+    """One bounded query per layout, rather than hundreds of REST reads per shard."""
+    topic = target.startswith('topic:')
+    selected_name, number = '', ''
+    if target and target != 'main' and not topic:
+        selected_name, separator, number = target.rpartition('#')
+        if not separator or selected_name not in names or not number.isdecimal():
+            raise ValueError('target must be main, repository#number, or topic:label')
+    pull_fields = '{number state headRefOid baseRefName mergeable potentialMergeCommit{oid tree{oid}}}'
+    fields = []
+    for index, name in enumerate(names):
+        selection = ''
+        if topic:
+            selection = ('members:pullRequests(first:2,states:OPEN,baseRefName:"main",labels:['
+                         + json.dumps(target) + ']){nodes' + pull_fields + 'pageInfo{hasNextPage}}')
+        elif name == selected_name:
+            selection = f'pr:pullRequest(number:{int(number)})' + pull_fields
+        fields.append(f'r{index}:repository(owner:{json.dumps(ORG)},name:{json.dumps(name)})'
+                      '{defaultBranchRef{name target{oid}}' + selection + '}')
+    data = graphql('query {' + ' '.join(fields) + '}')
+    result = {}
+    for index, name in enumerate(names):
+        repository = data[f'r{index}']
+        branch = repository.get('defaultBranchRef') if repository else None
+        if not branch or branch['name'] != 'main':
+            raise ValueError(f'{name}: candidate requires main as the default branch')
+        pull = None
+        if topic:
+            members = repository['members']
+            if members['pageInfo']['hasNextPage'] or len(members['nodes']) > 1:
+                raise ValueError(f'{name}: a topic may contain at most one PR per repository')
+            pull = next(iter(members['nodes']), None)
+        elif name == selected_name:
+            pull = repository['pr']
+            if not pull or pull['state'] != 'OPEN' or pull['baseRefName'] != 'main':
+                raise ValueError(f'{name}: candidate must be an open PR against main')
+        result[name] = {'base': branch['target']['oid'], 'pull': pull}
+    if topic and not any(record['pull'] for record in result.values()):
+        raise ValueError(f'no open PRs found for {target}')
+    return result
+
+
 def resolve(manifest, target):
     layout = project_layout(manifest)
-    names = list(layout)
-    selected = {}
-    if target.startswith('topic:'):
-        for name in names:
-            prs = open_pulls(name)
-            matches = [p for p in prs if target in [label['name'] for label in p['labels']]]
-            if len(matches) > 1:
-                raise ValueError(f'{name}: a topic may contain at most one PR per repository')
-            if matches:
-                selected[name] = matches[0]['number']
-        if not selected:
-            raise ValueError(f'no open PRs found for {target}')
-    elif target and target != 'main':
-        name, number = target.rsplit('#', 1)
-        if name not in names or not number.isdecimal():
-            raise ValueError('target must be main, repository#number, or topic:label')
-        selected[name] = int(number)
-    if 'manifest' in selected:
-        pull = api(f"repos/{ORG}/manifest/pulls/{selected['manifest']}")
-        manifest_head = pull['head']['sha']
-        manifest_revision = pull.get('merge_commit_sha') or manifest_head
-        layout = candidate_layout(manifest_revision)
-        names = list(layout)
-        if target.startswith('topic:'):
-            selected = {}
-            for name in names:
-                matches = [p for p in open_pulls(name) if target in [label['name'] for label in p['labels']]]
-                if len(matches) > 1:
-                    raise ValueError(f'{name}: a topic may contain at most one PR per repository')
-                if matches:
-                    selected[name] = matches[0]['number']
+    current = read_candidates(list(layout), target)
+    manifest_record = current['manifest']
+    if manifest_record['pull']:
+        pull = manifest_record['pull']
+        merge = pull['potentialMergeCommit']
+        if not merge or pull['mergeable'] != 'MERGEABLE':
+            raise ValueError('manifest candidate merge commit is unavailable; resolve conflicts or retry')
+        layout = candidate_layout(merge['oid'])
+        current = read_candidates(list(layout), target)
+        # Layout and source selection must describe the same manifest merge.
+        if current['manifest'] != manifest_record:
+            raise ValueError('manifest PR or main changed during resolution; rerun verification')
     projects = {}
-    for name in names:
-        branch = api(f'repos/{ORG}/{name}/branches/main')
-        record = {'base': branch['commit']['sha'], **layout[name]}
-        if name in selected:
-            pr = api(f'repos/{ORG}/{name}/pulls/{selected[name]}')
-            if pr['state'] != 'open' or pr['base']['ref'] != 'main':
-                raise ValueError(f'{name}: candidate must be an open PR against main')
-            if name == 'manifest' and pr['head']['sha'] != manifest_head:
-                raise ValueError('manifest PR changed during resolution; rerun verification')
-            record.update(pr=pr['number'], head=pr['head']['sha'])
-            if pr.get('merge_commit_sha') and pr.get('mergeable'):
-                record['merge_tree'] = api(f"repos/{ORG}/{name}/git/commits/{pr['merge_commit_sha']}")['tree']['sha']
+    for name, description in layout.items():
+        source = current[name]
+        record = {'base': source['base'], **description}
+        if pull := source['pull']:
+            record.update(pr=pull['number'], head=pull['headRefOid'])
+            if pull['potentialMergeCommit'] and pull['mergeable'] == 'MERGEABLE':
+                record['merge_tree'] = pull['potentialMergeCommit']['tree']['oid']
         projects[name] = record
     snapshot = {'version': 1, 'target': target, 'projects': projects}
     snapshot['identity'] = hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
