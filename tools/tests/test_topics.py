@@ -37,6 +37,14 @@ def store():
 
 
 class ButtonTests(unittest.TestCase):
+    def test_new_repository_can_join_its_manifest_registration_topic(self):
+        pulls = {'manifest': [pull()], 'new-module': [pull()]}
+        with patch.object(topics, 'project_names', return_value=['manifest']), \
+                patch.object(topics, 'candidate_layout', return_value={'manifest': {}, 'new-module': {}, 'not-created': {}}):
+            known = topics.declared_repositories(Path('default.xml'), pulls)
+        self.assertEqual(known, {'manifest', 'new-module'})
+        self.assertEqual(len(topics.validate_members(pulls, 'topic:test', known)), 2)
+
     def test_controls_are_published_before_review_or_system_verification(self):
         # A ready PR must be able to request its first verification. Review
         # and successful checks are submission gates, not visibility gates.

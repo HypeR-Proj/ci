@@ -18,7 +18,7 @@ import refresh
 from topic_requests import receive, target_for, permission, WORKFLOW
 from topic_store import Store, pages, write
 import topic_submit
-from workspace import ORG, api, project_names
+from workspace import ORG, api, project_names, candidate_layout
 
 CI = f'repos/{ORG}/ci'
 RUNNING = {'queued', 'in_progress', 'requested', 'waiting', 'pending'}
@@ -45,6 +45,24 @@ def members(pulls, target):
         return [(repository, pull) for pull in pulls.get(repository, []) if str(pull['number']) == number]
     return [(repository, pull) for repository, rows in pulls.items() for pull in rows
             if target.lower() in [label['name'].lower() for label in pull['labels']]]
+
+
+def declared_repositories(manifest, pulls):
+    known = set(project_names(manifest))
+    # New repositories can join the same topic as their manifest registration.
+    # This extends publication/validation only; the resolver still verifies the
+    # exact selected manifest candidate before granting a system check.
+    for pull in pulls.get('manifest', []):
+        if pull['base']['ref'] == 'main':
+            try:
+                known.update(set(candidate_layout(pull['head']['sha'])) & pulls.keys())
+            except ValueError as error:
+                print(f'Ignoring invalid manifest declaration in PR {pull["number"]}: {error}', flush=True)
+            except subprocess.CalledProcessError as error:
+                if 'HTTP 404' not in (error.stderr or ''):
+                    raise
+                print(f'Manifest PR {pull["number"]} has no readable module declaration', flush=True)
+    return known
 
 
 def validate_members(pulls, target, known):
@@ -233,8 +251,8 @@ def main():
     parser.add_argument('--target', default='')
     parser.add_argument('--actor', default='')
     args = parser.parse_args()
-    known = set(project_names(args.manifest))
     pulls = inventory()
+    known = declared_repositories(args.manifest, pulls)
     if known - pulls.keys():
         raise ValueError('manifest includes missing or inaccessible repositories')
     if args.action == 'controls':
