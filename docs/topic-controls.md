@@ -20,8 +20,8 @@ retain their topic and cannot be submitted. Mark every member ready before testi
 The listener records the GitHub event in an immutable Actions artifact. It checks
 out no source and receives no secrets. The central coordinator validates the
 workflow source, artifact digest, App, PR head and actor before acting. The App key
-is configured only in `ci`; it is not distributed to component repositories.
-Do not grant untrusted users write access to the coordinator repository or its secrets.
+is configured only in `ci`'s `topic-control` environment, restricted to `main`;
+it is not distributed to component repositories or available to feature-branch jobs.
 
 The coordinator polls every five minutes. GitHub can delay schedules, so buttons
 may take longer to take effect. Run the [Topic coordinator workflow](https://github.com/HypeR-Proj/ci/actions/workflows/refresh.yml)
@@ -100,6 +100,14 @@ Before the coordinator's first poll, run
 `python3 tools/configure.py --apply --state-only ci` to protect its state branch
 without changing the current default-branch merge policy.
 The App needs contents, pull requests, checks and actions write permission. Its
-Client ID and PEM key remain the `CI_APP_CLIENT_ID` variable and
-`CI_APP_PRIVATE_KEY` secret in the `ci` repository. Routine polling never runs
+Client ID is the `CI_APP_CLIENT_ID` variable. Store `CI_APP_PRIVATE_KEY` in the
+`topic-control` environment with only the `main` branch allowed, and remove any
+repository-level copy after validating authentication. Routine polling never runs
 candidate code with this token. The privileged workflows accept only `main` runs.
+
+For the initial migration, the disabled-by-default `migrate-app-key.yml` workflow
+can seal the existing repository secret directly for this environment's public key.
+Temporarily enable `CI_APP_KEY_MIGRATION=enabled`, run it on `main`, and use its
+encrypted artifact with the environment-secret REST endpoint. Validate with
+`verify-app.yml`, remove the repository secret, then delete the migration variable
+and artifact. The workflow never emits the PEM or accepts a replacement public key.

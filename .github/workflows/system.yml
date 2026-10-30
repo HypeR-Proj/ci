@@ -23,6 +23,7 @@ concurrency:
 jobs:
   resolve:
     if: github.ref == 'refs/heads/main'
+    environment: topic-control
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
@@ -160,6 +161,7 @@ jobs:
           if-no-files-found: ignore
   result:
     if: always() && needs.resolve.result == 'success'
+    environment: topic-control
     needs: [resolve, test]
     runs-on: ubuntu-24.04
     timeout-minutes: 15

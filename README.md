@@ -28,7 +28,8 @@ The system suite includes Native boot/services/filesystem/VM tests, board storag
 Native and I/O boot payloads under QEMU. Pi5 image distribution is manually dispatched
 in the pi5-images repository and never gates system verification or component merges.
 
-`CI_APP_CLIENT_ID` is an Actions variable and `CI_APP_PRIVATE_KEY` is the App PEM Actions secret.
+`CI_APP_CLIENT_ID` is an Actions variable. `CI_APP_PRIVATE_KEY` is the App PEM secret
+in the `topic-control` environment, whose deployment policy permits only `main`.
 The App is installed on HypeR-Proj and uses contents, pull-request, checks and actions permissions.
 Only trusted coordination jobs receive App credentials. Untrusted candidate code runs in separate jobs.
 Snapshot hashes are passed through trusted job outputs before downloaded artifacts are consumed.
