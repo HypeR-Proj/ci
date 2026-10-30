@@ -16,10 +16,10 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'Poll PR buttons, submit a topic, or explicitly bypass checks as administrator'
+        description: 'Publish controls, process queued requests, or submit one explicit target'
         type: choice
-        options: [poll, submit, force-submit]
-        default: poll
+        options: [controls, poll, submit, force-submit]
+        default: controls
       target:
         description: 'topic:label or repository#PR (required for submission)'
         type: string

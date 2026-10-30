@@ -37,7 +37,9 @@ delay schedules, so buttons may take longer to appear or take effect. If the
 **topic** check is missing entirely, no controls have been published for that head;
 review approval is unrelated to button visibility. Run the
 [Topic coordinator workflow](https://github.com/HypeR-Proj/ci/actions/workflows/refresh.yml)
-manually with `action=poll` to process requests sooner. The **topic** check shows
+manually with `action=controls` to publish missing buttons without processing
+requests or merging anything. Use `action=poll` only to process the queued button
+requests sooner; polling can also advance an already requested submission. The **topic** check shows
 the last request result and the members being submitted. The **system** check links
 to the actual acceptance run. Repeated verification requests reuse a running test
 for that target; a transport retry is reconciled against its unique request ID.
