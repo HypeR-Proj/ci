@@ -15,6 +15,7 @@ trap 'rm -f "$missing"' EXIT HUP INT TERM
 # not project-authored Apache source. Pin the notice rather than rewriting it.
 python3 - <<'PY'
 import hashlib
+import json
 import os
 from pathlib import Path
 for directory, notice, expected in (
@@ -30,6 +31,18 @@ for directory, notice, expected in (
             raise SystemExit(f'{directory}: public license differs from preserved upstream notice')
         if not (library / 'UPSTREAM.json').is_file():
             raise SystemExit(f'{directory}: missing source provenance')
+media = Path('.') if os.environ.get('HYPER_LICENSE_COMPONENT') == 'lib-fs-f2fs' else Path('lib/fs-f2fs')
+if media.exists():
+    notice_manifest = media / 'licenses/manifest.json'
+    files = json.loads(notice_manifest.read_text())['files']
+    expected_names = {'FUCHSIA-LICENSE', 'FUCHSIA-PATENTS',
+                      *(f'licenses/{name}' for name in ('ext2-hash', 'safemath', 'libcxx', 'musl-headers'))}
+    prefix = 'lib/fs-f2fs/'
+    if set(files) != {prefix + name for name in expected_names}:
+        raise SystemExit('F2FS dependency notice manifest is incomplete')
+    for name, expected in files.items():
+        if hashlib.sha256((media / name.removeprefix(prefix)).read_bytes()).hexdigest() != expected:
+            raise SystemExit(f'F2FS dependency notice changed: {name}')
 vendor = Path('.') if os.environ.get('HYPER_LICENSE_COMPONENT') == 'lib-rust-fatfs' else Path('third_party/rust-fatfs')
 if vendor.exists():
     expected = '9125b4be91e0486ca97316a7547ec0f7e15093b3eacbf4d85e4de1718e9bbfbf'
@@ -64,7 +77,15 @@ PY
             esac
             ;;
     esac
+    if [ "${HYPER_LICENSE_COMPONENT:-}" = lib-fs-f2fs ]; then
+        case "$path" in
+            FUCHSIA-LICENSE | FUCHSIA-PATENTS | licenses/ext2-hash | licenses/safemath | licenses/libcxx | licenses/musl-headers) continue ;;
+        esac
+    fi
     case "$path" in
+        lib/fs-f2fs/FUCHSIA-LICENSE | lib/fs-f2fs/FUCHSIA-PATENTS | lib/fs-f2fs/licenses/ext2-hash | lib/fs-f2fs/licenses/safemath | lib/fs-f2fs/licenses/libcxx | lib/fs-f2fs/licenses/musl-headers)
+            continue
+            ;;
         stdlib/musl/hyper/* | stdlib/cxx/hyper/* | \
         stdlib/musl/.github/* | stdlib/cxx/.github/* | \
         stdlib/musl/README.md | stdlib/cxx/README.md | \
