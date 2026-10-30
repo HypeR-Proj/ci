@@ -232,6 +232,15 @@ class CleanupAndDispatchTests(unittest.TestCase):
             self.assertIn(run['html_url'], topics.dispatch_verification(state, request, 'kernel-123'))
         write.assert_not_called()
 
+    def test_two_buttons_do_not_duplicate_a_dispatch_before_run_becomes_visible(self):
+        state = store()
+        state.data['requests']['kernel-1'] = {
+            'request': {'target': 'topic:test'}, 'phase': 'done',
+            'dispatched_at': datetime.now(timezone.utc).isoformat()}
+        with patch.object(topics, 'system_runs', return_value=[]), patch.object(topics, 'write') as write:
+            self.assertIn('awaiting', topics.dispatch_verification(state, {'target': 'topic:test'}, 'ci-2'))
+        write.assert_not_called()
+
 
 class StateTests(unittest.TestCase):
     def test_unprotected_state_is_not_loaded(self):

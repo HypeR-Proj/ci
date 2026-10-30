@@ -73,10 +73,19 @@ def dispatch_verification(store, request, identifier):
     if exact or active:
         run = (exact or active)[0]
         return 'System verification: ' + run['html_url']
+    now = datetime.now(timezone.utc)
+    for previous_id, previous in store.data['requests'].items():
+        if (previous_id == identifier or not previous.get('dispatched_at')
+                or previous.get('request', {}).get('target') != request['target']):
+            continue
+        visible = any(run['display_title'] == prefix + previous_id + ']' for run in runs)
+        started = datetime.fromisoformat(previous['dispatched_at'])
+        if not visible and now - started < timedelta(minutes=10):
+            return 'A verification request for this topic is awaiting GitHub run registration.'
     # Record intent before POST. A lost response is reconciled by the unique
     # run title on the next poll, rather than immediately launching a duplicate.
     row = store.data['requests'][identifier]
-    row.update(request=request, phase='dispatching')
+    row.update(request=request, phase='dispatching', dispatched_at=now.isoformat())
     store.save()
     write(CI + '/actions/workflows/system.yml/dispatches', {
         'ref': 'main', 'inputs': {'target': request['target'], 'request_id': identifier}})
