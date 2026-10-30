@@ -40,9 +40,34 @@ def main():
 def test_component(output, name, relative):
     output = output.resolve()
     project = output / 'project.py'
-    subprocess.run([sys.executable, str(project), '--workspace', str(output), 'prepare'], check=True)
     component = output / relative
     metadata = json.loads((component / 'component.json').read_text())
+    needs_workspace = metadata.get('tests_need_workspace', True)
+    generated = (output / 'scripts/build.py').is_file()
+    environment = dict(os.environ)
+    if metadata.get('test_requires_rust', True) or (needs_workspace and generated):
+        policy = next((path for path in (output / 'rust-toolchain.toml',
+                                        output / 'mk/workspace/rust-toolchain.toml') if path.is_file()), None)
+        if policy is None:
+            raise ValueError('candidate build tools do not declare a Rust toolchain')
+        toolchain = tomllib.loads(policy.read_text())['toolchain']
+        command = ['rustup', 'toolchain', 'install', toolchain['channel'], '--profile', 'minimal']
+        for rust_component in toolchain['components']:
+            command += ['--component', rust_component]
+        for target in toolchain['targets']:
+            command += ['--target', target]
+        subprocess.run(command, check=True)
+        environment['RUSTUP_TOOLCHAIN'] = toolchain['channel']
+    view = output
+    if needs_workspace:
+        prepared = subprocess.run([sys.executable, str(project), '--workspace', str(output), 'prepare'],
+                                  env=environment, check=True, capture_output=True, text=True)
+        lines = prepared.stdout.strip().splitlines()
+        if not lines:
+            raise ValueError('prepare did not report its execution workspace')
+        view = Path(lines[-1]).resolve()
+        if not view.is_dir():
+            raise ValueError('prepare did not return an existing execution workspace')
     subprocess.run(['sh', str(Path(__file__).resolve().parents[1] / 'ci/check-license-headers.sh')],
                    env={**os.environ, 'HYPER_LICENSE_ROOT': str(component),
                         'HYPER_LICENSE_COMPONENT': name}, check=True)
@@ -54,26 +79,27 @@ def test_component(output, name, relative):
     if shells:
         subprocess.run(['shellcheck', '--severity=warning', *shells], cwd=output, check=True)
     if metadata.get('test_requires_rust', True):
-        toolchain = tomllib.loads((output / 'rust-toolchain.toml').read_text())['toolchain']
-        command = ['rustup', 'toolchain', 'install', toolchain['channel'], '--profile', 'minimal']
-        for rust_component in toolchain['components']:
-            command += ['--component', rust_component]
-        for target in toolchain['targets']:
-            command += ['--target', target]
-        subprocess.run(command, check=True)
         # Native repositories share a Cargo workspace. Select only packages
         # owned by this component so an unrelated formatting error cannot fail it.
         if metadata.get('packages') or name == 'bootstrap':
             for filename in tracked:
                 if Path(filename).name != 'Cargo.toml':
                     continue
-                manifest = component / filename
+                manifest = view / relative / filename
                 package = tomllib.loads(manifest.read_text()).get('package')
                 if package:
                     subprocess.run(['cargo', 'fmt', '--manifest-path', str(manifest),
-                                    '-p', package['name'], '--', '--check'], cwd=output, check=True)
-    subprocess.run([sys.executable, str(project), '--workspace', str(output),
-                    'test', name], check=True)
+                                    '-p', package['name'], '--', '--check'], cwd=view, env=environment, check=True)
+    if needs_workspace:
+        subprocess.run([sys.executable, str(project), '--workspace', str(output),
+                        'test', name], env=environment, check=True)
+    else:
+        commands = metadata.get('tests', [])
+        if not commands:
+            raise ValueError(f'{name}: module tests are not declared')
+        for command in commands:
+            subprocess.run([value.replace('{component}', str(component)).replace('{system}', str(output))
+                            for value in command], cwd=output, env=environment, check=True)
 
 
 if __name__ == '__main__':
