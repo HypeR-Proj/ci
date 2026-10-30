@@ -30,6 +30,21 @@ def successful(check, repository):
         raise ValueError(f'{repository}: {check["name"]} has not passed')
 
 
+def remaining_checks_pass(repository, head):
+    # Required gates are checked separately. Do not submit while an owner's
+    # additional qualification (for example I/O VM kernel builds) is unfinished
+    # or failing merely because it is not a named branch-protection requirement.
+    latest = {}
+    for check in pages(f'repos/{ORG}/{repository}/commits/{head}/check-runs?filter=all', 'check_runs'):
+        key = (check['name'], check['app']['id'])
+        if key not in latest or check['id'] > latest[key]['id']:
+            latest[key] = check
+    for check in latest.values():
+        if (check['status'] != 'completed'
+                or check['conclusion'] not in ('success', 'neutral', 'skipped')):
+            raise ValueError(f'{repository}: {check["name"]} has not completed successfully')
+
+
 def verified_snapshot(request):
     check = latest_check(request['repository'], request['head'], 'system', APP_ID)
     successful(check, request['repository'])
@@ -79,6 +94,7 @@ def preflight(snapshot, actor, force=False, repositories=None):
             successful(check, repository)
             if check['external_id'] != snapshot['identity']:
                 raise ValueError(f'{repository}: system checks did not verify the same complete topic')
+            remaining_checks_pass(repository, candidate['head'])
         if not administrator:
             review(repository, candidate['pr'])
     pending = [(name, candidate) for name, candidate in snapshot['projects'].items()

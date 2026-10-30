@@ -41,6 +41,8 @@ The coordinator requires write permission in every member repository. Normal
 submission checks the latest successful `module` and `system` checks on the exact
 heads, a common system candidate snapshot, unchanged dependency bases and topic
 membership, mergeability, and CODEOWNER approval with resolved conversations.
+Other checks on those commits, including documentation and I/O VM qualification,
+must also finish without failure; an older passing attempt cannot hide a newer failure.
 Administrators may bypass review approval. They still need passing tests when
 using **Submit topic**.
 

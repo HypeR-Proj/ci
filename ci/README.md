@@ -5,10 +5,14 @@ SPDX-License-Identifier: Apache-2.0
 
 # CI test policy
 
-`tests/ci/run.sh` contains system runtime acceptance only. The manual
+`tests/ci/run.sh` defines system runtime acceptance. The manual
 `System verification` workflow has 29 test jobs, plus candidate resolution and
 result publication. It boots Native userspace, exercises services and storage,
 and verifies guest/I/O VM integration. It does not rerun module checks.
+
+Legacy suite names remain as forwarding shims to their owning module entrypoints
+so workflows deployed before this split can validate its rollout. They are absent
+from the new system matrix and contain no duplicate test implementations.
 
 | Owner | Automatic PR module checks |
 | --- | --- |

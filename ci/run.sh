@@ -47,6 +47,30 @@ run_native_probe() {
 }
 
 case "${1:-}" in
+    quality)
+        # Compatibility for trusted workflows already deployed on main. Tests
+        # stay with their owners; the new system matrix never selects these.
+        python3 project.py test manifest
+        KERNEL_CI_SUITE=quality python3 project.py test kernel
+        ;;
+    scripts)
+        for owner in ci build terminal-service; do
+            python3 project.py test "$owner"
+        done
+        KERNEL_CI_SUITE=scripts python3 project.py test kernel
+        ;;
+    kernel-configurations)
+        KERNEL_CI_SUITE=configurations python3 project.py test kernel
+        ;;
+    native-sdk)
+        SDK_CI_ARCH=aarch64 python3 project.py test toolchain
+        ;;
+    riscv64-sdk)
+        SDK_CI_ARCH=riscv64 python3 project.py test toolchain
+        ;;
+    aarch64-build|aarch64-production|aarch64-self-test|aarch64-compact|aarch64-qemu|riscv64-qemu|x86_64-build)
+        KERNEL_CI_SUITE="$1" python3 project.py test kernel
+        ;;
     native)
         # Separate processes keep dispatch state local to each suite. Local
         # runs remain serial because fixtures reuse the same output paths.
@@ -240,6 +264,11 @@ case "${1:-}" in
             CONFIG_FILE="$stack_config" \
             STACK_AUDIT=1 STACK_MINIMUM_REMAINING=4096 \
             CARGO_FEATURES='--features kernel-test,kernel-stack-audit'
+        ;;
+    riscv64-native)
+        # Old workflow aggregate; new system jobs select only the runtime part.
+        sh tests/ci/run.sh riscv64-sdk
+        sh tests/ci/run.sh riscv64-runtime
         ;;
     riscv64-runtime)
         for shard in native-boot native-console native-terminal native-apps native-shell native-stress; do

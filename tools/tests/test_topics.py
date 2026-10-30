@@ -136,6 +136,25 @@ class SubmissionTests(unittest.TestCase):
         self.assertIsNone(state.data['active'])
         self.assertIn('submissions/test-identity.json', state.save.call_args.args[0])
 
+    def test_additional_qualification_cannot_be_pending_failed_or_cancelled(self):
+        for status, conclusion in [('in_progress', None), ('completed', 'failure'),
+                                   ('completed', 'cancelled')]:
+            check = dict(id=2, name='I/O VM qualification', app={'id': submit.ACTIONS_APP_ID},
+                         status=status, conclusion=conclusion)
+            with self.subTest(conclusion=conclusion), \
+                    patch.object(submit, 'pages', return_value=[check]), self.assertRaises(ValueError):
+                submit.remaining_checks_pass('io-vm', 'b' * 40)
+
+    def test_additional_check_rerun_replaces_failure_but_not_another_apps_result(self):
+        checks = [dict(id=i, name='qualification', app={'id': submit.ACTIONS_APP_ID},
+                       status='completed', conclusion=result)
+                  for i, result in [(1, 'failure'), (2, 'success')]]
+        with patch.object(submit, 'pages', return_value=checks):
+            submit.remaining_checks_pass('io-vm', 'b' * 40)
+            checks.append({**checks[0], 'app': {'id': 42}})
+            with self.assertRaises(ValueError):
+                submit.remaining_checks_pass('io-vm', 'b' * 40)
+
     def test_merge_response_loss_keeps_inflight_checkpoint(self):
         state = store()
         state.data['active'] = {'snapshot': snapshot(), 'actor': 'alice', 'force': False,

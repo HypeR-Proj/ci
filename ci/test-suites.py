@@ -23,7 +23,10 @@ class SuiteTests(unittest.TestCase):
                 program = directory / name
                 program.write_text(f'#!{sys.executable}\n' + '''import json, os, sys
 with open(os.environ['COMMAND_LOG'], 'a') as log:
-    log.write(json.dumps([os.path.basename(sys.argv[0]), *sys.argv[1:]]) + '\\n')
+    command = [os.path.basename(sys.argv[0]), *sys.argv[1:]]
+    if 'project.py' in sys.argv:
+        command += [os.environ.get('KERNEL_CI_SUITE'), os.environ.get('SDK_CI_ARCH')]
+    log.write(json.dumps(command) + '\\n')
 if 'scripts/fetch-io-vm.py' in sys.argv:
     print('/fixture/io-vm')
 ''')
@@ -101,13 +104,25 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
         self.assertIn('CARGO_FEATURES=--features kernel-test,kernel-vgic-tc-test',
                       feature_builds[0])
 
-    def test_module_suites_are_not_system_entrypoints(self):
-        for suite in ('quality', 'scripts', 'kernel-configurations', 'native-sdk',
-                      'riscv64-sdk', 'aarch64-build', 'aarch64-qemu', 'x86_64-build'):
+    def test_old_workflows_forward_module_suites_to_their_owners(self):
+        forwarding = {
+            'quality': [('manifest', None, None), ('kernel', 'quality', None)],
+            'scripts': [('ci', None, None), ('build', None, None),
+                        ('terminal-service', None, None), ('kernel', 'scripts', None)],
+            'kernel-configurations': [('kernel', 'configurations', None)],
+            'native-sdk': [('toolchain', None, 'aarch64')],
+            'riscv64-sdk': [('toolchain', None, 'riscv64')],
+        }
+        for suite in ('aarch64-build', 'aarch64-production', 'aarch64-self-test',
+                      'aarch64-compact', 'aarch64-qemu', 'riscv64-qemu', 'x86_64-build'):
+            forwarding[suite] = [('kernel', suite, None)]
+        workflow = (ROOT / 'tests/.github/workflows/system.yml').read_text()
+        for suite, owners in forwarding.items():
             with self.subTest(suite=suite):
-                result = subprocess.run(['sh', 'tests/ci/run.sh', suite], cwd=ROOT,
-                                        capture_output=True)
-                self.assertEqual(result.returncode, 2)
+                self.assertNotIn('          - ' + suite + '\n', workflow)
+                self.assertEqual(self.run_suite(suite), [
+                    ['python3', 'project.py', 'test', owner, kernel, sdk]
+                    for owner, kernel, sdk in owners])
 
     def test_riscv_runtime_does_not_repeat_sdk_or_host_tests(self):
         calls = [call for call in self.run_suite('riscv64-runtime') if call[0] == 'make']
@@ -115,6 +130,11 @@ if 'scripts/fetch-io-vm.py' in sys.argv:
         self.assertTrue(any('test-vm-smoke' in call for call in calls))
         for call in calls:
             self.assertFalse({'sdk-check', 'sdk-test', 'app-check', 'app-test', 'app-sdk-test'} & set(call))
+
+    def test_old_riscv_aggregate_retains_sdk_and_runtime_coverage(self):
+        calls = self.run_suite('riscv64-native')
+        self.assertEqual(calls[0], ['python3', 'project.py', 'test', 'toolchain', None, 'riscv64'])
+        self.assertEqual(calls[1:], self.run_suite('riscv64-runtime'))
 
     def test_minimal_product_boot_has_no_kernel_test_features(self):
         calls = [call for call in self.run_suite('board-product-config') if call[0] == 'make']
