@@ -523,7 +523,7 @@ def main():
             run('ls /bin', rb'(?i)\bhandle\b')
             run('ldd --loader /lib64/ld-hyper-aarch64.so '
                     '--library-dir /lib64/aarch64-hyper-hyper /bin/ls',
-                    rb'libhyper.* => /lib64/')
+                    rb'libsystem.* => /lib64/')
             run('ps --name vm-manager', rb'vm-manager\s+running')
             run('handle --summary --kind process', rb'\bprocess\s+[1-9]')
             baseline_memory = memory_accounting(run)

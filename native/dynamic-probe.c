@@ -22,7 +22,7 @@ __attribute__((visibility("default"))) uint64_t hyper_dynamic_probe(void)
 	return probe_state;
 }
 
-/* Allocation and release cross a DSO boundary but share one libhyper heap. */
+/* Allocation and release cross a DSO boundary but share one libsystem heap. */
 __attribute__((visibility("default"))) void *hyper_dynamic_heap_probe(void)
 {
 	void *memory = aligned_alloc(4096, 8192);

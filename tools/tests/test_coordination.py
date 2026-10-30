@@ -222,13 +222,13 @@ class CoordinationTests(unittest.TestCase):
         write.assert_not_called()
 
     def test_rename_uses_canonical_repository_for_check_updates(self):
-        pull = {'head': {'sha': 'b' * 40}, 'base': {'repo': {'name': 'libc'}}}
+        pull = {'head': {'sha': 'b' * 40}, 'base': {'repo': {'name': 'lib-system'}}}
         check = {'id': 42, 'app': {'id': refresh.APP_ID}, 'conclusion': 'success',
                  'output': {'text': json.dumps(self.topic_snapshot())}}
         with patch.object(workspace, 'project_names', return_value=['lib']), patch.object(workspace, 'open_pulls', return_value=[pull]), patch.object(workspace, 'api', return_value={'check_runs': [check]}) as read, patch.object(workspace, 'verify_current', side_effect=ValueError('stale')), patch.object(refresh, 'write_check') as write:
             refresh.refresh(Path('unused.xml'))
-        self.assertIn('/libc/', read.call_args.args[0])
-        self.assertEqual(write.call_args.args[0], 'libc')
+        self.assertIn('/lib-system/', read.call_args.args[0])
+        self.assertEqual(write.call_args.args[0], 'lib-system')
         self.assertEqual(write.call_args.args[2], 42)
 
     def test_pending_is_not_a_success(self):
