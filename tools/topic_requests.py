@@ -21,7 +21,7 @@ WORKFLOW = '.github/workflows/topic-button.yml'
 
 
 def target_for(repository, pull):
-    topics = sorted(label['name'] for label in pull['labels'] if label['name'].startswith('topic:'))
+    topics = sorted(label['name'] for label in pull['labels'] if label['name'].lower().startswith('topic:'))
     if len(topics) > 1:
         raise ValueError('a PR must have at most one topic label')
     if topics and (topics[0] == 'topic:' or len(topics[0]) > 100):

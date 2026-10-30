@@ -44,7 +44,7 @@ def members(pulls, target):
         repository, number = target.rsplit('#', 1)
         return [(repository, pull) for pull in pulls.get(repository, []) if str(pull['number']) == number]
     return [(repository, pull) for repository, rows in pulls.items() for pull in rows
-            if target in [label['name'] for label in pull['labels']]]
+            if target.lower() in [label['name'].lower() for label in pull['labels']]]
 
 
 def validate_members(pulls, target, known):

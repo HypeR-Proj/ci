@@ -81,6 +81,11 @@ class ButtonTests(unittest.TestCase):
             requests.target_for('kernel', item)
         with self.assertRaises(ValueError):
             requests.target_for('kernel', pull(topic='topic:Test'))
+        with self.assertRaises(ValueError):
+            requests.target_for('kernel', pull(topic='Topic:test'))
+        with self.assertRaises(ValueError):
+            topics.validate_members({'kernel': [pull()], 'ci': [pull(topic='Topic:test')]},
+                                    'topic:test', {'kernel', 'ci'})
 
     def test_unknown_repository_cannot_be_silently_omitted(self):
         with self.assertRaises(ValueError):
