@@ -121,7 +121,7 @@ jobs:
           PYCODE
   fixtures:
     needs: [resolve, plan]
-    if: needs.plan.outputs.has_fixtures == 'true'
+    if: always() && needs.resolve.result == 'success' && needs.plan.result == 'success' && needs.plan.outputs.has_fixtures == 'true'
     runs-on: ubuntu-24.04
     container: debian:trixie-slim
     defaults:
@@ -166,7 +166,7 @@ jobs:
           if-no-files-found: ignore
   test:
     needs: [resolve, plan, fixtures]
-    if: always() && needs.plan.result == 'success' && (needs.fixtures.result == 'success' || needs.fixtures.result == 'skipped')
+    if: always() && needs.plan.result == 'success' && (needs.fixtures.result == 'success' || (needs.plan.outputs.has_fixtures == 'false' && needs.fixtures.result == 'skipped'))
     runs-on: ubuntu-24.04
     container: debian:trixie-slim
     defaults:
@@ -210,6 +210,27 @@ jobs:
             ${{ runner.temp }}/system-out/**/*.log
             ${{ runner.temp }}/system-out/results/*.json
           if-no-files-found: ignore
+  preview-result:
+    if: always() && github.ref != 'refs/heads/main'
+    needs: [resolve, plan, fixtures, test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every planned preview stage to finish
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os
+          stages = json.loads(os.environ['RESULTS'])
+          required = ['resolve', 'plan', 'test']
+          if stages['plan']['outputs'].get('has_fixtures') == 'true':
+              required.append('fixtures')
+          failed = {name: stages[name]['result'] for name in required if stages[name]['result'] != 'success'}
+          if failed:
+              raise SystemExit('Incomplete system preview: ' + json.dumps(failed))
+          print('Every planned system preview stage passed.')
+          PYCODE
   result:
     if: always() && github.ref == 'refs/heads/main' && needs.resolve.result == 'success'
     environment: topic-control
@@ -237,6 +258,6 @@ jobs:
       - name: Publish exact-candidate result
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          OUTCOME: ${{ needs.pending.result == 'success' && needs.plan.result == 'success' && (needs.fixtures.result == 'success' || needs.fixtures.result == 'skipped') && needs.test.result == 'success' && 'success' || 'failure' }}
+          OUTCOME: ${{ needs.pending.result == 'success' && needs.plan.result == 'success' && (needs.fixtures.result == 'success' || (needs.plan.outputs.has_fixtures == 'false' && needs.fixtures.result == 'skipped')) && needs.test.result == 'success' && 'success' || 'failure' }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: python3 tools/gate.py --snapshot candidate.json --outcome "$OUTCOME" --url "$RUN_URL"
