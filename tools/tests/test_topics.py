@@ -37,6 +37,44 @@ def store():
 
 
 class ButtonTests(unittest.TestCase):
+    def test_controls_are_published_before_review_or_system_verification(self):
+        # A ready PR must be able to request its first verification. Review
+        # and successful checks are submission gates, not visibility gates.
+        with patch.object(topics, 'pages', return_value=[]), \
+                patch.object(topics, 'write', return_value={'id': 42}) as write:
+            topics.publish_controls(store(), {'kernel': [pull()]}, {'kernel'})
+        create, update = write.call_args_list
+        self.assertEqual([a['identifier'] for a in create.args[1]['actions']], ['verify', 'submit'])
+        self.assertEqual(create.args[1]['head_sha'], 'b' * 40)
+        self.assertEqual(update.args[1]['details_url'],
+                         'https://github.com/HypeR-Proj/kernel/pull/1/checks?check_run_id=42')
+
+    def test_read_response_without_actions_does_not_cause_repeated_writes(self):
+        with patch.object(topics, 'pages', return_value=[]), \
+                patch.object(topics, 'write', return_value={'id': 42}) as write:
+            topics.publish_controls(store(), {'kernel': [pull()]}, {'kernel'})
+        check = copy.deepcopy(write.call_args_list[0].args[1])
+        check.update(write.call_args_list[1].args[1])
+        check.update(id=42, app={'id': APP_ID})
+        del check['actions']
+        check['output'].update(annotations_count=0, annotations_url='https://example.invalid/annotations')
+        with patch.object(topics, 'pages', return_value=[check]), patch.object(topics, 'write') as write:
+            topics.publish_controls(store(), {'kernel': [pull()]}, {'kernel'})
+        write.assert_not_called()
+
+    def test_publication_does_not_process_requests_or_touch_submission_state(self):
+        with patch.object(sys, 'argv', ['topics', '--manifest', 'unused', '--action', 'controls']), \
+                patch.object(topics, 'project_names', return_value=['kernel']), \
+                patch.object(topics, 'inventory', return_value={'kernel': [pull()]}), \
+                patch.object(topics, 'publish_controls') as publish, \
+                patch.object(topics, 'Store') as state, patch.object(topics, 'process') as process, \
+                patch.object(topics.topic_submit, 'advance') as advance:
+            topics.main()
+        publish.assert_called_once()
+        state.assert_not_called()
+        process.assert_not_called()
+        advance.assert_not_called()
+
     def setUp(self):
         self.run = {'event': 'check_run', 'run_attempt': 1, 'status': 'completed',
                     'conclusion': 'success', 'path': requests.WORKFLOW,

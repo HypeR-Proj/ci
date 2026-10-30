@@ -144,7 +144,10 @@ def publish_controls(store, pulls, known):
                     actions = BUTTONS
             except ValueError as error:
                 summary = str(error)
-            summary += '\n\nButtons are processed by the central coordinator, normally within several minutes. '
+            controls_url = f'https://github.com/{ORG}/{repository}/pull/{pull["number"]}/checks'
+            summary += '\n\nOpen the **topic** check in this PR\'s **Checks** tab to use '
+            summary += '**Run system CI** or **Submit topic**. '
+            summary += 'Buttons are processed by the central coordinator, normally within several minutes. '
             summary += 'Submission includes every topic member. Do not use the ordinary Merge button.'
             if target in store.data['messages']:
                 summary += '\n\nLast request: ' + store.data['messages'][target]
@@ -156,7 +159,7 @@ def publish_controls(store, pulls, known):
             identity = f'topic:{repository}#{pull["number"]}'
             payload = {'name': 'topic', 'external_id': identity, 'status': 'completed',
                        'conclusion': 'neutral', 'actions': actions,
-                       'details_url': f'https://github.com/{ORG}/ci/actions/workflows/refresh.yml',
+                       'details_url': controls_url,
                        'output': {'title': 'Topic controls', 'summary': summary,
                                   'text': json.dumps({'target': target, 'pr': pull['number'],
                                                       'buttons': actions})}}
@@ -165,12 +168,19 @@ def publish_controls(store, pulls, known):
             own = [check for check in checks if check['app']['id'] == APP_ID and check.get('external_id') == identity]
             if own:
                 check = max(own, key=lambda row: row['id'])
+                payload['details_url'] += f'?check_run_id={check["id"]}'
                 # GitHub does not consistently echo requested actions in GET
                 # responses. Their version is also in output.text for comparison.
-                if any(check.get(key) != value for key, value in payload.items() if key != 'actions'):
+                changed = any(check.get(key) != value for key, value in payload.items()
+                              if key not in ('actions', 'output'))
+                changed |= any(check.get('output', {}).get(key) != value
+                               for key, value in payload['output'].items())
+                if changed:
                     write(f'repos/{ORG}/{repository}/check-runs/{check["id"]}', payload, 'PATCH')
             else:
-                write(f'repos/{ORG}/{repository}/check-runs', {**payload, 'head_sha': pull['head']['sha']})
+                check = write(f'repos/{ORG}/{repository}/check-runs', {**payload, 'head_sha': pull['head']['sha']})
+                write(f'repos/{ORG}/{repository}/check-runs/{check["id"]}',
+                      {'details_url': controls_url + f'?check_run_id={check["id"]}'}, 'PATCH')
 
 
 def clean_labels(store, pulls):
@@ -219,7 +229,7 @@ def clean_labels(store, pulls):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--manifest', type=Path, required=True)
-    parser.add_argument('--action', choices=['poll', 'submit', 'force-submit'], default='poll')
+    parser.add_argument('--action', choices=['controls', 'poll', 'submit', 'force-submit'], default='poll')
     parser.add_argument('--target', default='')
     parser.add_argument('--actor', default='')
     args = parser.parse_args()
@@ -227,6 +237,13 @@ def main():
     pulls = inventory()
     if known - pulls.keys():
         raise ValueError('manifest includes missing or inaccessible repositories')
+    if args.action == 'controls':
+        # Publication needs only PR reads and Check writes. It neither reads
+        # submission state nor dispatches verification or merges a PR. Keep it
+        # usable from the resolver without waiting for a scheduled poll.
+        from types import SimpleNamespace
+        publish_controls(SimpleNamespace(data={'messages': {}, 'active': None}), pulls, known)
+        return
     store = Store()
     if args.action != 'poll':
         selected = validate_members(pulls, args.target, known)

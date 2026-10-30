@@ -3,8 +3,16 @@
 
 name: Topic coordinator
 on:
+  # These events run on the trusted default branch. Other repositories retain
+  # the credential-free listener and periodic discovery; no App key is shared.
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, labeled, unlabeled, closed]
+  workflow_run:
+    workflows: [System verification, Module tests, Topic button]
+    types: [completed]
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '2-57/5 * * * *'
   workflow_dispatch:
     inputs:
       action:
@@ -30,6 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: main
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
