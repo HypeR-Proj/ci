@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 name: System verification
-run-name: "System verification: ${{ inputs.target }} [${{ inputs.request_id || 'manual' }}]"
+run-name: "${{ github.ref == 'refs/heads/main' && 'System verification' || 'System preview' }}: ${{ inputs.target }} [${{ inputs.request_id || 'manual' }}]"
 on:
   workflow_dispatch:
     inputs:
@@ -18,12 +18,10 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: system-${{ inputs.target }}
+  group: system-${{ github.ref }}-${{ inputs.target }}
   cancel-in-progress: false
 jobs:
   resolve:
-    if: github.ref == 'refs/heads/main'
-    environment: topic-control
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
@@ -35,6 +33,43 @@ jobs:
           repository: HypeR-Proj/manifest
           path: manifest-input
           persist-credentials: false
+      - uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4
+        with:
+          version: 1.3.0
+      - name: Resolve the exact source and appliance candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE: ${{ inputs.target }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 tools/workspace.py resolve --manifest manifest-input/default.xml --target "$CANDIDATE" --packages --output candidate.json
+      - id: identity
+        run: echo "sha256=$(sha256sum candidate.json | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: candidate
+          path: candidate.json
+          retention-days: 30
+  pending:
+    if: github.ref == 'refs/heads/main'
+    needs: resolve
+    environment: topic-control
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: HypeR-Proj/manifest
+          path: manifest-input
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: candidate
+      - name: Verify resolver output
+        env:
+          EXPECTED: ${{ needs.resolve.outputs.snapshot_hash }}
+        run: echo "$EXPECTED  candidate.json" | sha256sum --check
       - id: app
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
         with:
@@ -44,68 +79,60 @@ jobs:
           permission-contents: read
           permission-pull-requests: read
           permission-checks: write
-      - uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4
-        with:
-          version: 1.3.0
-      - name: Resolve candidate and mark checks pending
+      - name: Publish controls and pending checks
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          CANDIDATE: ${{ inputs.target }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          python3 tools/workspace.py resolve --manifest manifest-input/default.xml --target "$CANDIDATE" --packages --output candidate.json
           python3 tools/topics.py --manifest manifest-input/default.xml --action controls
           python3 tools/gate.py --snapshot candidate.json --outcome pending --url "$RUN_URL"
-      - id: identity
-        run: echo "sha256=$(sha256sum candidate.json | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+  plan:
+    needs: [resolve, pending]
+    if: always() && needs.resolve.result == 'success' && (needs.pending.result == 'success' || needs.pending.result == 'skipped')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      cases: ${{ steps.matrix.outputs.cases }}
+      fixtures: ${{ steps.matrix.outputs.fixtures }}
+      has_fixtures: ${{ steps.matrix.outputs.has_fixtures }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: candidate
-          path: candidate.json
-          retention-days: 30
-  test:
-    needs: resolve
+      - name: Verify snapshot integrity
+        env:
+          EXPECTED: ${{ needs.resolve.outputs.snapshot_hash }}
+        run: echo "$EXPECTED  candidate.json" | sha256sum --check
+      - name: Read the case-owned execution matrix
+        id: matrix
+        run: |
+          python3 tools/workspace.py checkout --snapshot candidate.json --directory "$RUNNER_TEMP/system"
+          python3 "$RUNNER_TEMP/system/test-framework/runner.py" list > matrix.json
+          python3 - <<'PYCODE'
+          import json, os
+          plan = json.load(open('matrix.json'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              for name in ('cases', 'fixtures'):
+                  print(name + '=' + json.dumps(plan[name], separators=(',', ':')), file=output)
+              print('has_fixtures=' + str(bool(plan['fixtures']['include'])).lower(), file=output)
+          PYCODE
+  fixtures:
+    needs: [resolve, plan]
+    if: needs.plan.outputs.has_fixtures == 'true'
     runs-on: ubuntu-24.04
     container: debian:trixie-slim
     defaults:
       run:
         shell: bash
+    env:
+      ARCH: ${{ matrix.arch }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      matrix:
-        suite:
-          # Keep existing acceptance shards independent, as before migration.
-          - native-boot
-          - native-console
-          - native-terminal
-          - native-apps
-          - native-shell
-          - native-stress
-          - native-fleet
-          - native-services
-          - native-storage-recovery
-          - native-filesystem
-          - native-runtime-crash
-          - native-vm
-          - native-gicv2
-          - native-smp-stack
-          - native-stack-16k
-          - native-pmu
-          - native-trace
-          - native-scheduler
-          # Keep existing acceptance shards independent, as before migration.
-          - board-storage-media
-          - board-boot-system
-          - board-alpine-rootfs
-          - board-business
-          - board-broker
-          - board-userspace-device
-          - board-product-config
-          - io-vm
-          - io-network
-          - io-network-mmio
-          - riscv64-runtime
+      matrix: ${{ fromJSON(needs.plan.outputs.fixtures) }}
     steps:
       - name: Bootstrap the supported QEMU environment
         env:
@@ -117,53 +144,76 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      - uses: ./.github/actions/system-environment
         with:
-          name: candidate
-      - name: Verify snapshot integrity
-        env:
-          EXPECTED: ${{ needs.resolve.outputs.snapshot_hash }}
-        run: echo "$EXPECTED  candidate.json" | sha256sum --check
-      - name: Install build and test tools
-        run: |
-          apt-get update
-          apt-get install -y clang cmake cpio lld llvm make python3 ripgrep shellcheck dosfstools mtools e2fsprogs erofs-utils squashfs-tools device-tree-compiler qemu-system-arm qemu-system-misc
-      - uses: oras-project/setup-oras@005458ad77f1c8facd38a094e4af2e69e5607ff4
+          snapshot-hash: ${{ needs.resolve.outputs.snapshot_hash }}
+      - name: Build the immutable fixture once
+        run: python3 "$RUNNER_TEMP/system/test-framework/runner.py" fixture "${{ matrix.name }}" --arch "${{ matrix.arch }}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          version: 1.3.0
-      - name: Check out candidate workspace
-        run: |
-          python3 tools/workspace.py checkout --snapshot candidate.json --directory "$RUNNER_TEMP/system"
-          python3 "$RUNNER_TEMP/system/project.py" prepare
-      - name: Install selected Rust toolchain
-        run: |
-          cd "$RUNNER_TEMP/system"
-          toolchain=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
-          test -n "$toolchain"
-          rustup toolchain install "$toolchain" --profile minimal --component rust-src --component llvm-tools --component clippy --component rustfmt --target aarch64-unknown-none --target aarch64-unknown-none-softfloat --target riscv64imac-unknown-none-elf --target riscv64gc-unknown-none-elf --target x86_64-unknown-none
-          rustup default "$toolchain"
-      - name: Download the resolved appliance
-        run: echo "IO_VM_PACKAGE=$(python3 tools/package.py --snapshot candidate.json --workspace "$RUNNER_TEMP/system" --platform qemu)" >> "$GITHUB_ENV"
-      - name: Run system acceptance
-        env:
-          SUITE: ${{ matrix.suite }}
-        run: |
-          cd "$RUNNER_TEMP/system"
-          sh tests/ci/run.sh "$SUITE"
-      - name: Collect diagnostics
+          name: fixture-${{ matrix.id }}
+          path: ${{ runner.temp }}/system-out/fixtures/${{ matrix.id }}/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Collect diagnostics and timings
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
-          name: system-${{ matrix.suite }}
+          name: fixtures-${{ matrix.id }}
           path: |
-            ${{ runner.temp }}/system/source-inventory.json
-            ${{ runner.temp }}/system/target/**/*.log
-            ${{ runner.temp }}/system/kernel/target/**/*.log
+            ${{ runner.temp }}/system-out/**/*.log
+            ${{ runner.temp }}/system-out/results/*.json
+          if-no-files-found: ignore
+  test:
+    needs: [resolve, plan, fixtures]
+    if: always() && needs.plan.result == 'success' && (needs.fixtures.result == 'success' || needs.fixtures.result == 'skipped')
+    runs-on: ubuntu-24.04
+    container: debian:trixie-slim
+    defaults:
+      run:
+        shell: bash
+    env:
+      ARCH: ${{ matrix.arch }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.cases) }}
+    steps:
+      - name: Bootstrap the supported QEMU environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get -o Acquire::Retries=2 update
+          apt-get install -y --no-install-recommends ca-certificates git python3 rustup build-essential curl xz-utils zstd unzip
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/system-environment
+        with:
+          snapshot-hash: ${{ needs.resolve.outputs.snapshot_hash }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: matrix.fixture != ''
+        with:
+          name: fixture-${{ matrix.fixture }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/system-out/fixtures/${{ matrix.fixture }}-${{ matrix.arch }}
+      - name: Execute the selected system case
+        env:
+          CI_REQUIRE_FIXTURES: '1'
+        run: python3 "$RUNNER_TEMP/system/test-framework/runner.py" run "${{ matrix.id }}"
+      - name: Collect diagnostics and timings
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: test-${{ matrix.id }}
+          path: |
+            ${{ runner.temp }}/system-out/**/*.log
+            ${{ runner.temp }}/system-out/results/*.json
           if-no-files-found: ignore
   result:
-    if: always() && needs.resolve.result == 'success'
+    if: always() && github.ref == 'refs/heads/main' && needs.resolve.result == 'success'
     environment: topic-control
-    needs: [resolve, test]
+    needs: [resolve, pending, plan, fixtures, test]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -187,6 +237,6 @@ jobs:
       - name: Publish exact-candidate result
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
-          OUTCOME: ${{ needs.test.result == 'success' && 'success' || 'failure' }}
+          OUTCOME: ${{ needs.pending.result == 'success' && needs.plan.result == 'success' && (needs.fixtures.result == 'success' || needs.fixtures.result == 'skipped') && needs.test.result == 'success' && 'success' || 'failure' }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: python3 tools/gate.py --snapshot candidate.json --outcome "$OUTCOME" --url "$RUN_URL"

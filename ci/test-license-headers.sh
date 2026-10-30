@@ -5,11 +5,12 @@
 # Check attribution acceptance without modifying the developer's working tree.
 set -eu
 root=$(CDPATH='' cd -- "$(dirname "$0")/../.." && pwd)
+checker=$(CDPATH='' cd -- "$(dirname "$0")" && pwd)/check-license-headers.sh
 fixture=$(mktemp -d "${TMPDIR:-/tmp}/hyper-license-test.XXXXXX")
 trap 'rm -rf "$fixture"' EXIT HUP INT TERM
 git -C "$fixture" init -q
 check() {
-    HYPER_LICENSE_ROOT="$fixture" sh "$root/tests/ci/check-license-headers.sh"
+    HYPER_LICENSE_ROOT="$fixture" sh "$checker"
 }
 for author in '2026 Contributor Name' '2027 Another Contributor' '2024-2027 Project Authors'; do
     printf '// SPDX-FileCopyrightText: %s\n// SPDX-License-Identifier: Apache-2.0\n' "$author" >"$fixture/test.rs"

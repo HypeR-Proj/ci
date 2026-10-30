@@ -5,7 +5,9 @@ SPDX-License-Identifier: Apache-2.0
 
 # System CI
 
-This repository owns cross-component acceptance and its GitHub Actions coordination tools.
+This repository owns GitHub Actions coordination, topic controls and candidate verification.
+Runtime cases belong to [system-tests](https://github.com/HypeR-Proj/system-tests);
+reusable test execution belongs to [test-framework](https://github.com/HypeR-Proj/test-framework).
 Component PRs run their own `module` checks. In a ready PR's Checks tab, open **topic**
 and click **Run system CI** to verify the entire topic, or **Submit topic** to merge
 all verified members. The central Actions coordinator collects button requests on
@@ -35,15 +37,20 @@ Only trusted coordination jobs receive App credentials. Untrusted candidate code
 Snapshot hashes are passed through trusted job outputs before downloaded artifacts are consumed.
 
 Run module tests from the workspace with `python3 project.py test ci`.
-This covers the coordinator and test harness without booting a system.
-See [test ownership](ci/README.md) for the 29 runtime jobs and module boundaries.
+This covers coordinator behavior without booting a system. The system workflow
+asks the candidate test framework for its case/fixture matrix, builds shared
+images once per architecture, then runs independent case jobs. It does not repeat
+module self-tests. See [test ownership](https://github.com/HypeR-Proj/system-tests/blob/main/ci/README.md).
 `tools/configure.py --apply REPOSITORY` enables coordinator-only default-branch submission.
 Install and validate the button listener and coordinator before enabling this restriction.
-The `legacy/workflows` directory preserves the original suite definitions as migration reference;
-those workflows are not registered as automatic system CI.
+The manifest owns source paths. CI uses that exact candidate layout, plus any
+management-only repositories declared by manifest metadata. Build preparation
+generates execution files inside OUT; source checkouts remain independent.
 
-The manifest owns checkout paths and links; CI checks out that exact layout,
-including proposed manifest changes, without generating a second source tree.
+A manual dispatch from a feature workflow branch is a **System preview**. It
+runs the candidate without App credentials and cannot publish merge gates. Only
+the protected main workflow publishes **System verification** results.
+
 System runs resolve the latest qualified QEMU I/O VM package digest
 once and record them in the candidate snapshot. Every test uses those immutable
 packages. Appliance source changes are qualified by the I/O VM repository's own
