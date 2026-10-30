@@ -53,7 +53,9 @@ def publish(snapshot, outcome, url):
         payload = {'name': 'system', 'head_sha': candidate['head'], 'details_url': url,
                    'external_id': snapshot['identity'],
                    'output': {'title': 'HypeR system verification',
-                              'summary': 'Candidate ' + snapshot['identity'],
+                              'summary': 'Candidate ' + snapshot['identity']
+                              + f'\n\n[Open PR Checks](https://github.com/{ORG}/{repository}/pull/{candidate["pr"]}/checks)'
+                              + ' and select **topic** for **Run system CI** / **Submit topic**.',
                               'text': json.dumps(snapshot, sort_keys=True)}}
         identifier = None
         if outcome == 'pending':

@@ -54,6 +54,7 @@ jobs:
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           python3 tools/workspace.py resolve --manifest manifest-input/default.xml --target "$CANDIDATE" --packages --output candidate.json
+          python3 tools/topics.py --manifest manifest-input/default.xml --action controls
           python3 tools/gate.py --snapshot candidate.json --outcome pending --url "$RUN_URL"
       - id: identity
         run: echo "sha256=$(sha256sum candidate.json | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"

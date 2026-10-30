@@ -7,7 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 
 Each managed repository contains the same small `.github/workflows/topic-button.yml`
 listener. The App publishes a **topic** check on open PRs. Its native GitHub buttons
-are in the PR's Checks tab:
+are in **PR → Checks → topic**. The check's **Details** link opens that exact
+check, rather than the coordinator's Actions page:
 
 - **Run system CI** verifies every open PR with the same `topic:*` label.
 - **Submit topic** submits that whole verified group, after checking every member.
@@ -20,11 +21,22 @@ retain their topic and cannot be submitted. Mark every member ready before testi
 The listener records the GitHub event in an immutable Actions artifact. It checks
 out no source and receives no secrets. The central coordinator validates the
 workflow source, artifact digest, App, PR head and actor before acting. The App key
-is configured only in `ci`'s `topic-control` environment, restricted to `main`;
-it is not distributed to component repositories or available to feature-branch jobs.
+must remain centralized in `ci`; the deployment instructions below place it in the
+`topic-control` environment restricted to `main`. Do not distribute it to component
+repositories. The privileged refresh workflow always checks out `main`, including
+when triggered by a PR event.
 
-The coordinator polls every five minutes. GitHub can delay schedules, so buttons
-may take longer to take effect. Run the [Topic coordinator workflow](https://github.com/HypeR-Proj/ci/actions/workflows/refresh.yml)
+System verification publishes controls before running its tests, so its PRs do not
+depend on a scheduled poll for their first buttons. PR lifecycle events in `ci`
+and completion of its module tests, button listener or system verification also
+refresh controls. These refreshes do not automatically start system tests: a
+verification request must still come from a user.
+
+The coordinator also polls every five minutes for other repositories. GitHub can
+delay schedules, so buttons may take longer to appear or take effect. If the
+**topic** check is missing entirely, no controls have been published for that head;
+review approval is unrelated to button visibility. Run the
+[Topic coordinator workflow](https://github.com/HypeR-Proj/ci/actions/workflows/refresh.yml)
 manually with `action=poll` to process requests sooner. The **topic** check shows
 the last request result and the members being submitted. The **system** check links
 to the actual acceptance run. Repeated verification requests reuse a running test
@@ -32,7 +44,8 @@ for that target; a transport retry is reconciled against its unique request ID.
 
 ## Submission policy
 
-Only the GitHub App can update a default branch, and only through PR merges.
+With the coordinator-only submission rules installed, only the GitHub App can
+update a default branch, and only through PR merges.
 The normal GitHub Merge button and `gh pr merge` cannot bypass the coordinator,
 including for administrators. The separate history rules prohibit force-pushing
 and deleting default branches for every actor, including the App.
