@@ -6,6 +6,7 @@
   },
   "requests": {},
   "retired": {
+    "topic:filesystem-foundation": "topics/56fae772a17dc51d4dd02bc1f48fe73353ffe3fbb5f6e021fb08baf5bdfa361c.json",
     "topic:library-repository-names": "topics/54f43f53a387ad893943673f506f11b97075fcf4aefca69aac877c5b451f8916.json",
     "topic:module-test-ownership": "topics/5d5f21d42f05b1592ae89a40527baee093b492a061ac860ed71c2f828601f7b1.json",
     "topic:native-standard-libraries": "topics/69629245547e0a8993e0e2383300c47dc44e95e587a68fa69e097a3208ab4f32.json",

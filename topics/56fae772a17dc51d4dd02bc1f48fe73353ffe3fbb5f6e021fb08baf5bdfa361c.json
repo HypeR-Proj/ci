@@ -1,0 +1,60 @@
+{
+  "last_result": null,
+  "members": [
+    {
+      "closed_at": "2026-10-30T13:09:12Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "feat(fs): recognize optional F2FS workers during bootstrap",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/4"
+    },
+    {
+      "closed_at": "2026-10-30T13:09:34Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "build: verify source archives and isolate packaging fixtures",
+      "url": "https://github.com/HypeR-Proj/build/pull/6"
+    },
+    {
+      "closed_at": "2026-10-30T13:10:53Z",
+      "number": 16,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "test(fs): require recursive deletion coverage on FAT volumes",
+      "url": "https://github.com/HypeR-Proj/ci/pull/16"
+    },
+    {
+      "closed_at": "2026-10-30T13:09:53Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "feat(fs): recognize optional F2FS workers",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T13:10:13Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "fix(std): release remote directory leases before recursive removal",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/5"
+    },
+    {
+      "closed_at": "2026-10-30T13:10:33Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "mount",
+      "state": "closed",
+      "title": "docs(mount): list the optional F2FS mount selector",
+      "url": "https://github.com/HypeR-Proj/mount/pull/3"
+    }
+  ],
+  "topic": "topic:filesystem-foundation"
+}
