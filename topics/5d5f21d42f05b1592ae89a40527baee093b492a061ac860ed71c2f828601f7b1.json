@@ -1,0 +1,573 @@
+{
+  "last_result": null,
+  "members": [
+    {
+      "closed_at": "2026-10-30T05:42:38Z",
+      "number": 224,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/224"
+    },
+    {
+      "closed_at": "2026-10-30T05:42:57Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/abi/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T05:43:17Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T05:43:37Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "bootstrap-retire",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/bootstrap-retire/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T03:38:02Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/build/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T04:59:48Z",
+      "number": 15,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Fix topic state validation and terminal event synchronization",
+      "url": "https://github.com/HypeR-Proj/ci/pull/15"
+    },
+    {
+      "closed_at": "2026-10-30T03:39:24Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "feat: add whole-topic CI controls and split module tests from system acceptance",
+      "url": "https://github.com/HypeR-Proj/ci/pull/11"
+    },
+    {
+      "closed_at": "2026-10-30T05:43:55Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:44:17Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "componentctl",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/componentctl/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:44:38Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "console-raw",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/console-raw/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:44:56Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "coreutils",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/coreutils/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:47:18Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "editor",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/editor/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:47:36Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "fit-pack",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/fit-pack/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:47:54Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "free",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/free/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:48:12Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:48:31Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:48:51Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:49:10Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "grep",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/grep/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:49:28Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "handle",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/handle/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:49:48Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:50:07Z",
+      "number": 23,
+      "pull_request": true,
+      "repository": "io-vm",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/io-vm/pull/23"
+    },
+    {
+      "closed_at": "2026-10-30T05:50:25Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "journalctl",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/journalctl/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:50:45Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/journald/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T03:38:24Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:51:04Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "ldd",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/ldd/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:51:23Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "less",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/less/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:51:42Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-block",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-block/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:52:00Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-bootstrap-handoff",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-bootstrap-handoff/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:52:18Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-clap",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-clap/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:52:38Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-component",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-component/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:52:58Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-component-config",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-component-config/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:53:17Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-cxx",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-cxx/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T05:53:35Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-dynamic-loader",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-dynamic-loader/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T05:53:54Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:54:13Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-journal-client",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-journal-client/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:54:33Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-musl",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-musl/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T05:54:52Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T05:55:12Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-rust-fatfs",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-rust-fatfs/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:56:14Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T05:55:34Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:55:53Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-service-ipc",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-service-ipc/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:56:34Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/4"
+    },
+    {
+      "closed_at": "2026-10-30T05:56:53Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-terminal",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-terminal/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:57:12Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-text-ui",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-text-ui/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:57:33Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-tool-args",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-tool-args/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:57:52Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-vm-image",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-vm-image/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:58:10Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-vm-policy",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-vm-policy/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:58:30Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-vm-support",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/lib-vm-support/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T03:37:43Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:58:50Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "memstat",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/memstat/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:59:28Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "perf",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/perf/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T05:59:48Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "pi5-images",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/pi5-images/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:00:07Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "ps",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/ps/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:00:27Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:00:47Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "shell",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/shell/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:01:07Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "system-startup",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/system-startup/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T03:39:03Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "terminal-service",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/terminal-service/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T03:38:41Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:01:26Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "top",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/top/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:01:45Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "umount",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/umount/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:02:04Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "vm-manager",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/vm-manager/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:02:24Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "vm-runtime",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/vm-runtime/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T06:02:45Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "vmm",
+      "state": "closed",
+      "title": "ci: add native PR buttons and whole-topic submission guidance",
+      "url": "https://github.com/HypeR-Proj/vmm/pull/2"
+    }
+  ],
+  "topic": "topic:module-test-ownership"
+}
