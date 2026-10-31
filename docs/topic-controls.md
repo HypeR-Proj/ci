@@ -46,27 +46,40 @@ for that target; a transport retry is reconciled against its unique request ID.
 
 ## Submission policy
 
-With the coordinator-only submission rules installed, only the GitHub App can
-update a default branch, and only through PR merges.
-The normal GitHub Merge button and `gh pr merge` cannot bypass the coordinator,
-including for administrators. The separate history rules prohibit force-pushing
-and deleting default branches for every actor, including the App.
+Only `roolrz` and the CI GitHub App may merge default-branch PRs. The
+`merge-codeowners` organization team contains only `roolrz`; it and the App are
+the two actors allowed through the PR-only update rule. Direct pushes, force
+pushes and default-branch deletion remain prohibited for both. Required approval
+count is zero and CODEOWNER reviews are not mandatory. CODEOWNERS still defines
+who may instruct the bot to submit a topic.
 
-The coordinator requires write permission in every member repository. Normal
-submission checks the latest successful `module` and `system` checks on the exact
-heads, a common system candidate snapshot, unchanged dependency bases and topic
-membership, mergeability, and CODEOWNER approval with resolved conversations.
-Other checks on those commits, including documentation and I/O VM qualification,
-must also finish without failure; an older passing attempt cannot hide a newer failure.
-Administrators may bypass review approval. They still need passing tests when
-using **Submit topic**.
+**Run system CI** and manual system workflow dispatches require active organization
+membership. Outside collaborators are rejected even when they can write to a
+repository. **Submit topic** and `force-submit` require the sole submission owner,
+`roolrz`, to remain an active member with the original GitHub account identity.
+Every member repository must assign its trusted default-branch ownership to that
+account. Proposed CODEOWNERS edits cannot authorize their author. The coordinator
+checks identity when receiving a request and again before merging or resuming.
+GitHub's check buttons are shared across viewers; unauthorized clicks receive an
+explicit rejection instead of dispatching tests or starting a submission.
 
-An administrator can explicitly bypass tests using the central workflow's
-`action=force-submit` and `target=topic:example`. This requires administrator access
-to every member repository and records the override. It still requires a whole
-topic, fixed commits, mergeable PRs and normal squash merges. Re-running a workflow
-uses the current triggering actor's permissions rather than inheriting the original
-actor's privileges.
+Normal submission requires the latest successful `module` and `system` checks on
+exact heads, a common tested candidate, unchanged bases and topic membership, and
+mergeable PRs. Other checks, including documentation and I/O VM qualification,
+must finish without failure. No approving review is needed. The App cannot bypass
+test requirements. `roolrz` can explicitly use `action=force-submit` with a target
+to override tests; this still requires administrator access to every member,
+a complete topic, fixed commits and normal squash merges.
+
+System runs wait for the trusted main `System request authorization` workflow
+before resolving or building a candidate. It checks the actual triggering actor
+again on reruns. Bot dispatches must identify a previously authenticated member
+request in protected `topic-state`, and membership is checked again at execution.
+Private members are supported through the App's organization Members read permission.
+The authorizer publishes a small artifact bound to the exact run and attempt.
+Consumers verify its main-workflow provenance, digest and actor identity; a denied
+or missing authorization never starts the test matrix. Branch previews consume
+this evidence without receiving App credentials.
 
 ## Failures and recovery
 
@@ -87,7 +100,7 @@ GitHub cannot atomically merge multiple repositories. A failure can therefore le
 a partly submitted topic. The active record prevents another topic from being
 submitted while recovery is pending. Lost API responses are reconciled with actual
 PR state and the tested merge tree. Transport failures are retried by a later poll.
-Changed commits, reviews or membership block further merging. Correct the reported
+Changed commits, ownership or membership block further merging. Correct the reported
 condition and click **Submit topic** on a remaining member as the original actor,
 using the same override setting if applicable. The original snapshot is retained;
 recovery does not silently choose new commits or omit an unmerged member.
@@ -123,7 +136,9 @@ Before the coordinator's first poll, run
 without changing the current default-branch merge policy.
 This command also refreshes the administrator-verified state policy in `topic-control`;
 create that environment first, and reprovision after changing state protections.
-The App needs contents, pull requests, checks and actions write permission. Its
+The App needs contents, pull requests, checks and actions write permission, plus
+organization Members read permission. Approve that permission on the organization
+installation as well. Its
 Client ID is the `CI_APP_CLIENT_ID` variable. Store `CI_APP_PRIVATE_KEY` in the
 `topic-control` environment with only the `main` branch allowed, and remove any
 repository-level copy after validating authentication. Routine polling never runs

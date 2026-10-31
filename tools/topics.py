@@ -13,9 +13,10 @@ from pathlib import Path
 import subprocess
 from urllib.parse import quote
 
+from authorization import require_org_member
 from configure import APP_ID
 import refresh
-from topic_requests import receive, target_for, permission, WORKFLOW
+from topic_requests import authorize_request, receive, target_for, permission, WORKFLOW
 from topic_store import Store, pages, write
 import topic_submit
 from workspace import ORG, api, project_names, candidate_layout
@@ -84,6 +85,7 @@ def system_runs():
 
 
 def dispatch_verification(store, request, identifier):
+    require_org_member(request.get('actor', ''))
     prefix = f'System verification: {request["target"]} ['
     runs = system_runs()
     exact = [run for run in runs if run['display_title'] == prefix + identifier + ']']
@@ -129,6 +131,7 @@ def process(store, manifest, pulls, known):
         try:
             request = receive(repository, run)
             validate_members(pulls, request['target'], known)
+            authorize_request(repository, request)
             if request['action'] == 'verify':
                 message = dispatch_verification(store, request, identifier)
             else:

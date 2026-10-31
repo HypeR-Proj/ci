@@ -8,6 +8,7 @@ import concurrent.futures
 import json
 import re
 
+from authorization import require_submitter, trusted_ownership
 from configure import APP_ID
 from topic_requests import permission, target_for
 from topic_store import pages, write
@@ -63,21 +64,12 @@ def verified_snapshot(request):
     return snapshot
 
 
-def review(repository, number):
-    pull = graphql('query {repository(owner:' + json.dumps(ORG) + ',name:' + json.dumps(repository)
-                   + '){pullRequest(number:' + str(number) + '){reviewDecision '
-                   'reviewThreads(first:100){nodes{isResolved}pageInfo{hasNextPage}}}}}')['repository']['pullRequest']
-    if pull['reviewDecision'] != 'APPROVED':
-        raise ValueError(f'{repository}#{number}: CODEOWNER approval is required')
-    threads = pull['reviewThreads']
-    if threads['pageInfo']['hasNextPage'] or any(not thread['isResolved'] for thread in threads['nodes']):
-        raise ValueError(f'{repository}#{number}: review conversations need resolution')
-
-
 def preflight(snapshot, actor, force=False, repositories=None):
+    require_submitter(actor)
     applied = verify_current(snapshot)
     def inspect(item):
         repository, candidate = item
+        trusted_ownership(repository, candidate['base'])
         administrator = permission(repository, actor)
         if force and not administrator:
             raise ValueError('force submission requires administrator access to every member repository')
@@ -95,8 +87,6 @@ def preflight(snapshot, actor, force=False, repositories=None):
             if check['external_id'] != snapshot['identity']:
                 raise ValueError(f'{repository}: system checks did not verify the same complete topic')
             remaining_checks_pass(repository, candidate['head'])
-        if not administrator:
-            review(repository, candidate['pr'])
     pending = [(name, candidate) for name, candidate in snapshot['projects'].items()
                if 'pr' in candidate and name not in applied
                and (repositories is None or name in repositories)]
@@ -106,6 +96,7 @@ def preflight(snapshot, actor, force=False, repositories=None):
 
 
 def begin(store, manifest, request, force=False):
+    require_submitter(request.get('actor', ''))
     active = store.data['active']
     if active:
         if active['snapshot']['target'] != request['target']:

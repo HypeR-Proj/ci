@@ -10,6 +10,10 @@ import subprocess
 
 ORG = 'HypeR-Proj'
 APP_ID = 5526627
+OWNER_LOGIN = 'roolrz'
+OWNER_ID = 13791334
+OWNER_TEAM_ID = 20445205
+OWNER_TEAM = 'merge-codeowners'
 STATE_ACTORS = {
     'topic-state-writer': [{'actor_id': APP_ID, 'actor_type': 'Integration', 'bypass_mode': 'always'}],
     'default-branch-history': [],
@@ -34,15 +38,14 @@ def rulesets(repository=None):
         {**common, 'name': 'default-branch-history', 'bypass_actors': [],
          'rules': [{'type': 'deletion'}, {'type': 'non_fast_forward'}]},
         {**common, 'name': 'review-and-verification',
-         'bypass_actors': [{'actor_id': 5, 'actor_type': 'RepositoryRole',
-                            'bypass_mode': 'pull_request'},
-                           {'actor_id': APP_ID, 'actor_type': 'Integration',
+         'bypass_actors': [{'actor_id': OWNER_TEAM_ID, 'actor_type': 'Team',
                             'bypass_mode': 'pull_request'}],
          'rules': [
              {'type': 'pull_request', 'parameters': {
-                 'required_approving_review_count': 1,
+                 'required_approving_review_count': 0,
                  'dismiss_stale_reviews_on_push': True,
-                 'require_code_owner_review': True,
+                 'require_code_owner_review': False,
+                 'require_extra_approval_for_unattributed_changes': False,
                  'require_last_push_approval': False,
                  'required_review_thread_resolution': True,
                  'allowed_merge_methods': ['squash']}},
@@ -55,7 +58,9 @@ def rulesets(repository=None):
                      {'context': 'system', 'integration_id': APP_ID}]}}
         ]},
         {**common, 'name': 'topic-submission',
-         'bypass_actors': [{'actor_id': APP_ID, 'actor_type': 'Integration',
+         'bypass_actors': [{'actor_id': OWNER_TEAM_ID, 'actor_type': 'Team',
+                            'bypass_mode': 'pull_request'},
+                           {'actor_id': APP_ID, 'actor_type': 'Integration',
                             'bypass_mode': 'pull_request'}],
          'rules': [{'type': 'update'}]}
     ]
@@ -67,6 +72,14 @@ def rulesets(repository=None):
                        'bypass_actors': [{'actor_id': APP_ID, 'actor_type': 'Integration', 'bypass_mode': 'always'}],
                        'rules': [{'type': 'creation'}, {'type': 'update'}]})
     return result
+
+
+def verify_owner_team():
+    team = api(f'orgs/{ORG}/teams/{OWNER_TEAM}')
+    members = api(f'orgs/{ORG}/teams/{OWNER_TEAM}/members?per_page=100')
+    if (team['id'] != OWNER_TEAM_ID or team.get('parent')
+            or [(member['login'], member['id']) for member in members] != [(OWNER_LOGIN, OWNER_ID)]):
+        raise ValueError('The merge authority team must contain only roolrz and have no parent')
 
 
 def record_state_policy():
@@ -91,6 +104,7 @@ def configure(name, state_only=False):
     if state_only and name != 'ci':
         raise ValueError('state-only setup applies only to ci')
     if not state_only:
+        verify_owner_team()
         api(endpoint, {'allow_squash_merge': True, 'allow_merge_commit': False,
                        'allow_rebase_merge': False, 'delete_branch_on_merge': True}, 'PATCH')
         api(endpoint + '/private-vulnerability-reporting', method='PUT')
@@ -103,7 +117,7 @@ def configure(name, state_only=False):
         api(path, rule, 'PUT' if identifier else 'POST')
     if name == 'ci':
         record_state_policy()
-    print(f'{ORG}/{name}: ' + ('protected coordinator state' if state_only else 'coordinator-only PR submission; immutable default history'))
+    print(f'{ORG}/{name}: ' + ('protected coordinator state' if state_only else 'CODEOWNER/App PR submission; immutable default history'))
 
 
 def main():

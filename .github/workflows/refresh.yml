@@ -55,6 +55,7 @@ jobs:
           permission-pull-requests: write
           permission-checks: write
           permission-actions: write
+          permission-members: read
       - env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           CI_TOPIC_STATE_POLICY: ${{ vars.CI_TOPIC_STATE_POLICY }}

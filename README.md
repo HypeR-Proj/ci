@@ -16,7 +16,9 @@ never start full system tests automatically.
 
 [System verification](https://github.com/HypeR-Proj/ci/actions/workflows/system.yml)
 remains available as a manual entry point. See [topic controls](docs/topic-controls.md)
-for permissions, recovery, administrator overrides and expired-label cleanup.
+for permissions, recovery, owner overrides and expired-label cleanup. Only active
+organization members may request system tests; only the trusted CODEOWNER (`roolrz`)
+may ask the bot to submit a topic.
 
 Use `main`, `kernel#123`, or `topic:example` as the target. Topic PRs must share that exact lower-case label,
 with at most one PR per repository. Candidate commits and all dependency bases are fixed for the
@@ -32,7 +34,8 @@ in the pi5-images repository and never gates system verification or component me
 
 `CI_APP_CLIENT_ID` is an Actions variable. `CI_APP_PRIVATE_KEY` is the App PEM secret
 in the `topic-control` environment, whose deployment policy permits only `main`.
-The App is installed on HypeR-Proj and uses contents, pull-request, checks and actions permissions.
+The App is installed on HypeR-Proj and uses contents, pull-request, checks and actions
+permissions, plus organization Members read permission.
 Only trusted coordination jobs receive App credentials. Untrusted candidate code runs in separate jobs.
 Snapshot hashes are passed through trusted job outputs before downloaded artifacts are consumed.
 
@@ -44,14 +47,16 @@ built once per architecture. Publishing pending checks does not delay execution.
 Both case groups use the same reusable execution workflow, and the final gate
 requires every planned group to pass. It does not repeat module self-tests.
 See [test ownership](https://github.com/HypeR-Proj/system-tests/blob/main/ci/README.md).
-`tools/configure.py --apply REPOSITORY` enables coordinator-only default-branch submission.
+`tools/configure.py --apply REPOSITORY` restricts default-branch merges to `roolrz`
+and the App. Required approvals are disabled; PRs and tests remain required.
 Install and validate the button listener and coordinator before enabling this restriction.
 The manifest owns source paths. CI uses that exact candidate layout, plus any
 management-only repositories declared by manifest metadata. Build preparation
 generates execution files inside OUT; source checkouts remain independent.
 
 A manual dispatch from a feature workflow branch is a **System preview**. It
-runs the candidate without App credentials and cannot publish merge gates. Only
+waits for trusted organization-member authorization, runs the candidate without
+App credentials and cannot publish merge gates. Only
 the protected main workflow publishes **System verification** results.
 
 System runs resolve the latest qualified QEMU I/O VM package digest
