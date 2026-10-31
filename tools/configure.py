@@ -37,6 +37,8 @@ def rulesets(repository=None):
          'rules': [{'type': 'deletion'}, {'type': 'non_fast_forward'}]},
         {**common, 'name': 'review-and-verification',
          'bypass_actors': [{'actor_id': OWNER_ID, 'actor_type': 'User',
+                            'bypass_mode': 'pull_request'},
+                           {'actor_id': APP_ID, 'actor_type': 'Integration',
                             'bypass_mode': 'pull_request'}],
          'rules': [
              {'type': 'pull_request', 'parameters': {

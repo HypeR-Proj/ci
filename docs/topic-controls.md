@@ -66,10 +66,12 @@ explicit rejection instead of dispatching tests or starting a submission.
 Normal submission requires the latest successful `module` and `system` checks on
 exact heads, a common tested candidate, unchanged bases and topic membership, and
 mergeable PRs. Other checks, including documentation and I/O VM qualification,
-must finish without failure. No approving review is needed. The App cannot bypass
-test requirements. `roolrz` can explicitly use `action=force-submit` with a target
-to override tests; this still requires administrator access to every member,
-a complete topic, fixed commits and normal squash merges.
+must finish without failure. No approving review is needed. Normal **Submit topic** never bypasses tests.
+`roolrz` can explicitly use `action=force-submit` with a target to override tests; this still requires administrator access to every member,
+a complete topic, fixed commits and normal squash merges. The App has a PR-only
+override so it can execute this explicit owner request; every forced submission
+records the actor and override in protected coordinator history. No other actor
+can request it, and no override permits direct pushes or rewriting history.
 
 System runs wait for the trusted main `System request authorization` workflow
 before resolving or building a candidate. It checks the actual triggering actor

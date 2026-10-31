@@ -85,7 +85,8 @@ class CoordinationTests(unittest.TestCase):
         self.assertEqual(history['bypass_actors'], [])
         self.assertEqual({r['type'] for r in history['rules']}, {'deletion', 'non_fast_forward'})
         self.assertEqual(review['bypass_actors'], [
-            {'actor_id': configure.OWNER_ID, 'actor_type': 'User', 'bypass_mode': 'pull_request'}])
+            {'actor_id': configure.OWNER_ID, 'actor_type': 'User', 'bypass_mode': 'pull_request'},
+            {'actor_id': configure.APP_ID, 'actor_type': 'Integration', 'bypass_mode': 'pull_request'}])
         self.assertEqual(submission['rules'], [{'type': 'update'}])
         self.assertEqual(submission['bypass_actors'], [
             {'actor_id': configure.OWNER_ID, 'actor_type': 'User', 'bypass_mode': 'pull_request'},

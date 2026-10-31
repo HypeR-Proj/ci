@@ -96,17 +96,37 @@ class AuthorizationTests(unittest.TestCase):
             topics.dispatch_verification(Mock(), {'actor': 'outside'}, 'kernel-1')
         write.assert_not_called()
 
-    def test_only_owner_and_app_can_merge_and_only_owner_can_override_checks(self):
+    def test_only_owner_and_app_can_merge_or_execute_explicit_owner_overrides(self):
         history, verification, submission = configure.rulesets()
         self.assertEqual(history['bypass_actors'], [])
         self.assertEqual({(a['actor_type'], a['actor_id']) for a in submission['bypass_actors']},
                          {('User', configure.OWNER_ID), ('Integration', configure.APP_ID)})
         self.assertTrue(all(a['bypass_mode'] == 'pull_request' for a in submission['bypass_actors']))
         self.assertEqual(verification['bypass_actors'], [
-            {'actor_id': configure.OWNER_ID, 'actor_type': 'User', 'bypass_mode': 'pull_request'}])
+            {'actor_id': configure.OWNER_ID, 'actor_type': 'User', 'bypass_mode': 'pull_request'},
+            {'actor_id': configure.APP_ID, 'actor_type': 'Integration', 'bypass_mode': 'pull_request'}])
         rule = next(r for r in verification['rules'] if r['type'] == 'pull_request')['parameters']
         self.assertEqual(rule['required_approving_review_count'], 0)
         self.assertFalse(rule['require_code_owner_review'])
+
+    def test_normal_submit_requires_tests_but_explicit_owner_override_only_skips_tests(self):
+        snapshot = {'target': 'topic:test', 'projects': {'ci': {
+            'pr': 1, 'base': 'a' * 40, 'head': 'b' * 40, 'merge_tree': 'c' * 40}}}
+        pull = {'draft': False, 'mergeable': True, 'labels': [{'name': 'topic:test'}]}
+        failure = {'name': 'module', 'status': 'completed', 'conclusion': 'failure'}
+        with patch.object(submit, 'require_submitter'), patch.object(submit, 'trusted_ownership'), \
+                patch.object(submit, 'verify_current', return_value=set()), \
+                patch.object(submit, 'permission', return_value=True), \
+                patch.object(submit, 'api', return_value=pull), \
+                patch.object(submit, 'latest_check', return_value=failure) as checks:
+            with self.assertRaisesRegex(ValueError, 'module has not passed'):
+                submit.preflight(snapshot, 'roolrz')
+            checks.reset_mock()
+            submit.preflight(snapshot, 'roolrz', force=True)
+            checks.assert_not_called()
+            pull['mergeable'] = False
+            with self.assertRaisesRegex(ValueError, 'conflicting'):
+                submit.preflight(snapshot, 'roolrz', force=True)
 
 
 class SystemAccessTests(unittest.TestCase):
