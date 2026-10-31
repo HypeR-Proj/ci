@@ -1,0 +1,69 @@
+{
+  "last_result": null,
+  "members": [
+    {
+      "closed_at": "2026-10-30T06:55:34Z",
+      "number": 225,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "refactor: clarify Rust std and clap repository names",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/225"
+    },
+    {
+      "closed_at": "2026-10-30T06:55:52Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-clap",
+      "state": "closed",
+      "title": "refactor: clarify Rust std and clap repository names",
+      "url": "https://github.com/HypeR-Proj/lib-clap/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T06:56:11Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "refactor: clarify Rust std and clap repository names",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/4"
+    },
+    {
+      "closed_at": "2026-10-30T06:56:29Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "refactor: clarify Rust std and clap repository names",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/4"
+    },
+    {
+      "closed_at": "2026-10-30T06:56:47Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "refactor: clarify Rust std and clap repository names",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/5"
+    },
+    {
+      "closed_at": "2026-10-30T06:55:15Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "refactor: clarify Rust std and clap repository names",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/5"
+    },
+    {
+      "closed_at": "2026-10-30T06:57:03Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "refactor: clarify Rust std and clap repository names",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/5"
+    }
+  ],
+  "topic": "topic:library-repository-names"
+}
