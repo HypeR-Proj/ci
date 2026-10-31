@@ -1,0 +1,78 @@
+{
+  "last_result": null,
+  "members": [
+    {
+      "closed_at": "2026-10-30T00:14:47Z",
+      "number": 222,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "docs: add standard C/C++ library documentation entry points",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/222"
+    },
+    {
+      "closed_at": "2026-10-30T00:04:35Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "feat: integrate standard-library SDK and probes",
+      "url": "https://github.com/HypeR-Proj/build/pull/4"
+    },
+    {
+      "closed_at": "2026-10-30T00:04:02Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "test: qualify public standard libraries in Native acceptance",
+      "url": "https://github.com/HypeR-Proj/ci/pull/12"
+    },
+    {
+      "closed_at": "2026-10-30T00:12:35Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-cxx",
+      "state": "closed",
+      "title": "feat: port libc++ containers and threading to HypeR Native",
+      "url": "https://github.com/HypeR-Proj/lib-cxx/pull/1"
+    },
+    {
+      "closed_at": "2026-10-30T00:12:18Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "lib-musl",
+      "state": "closed",
+      "title": "feat: port a musl subset to HypeR Native",
+      "url": "https://github.com/HypeR-Proj/lib-musl/pull/1"
+    },
+    {
+      "closed_at": "2026-10-30T00:04:19Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "feat: share C errno through Native thread state",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T00:12:49Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "feat: register independent musl and libc++ forks",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T00:12:02Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "feat: publish a standard C/C++ Native SDK subset",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/3"
+    }
+  ],
+  "topic": "topic:native-standard-libraries"
+}
