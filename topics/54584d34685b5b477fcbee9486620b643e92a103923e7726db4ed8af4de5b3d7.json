@@ -1,0 +1,132 @@
+{
+  "last_result": null,
+  "members": [
+    {
+      "closed_at": "2026-10-30T01:53:55Z",
+      "number": 223,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "docs: name the Native foundation lib-system",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/223"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:41Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "docs: reference the Native system runtime",
+      "url": "https://github.com/HypeR-Proj/abi/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T01:49:37Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "refactor: link the bootstrap loader against libsystem",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:18Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "refactor: assemble libsystem runtime artifacts",
+      "url": "https://github.com/HypeR-Proj/build/pull/5"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:48Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "test: expect libsystem in Native library dependencies",
+      "url": "https://github.com/HypeR-Proj/ci/pull/13"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:44Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "docs: reference the renamed system runtime",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:37Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-cxx",
+      "state": "closed",
+      "title": "refactor: track libsystem in the F2FS consumer receipt",
+      "url": "https://github.com/HypeR-Proj/lib-cxx/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T01:49:34Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-dynamic-loader",
+      "state": "closed",
+      "title": "refactor: load libsystem.so as the Native runtime",
+      "url": "https://github.com/HypeR-Proj/lib-dynamic-loader/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:32Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-musl",
+      "state": "closed",
+      "title": "docs: distinguish standard C from the Native system runtime",
+      "url": "https://github.com/HypeR-Proj/lib-musl/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:21Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "docs: reference the shared libsystem runtime",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:26Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "docs: reference libsystem in the Rust platform adapter",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/2"
+    },
+    {
+      "closed_at": "2026-10-30T01:49:32Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "refactor: name the Native foundation lib-system",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/3"
+    },
+    {
+      "closed_at": "2026-10-30T01:53:51Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "refactor: move the Native system runtime to stdlib/system",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/4"
+    },
+    {
+      "closed_at": "2026-10-30T01:52:36Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "refactor: link Native programs against libsystem",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/4"
+    }
+  ],
+  "topic": "topic:system-runtime"
+}
