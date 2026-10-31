@@ -15,5 +15,6 @@
       "{component}/ci/self-test.py"
     ]
   ],
-  "test_requires_rust": false
+  "test_requires_rust": false,
+  "tests_need_workspace": false
 }
