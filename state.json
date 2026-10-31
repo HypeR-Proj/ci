@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "manifest",
+    "inflight": "perf",
     "merged": [],
     "phase": "running",
     "snapshot": {
