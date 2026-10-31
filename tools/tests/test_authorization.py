@@ -100,10 +100,10 @@ class AuthorizationTests(unittest.TestCase):
         history, verification, submission = configure.rulesets()
         self.assertEqual(history['bypass_actors'], [])
         self.assertEqual({(a['actor_type'], a['actor_id']) for a in submission['bypass_actors']},
-                         {('Team', configure.OWNER_TEAM_ID), ('Integration', configure.APP_ID)})
+                         {('User', configure.OWNER_ID), ('Integration', configure.APP_ID)})
         self.assertTrue(all(a['bypass_mode'] == 'pull_request' for a in submission['bypass_actors']))
         self.assertEqual(verification['bypass_actors'], [
-            {'actor_id': configure.OWNER_TEAM_ID, 'actor_type': 'Team', 'bypass_mode': 'pull_request'}])
+            {'actor_id': configure.OWNER_ID, 'actor_type': 'User', 'bypass_mode': 'pull_request'}])
         rule = next(r for r in verification['rules'] if r['type'] == 'pull_request')['parameters']
         self.assertEqual(rule['required_approving_review_count'], 0)
         self.assertFalse(rule['require_code_owner_review'])

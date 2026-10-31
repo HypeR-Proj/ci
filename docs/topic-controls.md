@@ -47,8 +47,8 @@ for that target; a transport retry is reconciled against its unique request ID.
 ## Submission policy
 
 Only `roolrz` and the CI GitHub App may merge default-branch PRs. The
-`merge-codeowners` organization team contains only `roolrz`; it and the App are
-the two actors allowed through the PR-only update rule. Direct pushes, force
+PR-only update rule names the immutable `roolrz` user ID and App ID directly;
+other administrators and contributors are not granted merge authority. Direct pushes, force
 pushes and default-branch deletion remain prohibited for both. Required approval
 count is zero and CODEOWNER reviews are not mandatory. CODEOWNERS still defines
 who may instruct the bot to submit a topic.

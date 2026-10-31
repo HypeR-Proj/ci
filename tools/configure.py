@@ -12,8 +12,6 @@ ORG = 'HypeR-Proj'
 APP_ID = 5526627
 OWNER_LOGIN = 'roolrz'
 OWNER_ID = 13791334
-OWNER_TEAM_ID = 20445205
-OWNER_TEAM = 'merge-codeowners'
 STATE_ACTORS = {
     'topic-state-writer': [{'actor_id': APP_ID, 'actor_type': 'Integration', 'bypass_mode': 'always'}],
     'default-branch-history': [],
@@ -38,7 +36,7 @@ def rulesets(repository=None):
         {**common, 'name': 'default-branch-history', 'bypass_actors': [],
          'rules': [{'type': 'deletion'}, {'type': 'non_fast_forward'}]},
         {**common, 'name': 'review-and-verification',
-         'bypass_actors': [{'actor_id': OWNER_TEAM_ID, 'actor_type': 'Team',
+         'bypass_actors': [{'actor_id': OWNER_ID, 'actor_type': 'User',
                             'bypass_mode': 'pull_request'}],
          'rules': [
              {'type': 'pull_request', 'parameters': {
@@ -58,7 +56,7 @@ def rulesets(repository=None):
                      {'context': 'system', 'integration_id': APP_ID}]}}
         ]},
         {**common, 'name': 'topic-submission',
-         'bypass_actors': [{'actor_id': OWNER_TEAM_ID, 'actor_type': 'Team',
+         'bypass_actors': [{'actor_id': OWNER_ID, 'actor_type': 'User',
                             'bypass_mode': 'pull_request'},
                            {'actor_id': APP_ID, 'actor_type': 'Integration',
                             'bypass_mode': 'pull_request'}],
@@ -74,12 +72,10 @@ def rulesets(repository=None):
     return result
 
 
-def verify_owner_team():
-    team = api(f'orgs/{ORG}/teams/{OWNER_TEAM}')
-    members = api(f'orgs/{ORG}/teams/{OWNER_TEAM}/members?per_page=100')
-    if (team['id'] != OWNER_TEAM_ID or team.get('parent')
-            or [(member['login'], member['id']) for member in members] != [(OWNER_LOGIN, OWNER_ID)]):
-        raise ValueError('The merge authority team must contain only roolrz and have no parent')
+def verify_owner_identity():
+    member = api(f'orgs/{ORG}/memberships/{OWNER_LOGIN}')
+    if member.get('state') != 'active' or member['user']['id'] != OWNER_ID:
+        raise ValueError('The merge authority must be the original active roolrz account')
 
 
 def record_state_policy():
@@ -104,7 +100,7 @@ def configure(name, state_only=False):
     if state_only and name != 'ci':
         raise ValueError('state-only setup applies only to ci')
     if not state_only:
-        verify_owner_team()
+        verify_owner_identity()
         api(endpoint, {'allow_squash_merge': True, 'allow_merge_commit': False,
                        'allow_rebase_merge': False, 'delete_branch_on_merge': True}, 'PATCH')
         api(endpoint + '/private-vulnerability-reporting', method='PUT')
