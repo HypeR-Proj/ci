@@ -46,7 +46,7 @@ class ButtonTests(unittest.TestCase):
         self.assertEqual(len(topics.validate_members(pulls, 'topic:test', known)), 2)
 
     def test_controls_are_published_before_review_or_system_verification(self):
-        # A ready PR must be able to request its first verification. Review
+        # A ready PR must be able to request its first verification. Identity
         # and successful checks are submission gates, not visibility gates.
         with patch.object(topics, 'pages', return_value=[]), \
                 patch.object(topics, 'write', return_value={'id': 42}) as write:
@@ -144,6 +144,12 @@ class ButtonTests(unittest.TestCase):
 
 
 class SubmissionTests(unittest.TestCase):
+    def setUp(self):
+        for name in ('require_submitter', 'trusted_ownership'):
+            mock = patch.object(submit, name)
+            mock.start()
+            self.addCleanup(mock.stop)
+
     def test_no_merge_until_every_member_passes(self):
         state = store()
         request = {'repository': 'kernel', 'head': 'b' * 40, 'target': 'topic:test', 'actor': 'alice'}
@@ -243,6 +249,11 @@ class SubmissionTests(unittest.TestCase):
 
 
 class CleanupAndDispatchTests(unittest.TestCase):
+    def setUp(self):
+        mock = patch.object(topics, 'require_org_member')
+        mock.start()
+        self.addCleanup(mock.stop)
+
     def test_running_ci_or_partial_submission_prevents_cleanup(self):
         state = store()
         with patch.object(topics, 'system_runs', return_value=[{'status': 'in_progress'}]), \

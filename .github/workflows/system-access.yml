@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2026 roolrz
+# SPDX-License-Identifier: Apache-2.0
+
+name: System request authorization
+on:
+  workflow_run:
+    workflows: [System verification]
+    types: [in_progress]
+permissions:
+  contents: read
+concurrency:
+  group: system-access-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
+  cancel-in-progress: false
+jobs:
+  authorize:
+    if: github.event.workflow_run.event == 'workflow_dispatch'
+    environment: topic-control
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
+        with:
+          client-id: ${{ vars.CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: HypeR-Proj
+          permission-contents: read
+          permission-actions: read
+          permission-members: read
+      - name: Verify the actual requester against current organization membership
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          CI_TOPIC_STATE_POLICY: ${{ vars.CI_TOPIC_STATE_POLICY }}
+          REQUEST_RUN: ${{ github.event.workflow_run.id }}
+          REQUEST_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: python3 tools/system_access.py authorize --run "$REQUEST_RUN" --attempt "$REQUEST_ATTEMPT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: system-authorization-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
+          path: authorization.json
+          if-no-files-found: error
+          retention-days: 7

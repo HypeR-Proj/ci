@@ -21,7 +21,24 @@ concurrency:
   group: system-${{ github.ref }}-${{ inputs.target }}
   cancel-in-progress: false
 jobs:
+  authorize:
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Wait for trusted organization-member authorization
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST_RUN: ${{ github.run_id }}
+          REQUEST_ATTEMPT: ${{ github.run_attempt }}
+        run: python3 tools/system_access.py wait --run "$REQUEST_RUN" --attempt "$REQUEST_ATTEMPT"
   resolve:
+    needs: authorize
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:

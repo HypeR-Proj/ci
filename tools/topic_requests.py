@@ -12,6 +12,7 @@ from pathlib import Path
 import subprocess
 import zipfile
 
+from authorization import require_codeowner, require_org_member
 from configure import APP_ID
 from topic_store import pages
 from workspace import ORG, api
@@ -94,5 +95,12 @@ def receive(repository, run):
     number = int(check['external_id'][len(prefix):])
     pull = api(f'repos/{ORG}/{repository}/pulls/{number}')
     request = validate_event(repository, run, event, check, pull)
-    permission(repository, request['actor'])
     return request
+
+
+def authorize_request(repository, request):
+    if request['action'] == 'submit':
+        require_codeowner(repository, request['actor'])
+        permission(repository, request['actor'])
+    else:
+        require_org_member(request['actor'])
