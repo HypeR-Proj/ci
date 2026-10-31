@@ -1,0 +1,24 @@
+{
+  "last_result": null,
+  "members": [
+    {
+      "closed_at": "2026-10-30T16:58:18Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Generate module documentation catalog from the source manifest",
+      "url": "https://github.com/HypeR-Proj/build/pull/7"
+    },
+    {
+      "closed_at": "2026-10-30T16:58:39Z",
+      "number": 19,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Track integration-only repositories and proposed manifest registrations",
+      "url": "https://github.com/HypeR-Proj/ci/pull/19"
+    }
+  ],
+  "topic": "topic:workspace-preparation"
+}
