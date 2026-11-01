@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-terminal",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -45,6 +45,7 @@
       "lib-service",
       "lib-service-ipc",
       "lib-system",
+      "lib-terminal",
       "manifest"
     ],
     "phase": "running",
