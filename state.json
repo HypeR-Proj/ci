@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-block",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -29,6 +29,7 @@
       "kernel",
       "ldd",
       "less",
+      "lib-block",
       "manifest"
     ],
     "phase": "running",
