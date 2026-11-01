@@ -85,7 +85,7 @@ PY
         third_party/rust-fatfs/README.md | third_party/rust-fatfs/LICENSE.txt)
             continue
             ;;
-        io-vm/* | pi5-images/* | tests/legacy/*)
+        io-vm/* | build/pi5-images/* | tests/legacy/*)
             # Independently licensed publishers and preserved upstream workflows.
             continue
             ;;

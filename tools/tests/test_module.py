@@ -107,11 +107,11 @@ class ModuleTests(unittest.TestCase):
 
     def test_toolchain_is_owned_by_build_below_a_repository_free_root(self):
         root, _ = self.fixture(False)
-        build = root / 'build'
+        build = root / 'build/system'
         (build / 'scripts').mkdir(parents=True)
         (build / 'scripts/build.py').write_text('# build entry\n')
         (build / 'project.py').write_text('# project entry\n')
-        (root / 'project.py').symlink_to('build/project.py')
+        (root / 'project.py').symlink_to('build/system/project.py')
         (root / 'rust-toolchain.toml').rename(build / 'rust-toolchain.toml')
         with patch.object(runner.subprocess, 'check_output', return_value=''), patch.object(runner.subprocess, 'run') as run:
             run.return_value.stdout = str(root) + '\n'
