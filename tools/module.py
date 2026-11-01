@@ -80,9 +80,8 @@ def test_component(output, name, relative):
     if shells:
         subprocess.run(['shellcheck', '--severity=warning', *shells], cwd=output, check=True)
     if metadata.get('test_requires_rust', True):
-        # Native repositories share a Cargo workspace. Select only packages
-        # owned by this component so an unrelated formatting error cannot fail it.
-        if metadata.get('packages') or name == 'bootstrap':
+        # Format only packages owned by the candidate repository.
+        if metadata.get('cargo') or name == 'bootstrap':
             for filename in tracked:
                 if Path(filename).name != 'Cargo.toml':
                     continue

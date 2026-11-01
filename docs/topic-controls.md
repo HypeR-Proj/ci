@@ -6,15 +6,16 @@ SPDX-License-Identifier: Apache-2.0
 # PR buttons and whole-topic submission
 
 Each managed repository contains the same small `.github/workflows/topic-button.yml`
-listener. The App publishes a **topic** check on open PRs. Its native GitHub buttons
-are in **PR → Checks → topic**. The check's **Details** link opens that exact
+listener. The App publishes a **topic** check on open PRs. Its content is **Topic
+controls** for grouped PRs and **System CI** for PRs without a topic label. Native
+GitHub buttons are in **PR → Checks → topic**. The check's **Details** link opens that exact
 check, rather than the coordinator's Actions page:
 
 - **Run system CI** verifies every open PR with the same `topic:*` label.
 - **Submit topic** submits that whole verified group, after checking every member.
 
-A PR without a topic is a one-member submission. Use one lower-case topic label per
-PR and at most one PR per repository in a topic. A topic member outside the manifest,
+A PR without a topic uses the native GitHub merge flow described below. For grouped
+changes, use one lower-case topic label per PR and at most one PR per repository in a topic. A topic member outside the manifest,
 on another base branch, or carrying multiple topics blocks submission. Draft PRs
 retain their topic and cannot be submitted. Mark every member ready before testing.
 
@@ -43,6 +44,22 @@ requests sooner; polling can also advance an already requested submission. The *
 the last request result and the members being submitted. The **system** check links
 to the actual acceptance run. Repeated verification requests reuse a running test
 for that target; a transport retry is reconciled against its unique request ID.
+
+## Single-repository changes
+
+A PR without a `topic:` label shows **System CI** inside its **topic** check. It
+provides only **Run system CI**, resolving that PR together with current main dependencies.
+An organization member must request the run; PR creation and pushes do not start
+system tests. Manual dispatch with a target such as `kernel#123` is equivalent.
+
+After the latest `module` and `system` checks pass, the repository's configured
+CODEOWNER can click GitHub's native **Squash and merge** button. No **Submit topic**
+request is needed. Current repositories assign that authority to `roolrz`; the
+existing PR-only update rule permits that account and the App, while other users
+cannot merge. Direct pushes and rewriting default history remain forbidden.
+Checks are bound to the tested commit and dependencies; stale results require a
+new verification. Adding a topic label switches the controls back to whole-topic
+verification and submission.
 
 ## Submission policy
 

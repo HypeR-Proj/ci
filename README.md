@@ -8,9 +8,14 @@ SPDX-License-Identifier: Apache-2.0
 This repository owns GitHub Actions coordination, topic controls and candidate verification.
 Runtime cases belong to [system-tests](https://github.com/HypeR-Proj/system-tests);
 reusable test execution belongs to [test-framework](https://github.com/HypeR-Proj/test-framework).
-Component PRs run their own `module` checks. In a ready PR's Checks tab, open **topic**
-and click **Run system CI** to verify the entire topic, or **Submit topic** to merge
-all verified members. The central Actions coordinator collects button requests on
+Component PRs run their own `module` checks. A ready PR without a topic label
+shows **System CI** when opening its **topic** check: click **Run system CI**,
+then use GitHub's native
+**Squash and merge** button as the repository CODEOWNER after the current `module`
+and `system` checks pass. No topic submission is required.
+
+For grouped changes, open **topic** and click **Run system CI** to verify the
+entire topic, or **Submit topic** to merge all verified members. The central Actions coordinator collects button requests on
 a five-minute schedule; GitHub may delay scheduled runs. Pushes and PR creation
 never start full system tests automatically.
 
@@ -53,7 +58,7 @@ See [test ownership](https://github.com/HypeR-Proj/system-tests/blob/main/ci/REA
 and the App. Required approvals are disabled; PRs and tests remain required.
 Install and validate the button listener and coordinator before enabling this restriction.
 The manifest owns source paths. The workspace root is not a Git checkout;
-`build/` owns the tools and the manifest supplies the two root entry links. CI uses that exact candidate layout, plus any
+`build/system/` owns the tools and the manifest supplies the two root entry links. CI uses that exact candidate layout, plus any
 management-only repositories declared by manifest metadata. Build preparation
 generates execution files inside OUT; source checkouts remain independent.
 

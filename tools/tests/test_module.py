@@ -21,7 +21,7 @@ class ModuleTests(unittest.TestCase):
         component.mkdir(parents=True)
         (root / 'rust-toolchain.toml').write_text('[toolchain]\nchannel="test-nightly"\ncomponents=["rustfmt"]\ntargets=[]\n')
         (component / 'component.json').write_text(json.dumps({
-            'test_requires_rust': rust, 'packages': ['owner'], 'tests': []}))
+            'test_requires_rust': rust, 'cargo': [{'manifest': 'Cargo.toml', 'domain': 'system'}], 'tests': []}))
         (component / 'probe.sh').write_text('#!/bin/sh\ntrue\n')
         (component / 'Cargo.toml').write_text('[package]\nname="owner"\nversion="0.0.0"\n')
         unrelated = root / 'app/unrelated'
@@ -107,11 +107,11 @@ class ModuleTests(unittest.TestCase):
 
     def test_toolchain_is_owned_by_build_below_a_repository_free_root(self):
         root, _ = self.fixture(False)
-        build = root / 'build'
+        build = root / 'build/system'
         (build / 'scripts').mkdir(parents=True)
         (build / 'scripts/build.py').write_text('# build entry\n')
         (build / 'project.py').write_text('# project entry\n')
-        (root / 'project.py').symlink_to('build/project.py')
+        (root / 'project.py').symlink_to('build/system/project.py')
         (root / 'rust-toolchain.toml').rename(build / 'rust-toolchain.toml')
         with patch.object(runner.subprocess, 'check_output', return_value=''), patch.object(runner.subprocess, 'run') as run:
             run.return_value.stdout = str(root) + '\n'
