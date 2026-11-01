@@ -85,10 +85,25 @@ this evidence without receiving App credentials.
 
 ## Failures and recovery
 
-All members are checked before the first merge. The coordinator saves the candidate
-and each merge's progress on the `ci` repository's `topic-state` branch. It checks
-the exact heads, bases and remaining membership again before each merge, and merges
-the coordinator repository last. State writes use ordinary fast-forward Git updates;
+All members are checked before the first merge. The coordinator publishes the
+manifest first, submits ordinary repositories in batches of at most eight with
+up to four concurrent merge requests, and merges the coordinator repository last.
+Each batch rechecks the whole candidate's exact heads, bases and membership, plus
+the batch members' current permissions and checks. A paginated check-run read
+supplies both required gates and additional qualifications; older successes never
+hide newer failures or another App's result. Every merge request binds its tested
+head SHA. GitHub still processes individual squash merges, not one bulk transaction.
+
+Before issuing a batch, the coordinator durably records all its members on the
+`ci` repository's `topic-state` branch. Workers only issue merge requests; the
+coordinator waits for them, verifies actual PR/main trees and saves confirmed
+progress once per batch. This replaces per-PR whole-topic queries and checkpoints.
+Batch work reserves at most 50 merge/checkpoint writes per rolling minute within
+one run, leaving room below GitHub's content-creation limit for admission, archival
+and other App activity.
+Small topics need no artificial delay. Other activity can still cause rate limits.
+
+State writes use ordinary fast-forward Git updates;
 a conflicting writer cannot overwrite an existing checkpoint.
 The state branch permits creation and updates only by the App and prohibits force
 pushes and deletion. The coordinator refuses to load state without these protections.
@@ -101,8 +116,13 @@ This does not require granting the App administration permissions.
 GitHub cannot atomically merge multiple repositories. A failure can therefore leave
 a partly submitted topic. The active record prevents another topic from being
 submitted while recovery is pending. Lost API responses are reconciled with actual
-PR state and the tested merge tree. Transport failures are retried by a later poll.
-Changed commits, ownership or membership block further merging. Correct the reported
+PR state and the tested merge tree. A failed response for an actually merged PR
+does not interrupt submission. Partially published GitHub merge metadata is repaired
+only when its exact tree and parent match the saved candidate. Old single-PR
+checkpoints remain recoverable. Unconfirmed batch members stay in the checkpoint;
+no later batch starts after an incomplete batch. Already admitted requests in that
+batch may finish before a failure is observed. Changed commits, ownership or
+membership block further batches. Correct the reported
 condition and click **Submit topic** on a remaining member as the original actor,
 using the same override setting if applicable. The original snapshot is retained;
 recovery does not silently choose new commits or omit an unmerged member.

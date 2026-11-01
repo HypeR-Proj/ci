@@ -212,11 +212,12 @@ class SubmissionTests(unittest.TestCase):
         state.data['active'] = {'snapshot': snapshot(), 'actor': 'alice', 'force': False,
                                 'phase': 'running', 'inflight': None, 'error': None, 'merged': []}
         with patch.object(submit, 'preflight', return_value=set()), \
+                patch.object(submit, 'verify_current', return_value=set()), \
                 patch.object(submit, 'merge', side_effect=subprocess.CalledProcessError(1, ['gh'])):
-            with self.assertRaises(subprocess.CalledProcessError):
+            with self.assertRaisesRegex(ValueError, 'batch incomplete'):
                 submit.advance(state)
-        self.assertEqual(state.data['active']['inflight'], 'kernel')
-        state.save.assert_called_once()
+        self.assertEqual(state.data['active']['inflight'], ['kernel'])
+        self.assertEqual(state.save.call_count, 2)
 
     def test_changed_source_stops_before_next_merge(self):
         state = store()

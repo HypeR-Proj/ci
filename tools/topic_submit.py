@@ -2,19 +2,26 @@
 # SPDX-FileCopyrightText: 2026 roolrz
 # SPDX-License-Identifier: Apache-2.0
 
-"""Submit a complete verified topic, checkpointing each guarded PR merge."""
+"""Submit a verified topic in bounded, durably checkpointed batches."""
 
+from collections import deque
 import concurrent.futures
 import json
 import re
+import time
 
 from authorization import require_submitter, trusted_ownership
 from configure import APP_ID
 from topic_requests import permission, target_for
 from topic_store import pages, write
-from workspace import ORG, api, graphql, resolve, verify_current
+from workspace import ORG, api, resolve, verify_current
 
 ACTIONS_APP_ID = 15368
+BATCH_SIZE = 8
+MERGE_WORKERS = 4
+# Leave headroom below GitHub's content-creation limit for admission, archival
+# and other App activity. Each batch saves two checkpoints (three writes each).
+WRITES_PER_MINUTE = 50
 
 
 def latest_check(repository, head, name, app):
@@ -31,7 +38,7 @@ def successful(check, repository):
         raise ValueError(f'{repository}: {check["name"]} has not passed')
 
 
-def remaining_checks_pass(repository, head):
+def latest_checks(repository, head):
     # Required gates are checked separately. Do not submit while an owner's
     # additional qualification (for example I/O VM kernel builds) is unfinished
     # or failing merely because it is not a named branch-protection requirement.
@@ -40,7 +47,12 @@ def remaining_checks_pass(repository, head):
         key = (check['name'], check['app']['id'])
         if key not in latest or check['id'] > latest[key]['id']:
             latest[key] = check
-    for check in latest.values():
+    return latest
+
+
+def remaining_checks_pass(repository, head, checks=None):
+    checks = latest_checks(repository, head) if checks is None else checks
+    for check in checks.values():
         if (check['status'] != 'completed'
                 or check['conclusion'] not in ('success', 'neutral', 'skipped')):
             raise ValueError(f'{repository}: {check["name"]} has not completed successfully')
@@ -81,12 +93,15 @@ def preflight(snapshot, actor, force=False, repositories=None):
         if 'merge_tree' not in candidate:
             raise ValueError(f'{repository}: verified merge tree is missing')
         if not force:
-            successful(latest_check(repository, candidate['head'], 'module', ACTIONS_APP_ID), repository)
-            check = latest_check(repository, candidate['head'], 'system', APP_ID)
-            successful(check, repository)
-            if check['external_id'] != snapshot['identity']:
+            checks = latest_checks(repository, candidate['head'])
+            for name, app in (('module', ACTIONS_APP_ID), ('system', APP_ID)):
+                check = checks.get((name, app))
+                if check is None:
+                    raise ValueError(f'{repository}: {name} check is missing')
+                successful(check, repository)
+            if checks[('system', APP_ID)]['external_id'] != snapshot['identity']:
                 raise ValueError(f'{repository}: system checks did not verify the same complete topic')
-            remaining_checks_pass(repository, candidate['head'])
+            remaining_checks_pass(repository, candidate['head'], checks)
     pending = [(name, candidate) for name, candidate in snapshot['projects'].items()
                if 'pr' in candidate and name not in applied
                and (repositories is None or name in repositories)]
@@ -121,10 +136,15 @@ def merge(repository, candidate):
 
 def reconcile_inflight(active):
     """Recover a lost merge response, including GitHub's partially updated PR state."""
-    repository = active['inflight']
-    if not repository:
+    pending = active['inflight']
+    if not pending:
         return
-    candidate = active['snapshot']['projects'][repository]
+    # Resume checkpoints written by the previous one-PR-at-a-time coordinator.
+    for repository in [pending] if isinstance(pending, str) else pending:
+        reconcile_merge(repository, active['snapshot']['projects'][repository])
+
+
+def reconcile_merge(repository, candidate):
     pull = api(f'repos/{ORG}/{repository}/pulls/{candidate["pr"]}')
     if pull['merged']:
         return
@@ -142,6 +162,46 @@ def reconcile_inflight(active):
     merge(repository, candidate)
 
 
+def batches(members):
+    # Layout must be visible before consumers; the running coordinator remains
+    # on its trusted revision until all other repositories have been applied.
+    if 'manifest' in members:
+        yield ['manifest']
+    ordinary = sorted(set(members) - {'manifest', 'ci'})
+    for offset in range(0, len(ordinary), BATCH_SIZE):
+        yield ordinary[offset:offset + BATCH_SIZE]
+    if 'ci' in members:
+        yield ['ci']
+
+
+def pace_batch(recent, requests):
+    """Bound this run's merge/checkpoint writes without delaying small topics."""
+    while True:
+        now = time.monotonic()
+        while recent and recent[0][0] <= now - 60:
+            recent.popleft()
+        if sum(count for _, count in recent) + requests <= WRITES_PER_MINUTE:
+            recent.append((now, requests))
+            return
+        time.sleep(max(0, recent[0][0] + 60 - now))
+
+
+def merge_batch(snapshot, batch):
+    errors = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=MERGE_WORKERS) as pool:
+        pending = {pool.submit(merge, name, snapshot['projects'][name]): name for name in batch}
+        # All admitted requests settle before we verify or modify shared state.
+        for future in concurrent.futures.as_completed(pending):
+            name = pending[future]
+            try:
+                result = future.result()
+                if not result.get('merged'):
+                    errors[name] = result.get('message') or 'GitHub refused the merge'
+            except Exception as error:
+                errors[name] = (getattr(error, 'stderr', None) or str(error)).strip()
+    return errors
+
+
 def advance(store):
     active = store.data['active']
     if not active or active['phase'] != 'running':
@@ -149,29 +209,45 @@ def advance(store):
     snapshot = active['snapshot']
     reconcile_inflight(active)
     applied = preflight(snapshot, active['actor'], active['force'])
-    members = [name for name, candidate in snapshot['projects'].items() if 'pr' in candidate]
-    # Publish manifest layout first; keep the coordinator revision stable until
-    # all its dependencies are applied. GitHub has no cross-repository atomic merge.
-    members.sort(key=lambda name: (2 if name == 'ci' else 0 if name == 'manifest' else 1, name))
-    for repository in members:
-        if repository in applied:
+    members = [name for name, candidate in snapshot['projects'].items()
+               if 'pr' in candidate and name not in applied]
+    recent_writes = deque()
+    for batch in batches(members):
+        pace_batch(recent_writes, len(batch) + 6)
+        # Check the whole source combination and this batch's current gates
+        # after any rate-limit wait, then bind every merge to its tested head.
+        applied = preflight(snapshot, active['actor'], active['force'], set(batch))
+        batch = [name for name in batch if name not in applied]
+        if not batch:
             continue
-        # Recheck every remaining PR, review and dependency before each write.
-        applied = preflight(snapshot, active['actor'], active['force'], {repository})
-        if repository in applied:
-            continue
-        active['inflight'] = repository
+        active['inflight'] = batch
         store.save()
-        result = merge(repository, snapshot['projects'][repository])
-        if not result.get('merged'):
-            raise ValueError(f'{repository}: GitHub refused the merge: {result.get("message", "unknown")}')
-        applied = verify_current(snapshot)
-        if repository not in applied:
-            raise ValueError(f'{repository}: merge is not yet confirmed; resume after GitHub settles')
+        print('Submitting batch: ' + ', '.join(batch), flush=True)
+        errors = merge_batch(snapshot, batch)
+        try:
+            applied = verify_current(snapshot)
+        except ValueError:
+            # A lost response can leave main updated before PR metadata. Only
+            # reconcile the saved batch, preserving exact tree/parent checks.
+            reconcile_inflight(active)
+            applied = verify_current(snapshot)
         active['merged'] = sorted(applied)
-        active['inflight'] = None
+        missing = [name for name in batch if name not in applied]
+        active['inflight'] = missing or None
         store.save()
-    verify_current(snapshot)
+        if missing:
+            detail = '; '.join(f'{name}: {errors.get(name, "merge is not yet confirmed")}'
+                               for name in missing)
+            raise ValueError('Submission batch incomplete; resume the saved candidate. ' + detail)
+        if errors:
+            print('Confirmed merges despite failed replies: ' + ', '.join(sorted(errors)), flush=True)
+        print(f'Confirmed {len(applied)} topic members', flush=True)
+    applied = verify_current(snapshot)
+    expected = {name for name, candidate in snapshot['projects'].items() if 'pr' in candidate}
+    if applied != expected:
+        raise ValueError('Whole-topic submission is not yet confirmed')
+    active['merged'] = sorted(applied)
+    active['inflight'] = None
     archive = f'submissions/{snapshot["identity"]}.json'
     store.data['messages'][snapshot['target']] = 'Whole topic submitted successfully. Archive: ' + archive
     store.data['active'] = None

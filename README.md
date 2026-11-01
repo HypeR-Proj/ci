@@ -25,7 +25,9 @@ with at most one PR per repository. Candidate commits and all dependency bases a
 run. Successful results are posted only after rechecking those inputs. Unrelated input changes require a new run. Already merged topic members remain valid only
 when the merged tree equals the tested tree. A scheduled metadata check invalidates stale green
 checks. System tests start only after an explicit button request or manual workflow dispatch.
-The submission coordinator rechecks the candidate before each merge. Cross-repository
+The coordinator admits the whole topic, then submits batches of up to eight PRs
+with at most four merge requests in flight. It rechecks the candidate and gates at
+batch boundaries and confirms the resulting trees before continuing. Cross-repository
 submission is resumable, but GitHub does not provide an atomic multi-repository transaction.
 
 The system suite includes Native boot/services/filesystem/VM tests, board storage tests and
