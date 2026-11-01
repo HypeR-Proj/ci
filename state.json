@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "fs-fat",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -19,6 +19,7 @@
       "free",
       "fs-backend",
       "fs-erofs",
+      "fs-fat",
       "manifest"
     ],
     "phase": "running",
