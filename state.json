@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "journald",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -25,6 +25,7 @@
       "io-runtime",
       "io-vm",
       "journalctl",
+      "journald",
       "manifest"
     ],
     "phase": "running",
