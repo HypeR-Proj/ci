@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "system-tests",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -59,7 +59,8 @@
       "ps",
       "session-manager",
       "shell",
-      "system-startup"
+      "system-startup",
+      "system-tests"
     ],
     "phase": "running",
     "snapshot": {
