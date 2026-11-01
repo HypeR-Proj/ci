@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "memstat",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -51,7 +51,8 @@
       "lib-vm-image",
       "lib-vm-policy",
       "lib-vm-support",
-      "manifest"
+      "manifest",
+      "memstat"
     ],
     "phase": "running",
     "snapshot": {
