@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "vmm",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -67,7 +67,8 @@
       "top",
       "umount",
       "vm-manager",
-      "vm-runtime"
+      "vm-runtime",
+      "vmm"
     ],
     "phase": "running",
     "snapshot": {
