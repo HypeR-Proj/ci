@@ -162,14 +162,21 @@ def publish_controls(store, pulls, known):
                 if pull['draft']:
                     summary += '\n\nMark this PR ready before requesting verification or submission.'
                 else:
-                    actions = BUTTONS
+                    actions = BUTTONS if target.startswith('topic:') else BUTTONS[:1]
             except ValueError as error:
                 summary = str(error)
             controls_url = f'https://github.com/{ORG}/{repository}/pull/{pull["number"]}/checks'
-            summary += '\n\nOpen the **topic** check in this PR\'s **Checks** tab to use '
-            summary += '**Run system CI** or **Submit topic**. '
-            summary += 'Buttons are processed by the central coordinator, normally within several minutes. '
-            summary += 'Submission includes every topic member. Do not use the ordinary Merge button.'
+            grouped = target.startswith('topic:')
+            # Keep the installed listener's check identity for both PR routes.
+            control_name = 'topic'
+            summary += f'\n\nOpen the **{control_name}** check in this PR\'s **Checks** tab to use **Run system CI**. '
+            summary += 'Verification is manual; the coordinator processes requests within several minutes. '
+            if grouped:
+                summary += 'Use **Submit topic** to merge every verified member together. Do not use the ordinary Merge button.'
+            else:
+                summary += ('This PR has no topic label. After the current **module** and **system** checks pass, '
+                            'the repository CODEOWNER may use GitHub\'s **Squash and merge** button. '
+                            'No topic submission is needed; other merge requirements still apply.')
             if target in store.data['messages']:
                 summary += '\n\nLast request: ' + store.data['messages'][target]
             active = store.data['active']
@@ -178,14 +185,14 @@ def publish_controls(store, pulls, known):
                 if active['error']:
                     summary += '\n\n' + active['error']
             identity = f'topic:{repository}#{pull["number"]}'
-            payload = {'name': 'topic', 'external_id': identity, 'status': 'completed',
+            payload = {'name': control_name, 'external_id': identity, 'status': 'completed',
                        'conclusion': 'neutral', 'actions': actions,
                        'details_url': controls_url,
-                       'output': {'title': 'Topic controls', 'summary': summary,
+                       'output': {'title': 'Topic controls' if grouped else 'System CI', 'summary': summary,
                                   'text': json.dumps({'target': target, 'pr': pull['number'],
                                                       'buttons': actions})}}
             checks = list(pages(f'repos/{ORG}/{repository}/commits/{pull["head"]["sha"]}/check-runs'
-                               '?check_name=topic&filter=all', 'check_runs'))
+                               '?filter=all', 'check_runs'))
             own = [check for check in checks if check['app']['id'] == APP_ID and check.get('external_id') == identity]
             if own:
                 check = max(own, key=lambda row: row['id'])

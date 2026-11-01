@@ -64,6 +64,8 @@ def validate_event(repository, run, event, check, pull):
               else event.get('requested_action', {}).get('identifier'))
     if event['action'] not in ('rerequested', 'requested_action') or action not in ('verify', 'submit'):
         raise ValueError('unsupported topic button')
+    if action == 'submit' and not target.startswith('topic:'):
+        raise ValueError('Single-repository PRs use the GitHub Merge button after verification')
     return {'action': action, 'target': target, 'actor': run['actor']['login'],
             'repository': repository, 'pr': pull['number'], 'head': pull['head']['sha'],
             'url': run['html_url']}

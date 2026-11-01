@@ -21,7 +21,7 @@ class ModuleTests(unittest.TestCase):
         component.mkdir(parents=True)
         (root / 'rust-toolchain.toml').write_text('[toolchain]\nchannel="test-nightly"\ncomponents=["rustfmt"]\ntargets=[]\n')
         (component / 'component.json').write_text(json.dumps({
-            'test_requires_rust': rust, 'packages': ['owner'], 'tests': []}))
+            'test_requires_rust': rust, 'cargo': [{'manifest': 'Cargo.toml', 'domain': 'system'}], 'tests': []}))
         (component / 'probe.sh').write_text('#!/bin/sh\ntrue\n')
         (component / 'Cargo.toml').write_text('[package]\nname="owner"\nversion="0.0.0"\n')
         unrelated = root / 'app/unrelated'

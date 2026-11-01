@@ -57,6 +57,26 @@ class ButtonTests(unittest.TestCase):
         self.assertEqual(update.args[1]['details_url'],
                          'https://github.com/HypeR-Proj/kernel/pull/1/checks?check_run_id=42')
 
+    def test_single_pr_has_verification_and_native_merge_instructions(self):
+        with patch.object(topics, 'pages', return_value=[]), \
+                patch.object(topics, 'write', return_value={'id': 42}) as write:
+            topics.publish_controls(store(), {'kernel': [pull(topic='')]}, {'kernel'})
+        payload = write.call_args_list[0].args[1]
+        self.assertEqual(payload['name'], 'topic')
+        self.assertEqual(payload['output']['title'], 'System CI')
+        self.assertEqual([action['identifier'] for action in payload['actions']], ['verify'])
+        self.assertIn('Squash and merge', payload['output']['summary'])
+        self.assertNotIn('Submit topic', payload['output']['summary'])
+
+    def test_removing_topic_updates_existing_controls_in_place(self):
+        check = {'id': 42, 'app': {'id': APP_ID}, 'external_id': 'topic:kernel#1', 'name': 'topic'}
+        with patch.object(topics, 'pages', return_value=[check]), patch.object(topics, 'write') as write:
+            topics.publish_controls(store(), {'kernel': [pull(topic='')]}, {'kernel'})
+        write.assert_called_once()
+        self.assertEqual(write.call_args.args[0], 'repos/HypeR-Proj/kernel/check-runs/42')
+        self.assertEqual(write.call_args.args[1]['output']['title'], 'System CI')
+        self.assertEqual(write.call_args.args[2], 'PATCH')
+
     def test_read_response_without_actions_does_not_cause_repeated_writes(self):
         with patch.object(topics, 'pages', return_value=[]), \
                 patch.object(topics, 'write', return_value={'id': 42}) as write:
@@ -99,6 +119,16 @@ class ButtonTests(unittest.TestCase):
         self.assertEqual(result['action'], 'submit')
         self.event['action'] = 'rerequested'
         self.assertEqual(requests.validate_event('kernel', self.run, self.event, self.check, pull())['action'], 'verify')
+
+    def test_single_pr_accepts_verify_but_rejects_forged_topic_submit(self):
+        self.check['output']['text'] = json.dumps({'target': 'kernel#1'})
+        self.event['check_run'] = copy.deepcopy(self.check)
+        self.event['requested_action']['identifier'] = 'verify'
+        result = requests.validate_event('kernel', self.run, self.event, self.check, pull(topic=''))
+        self.assertEqual(result['target'], 'kernel#1')
+        self.event['requested_action']['identifier'] = 'submit'
+        with self.assertRaisesRegex(ValueError, 'GitHub Merge button'):
+            requests.validate_event('kernel', self.run, self.event, self.check, pull(topic=''))
 
     def test_forged_workflow_actor_app_or_head_is_rejected(self):
         for target, key, value in [
