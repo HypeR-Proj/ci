@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "bootstrap",
+    "inflight": "bootstrap-retire",
     "merged": [
       "HypeR",
       "abi",
