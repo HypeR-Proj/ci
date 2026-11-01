@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "top",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -63,7 +63,8 @@
       "system-tests",
       "terminal-service",
       "test-framework",
-      "toolchain"
+      "toolchain",
+      "top"
     ],
     "phase": "running",
     "snapshot": {
