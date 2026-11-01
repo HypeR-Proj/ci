@@ -1,0 +1,591 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/11fbd5601c1386d7e547c301603dedce7209d08cf73f2028b5764c8b0d23757b.json",
+  "members": [
+    {
+      "closed_at": "2026-10-31T02:26:37Z",
+      "number": 226,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "Document repo-only setup and link automatic module documentation",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/226"
+    },
+    {
+      "closed_at": "2026-10-31T02:26:59Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/abi/pull/4"
+    },
+    {
+      "closed_at": "2026-10-31T02:27:19Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/5"
+    },
+    {
+      "closed_at": "2026-10-31T02:27:38Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "bootstrap-retire",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/bootstrap-retire/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:27:59Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Generate multi-repository workspaces and isolate configurable build outputs",
+      "url": "https://github.com/HypeR-Proj/build/pull/8"
+    },
+    {
+      "closed_at": "2026-10-31T02:47:14Z",
+      "number": 20,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Discover independent system cases and share immutable runtime fixtures",
+      "url": "https://github.com/HypeR-Proj/ci/pull/20"
+    },
+    {
+      "closed_at": "2026-10-31T02:28:20Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:28:39Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "componentctl",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/componentctl/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:29:00Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "console-raw",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/console-raw/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:29:22Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "coreutils",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/coreutils/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:29:41Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "editor",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/editor/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:29:59Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "fit-pack",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/fit-pack/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:30:20Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "free",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/free/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:30:39Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/4"
+    },
+    {
+      "closed_at": "2026-10-31T02:31:00Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:31:20Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:31:39Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "grep",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/grep/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:31:59Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "handle",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/handle/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:32:18Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:32:36Z",
+      "number": 24,
+      "pull_request": true,
+      "repository": "io-vm",
+      "state": "closed",
+      "title": "Keep standalone appliance builds compatible with configurable workspace outputs",
+      "url": "https://github.com/HypeR-Proj/io-vm/pull/24"
+    },
+    {
+      "closed_at": "2026-10-31T02:32:55Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "journalctl",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/journalctl/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:33:13Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/journald/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:33:31Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Support independent module configuration and archived source provenance",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/4"
+    },
+    {
+      "closed_at": "2026-10-31T02:33:51Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "ldd",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/ldd/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:34:11Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "less",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/less/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:34:34Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-block",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-block/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:34:53Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-bootstrap-handoff",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-bootstrap-handoff/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:35:13Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-clap",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-clap/pull/4"
+    },
+    {
+      "closed_at": "2026-10-31T02:35:33Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-component",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-component/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:35:52Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-component-config",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-component-config/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:36:13Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-cxx",
+      "state": "closed",
+      "title": "Reuse Native compilation and expose the common module build entry",
+      "url": "https://github.com/HypeR-Proj/lib-cxx/pull/4"
+    },
+    {
+      "closed_at": "2026-10-31T02:36:33Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-dynamic-loader",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-dynamic-loader/pull/4"
+    },
+    {
+      "closed_at": "2026-10-31T02:36:51Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:37:11Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-journal-client",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-journal-client/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:37:29Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-musl",
+      "state": "closed",
+      "title": "Reuse Native compilation and expose the common module build entry",
+      "url": "https://github.com/HypeR-Proj/lib-musl/pull/4"
+    },
+    {
+      "closed_at": "2026-10-31T02:37:53Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/5"
+    },
+    {
+      "closed_at": "2026-10-31T02:38:11Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-rust-fatfs",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-rust-fatfs/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:38:33Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/6"
+    },
+    {
+      "closed_at": "2026-10-31T02:38:52Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:39:11Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-service-ipc",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-service-ipc/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:39:30Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/6"
+    },
+    {
+      "closed_at": "2026-10-31T02:39:48Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-terminal",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-terminal/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:40:08Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-text-ui",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-text-ui/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:40:29Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-tool-args",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-tool-args/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:40:50Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-vm-image",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-vm-image/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:41:09Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-vm-policy",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-vm-policy/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:41:27Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "lib-vm-support",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/lib-vm-support/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:26:14Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "Declare source-only layout and independent system test repositories",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/6"
+    },
+    {
+      "closed_at": "2026-10-31T02:41:45Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "memstat",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/memstat/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:42:03Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "mount",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/mount/pull/4"
+    },
+    {
+      "closed_at": "2026-10-31T02:42:20Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "perf",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/perf/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:42:38Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "pi5-images",
+      "state": "closed",
+      "title": "Build distribution assets from prepared workspaces under a common output",
+      "url": "https://github.com/HypeR-Proj/pi5-images/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:42:56Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "ps",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/ps/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:43:15Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:43:32Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "shell",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/shell/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:43:52Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "system-startup",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/system-startup/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:44:12Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Locate the shared build frontend by its workspace implementation",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/1"
+    },
+    {
+      "closed_at": "2026-10-31T02:44:32Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "terminal-service",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/terminal-service/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:44:51Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "test-framework",
+      "state": "closed",
+      "title": "Locate the shared build frontend by its workspace implementation",
+      "url": "https://github.com/HypeR-Proj/test-framework/pull/1"
+    },
+    {
+      "closed_at": "2026-10-31T02:45:10Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "Reuse Native and CMake compilation across SDK publication",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/6"
+    },
+    {
+      "closed_at": "2026-10-31T02:45:31Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "top",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/top/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:45:52Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "umount",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/umount/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:46:12Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "vm-manager",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/vm-manager/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:46:31Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "vm-runtime",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/vm-runtime/pull/3"
+    },
+    {
+      "closed_at": "2026-10-31T02:46:53Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "vmm",
+      "state": "closed",
+      "title": "Declare repository build, configuration and artifact ownership",
+      "url": "https://github.com/HypeR-Proj/vmm/pull/3"
+    }
+  ],
+  "topic": "topic:modular-workspace"
+}
