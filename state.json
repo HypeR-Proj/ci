@@ -3,8 +3,9 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "HypeR",
+    "inflight": null,
     "merged": [
+      "HypeR",
       "manifest"
     ],
     "phase": "running",
