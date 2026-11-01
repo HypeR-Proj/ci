@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "io-runtime",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -22,6 +22,7 @@
       "fs-fat",
       "grep",
       "handle",
+      "io-runtime",
       "manifest"
     ],
     "phase": "running",
