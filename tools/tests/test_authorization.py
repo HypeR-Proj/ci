@@ -118,7 +118,8 @@ class AuthorizationTests(unittest.TestCase):
                 patch.object(submit, 'verify_current', return_value=set()), \
                 patch.object(submit, 'permission', return_value=True), \
                 patch.object(submit, 'api', return_value=pull), \
-                patch.object(submit, 'latest_check', return_value=failure) as checks:
+                patch.object(submit, 'latest_checks',
+                             return_value={('module', submit.ACTIONS_APP_ID): failure}) as checks:
             with self.assertRaisesRegex(ValueError, 'module has not passed'):
                 submit.preflight(snapshot, 'roolrz')
             checks.reset_mock()
