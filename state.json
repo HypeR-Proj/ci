@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "coreutils",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -13,6 +13,7 @@
       "component-manager",
       "componentctl",
       "console-raw",
+      "coreutils",
       "manifest"
     ],
     "phase": "running",
