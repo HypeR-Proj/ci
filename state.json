@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-rust-fatfs",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -40,6 +40,7 @@
       "lib-journal-client",
       "lib-musl",
       "lib-rust",
+      "lib-rust-fatfs",
       "manifest"
     ],
     "phase": "running",
