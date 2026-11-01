@@ -1,0 +1,15 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/0225b64caeedf3fef4ef4fa9f90485ff91e7d8b19803d2f1200210db73abade4.json",
+  "members": [
+    {
+      "closed_at": "2026-10-31T04:05:52Z",
+      "number": 22,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Restrict system CI to organization members and topic submission to CODEOWNER",
+      "url": "https://github.com/HypeR-Proj/ci/pull/22"
+    }
+  ],
+  "topic": "topic:codeowner-ci-access"
+}
