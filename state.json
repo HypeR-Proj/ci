@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "system-tests",
-      "terminal-service",
-      "test-framework",
-      "toolchain",
-      "top",
-      "umount",
-      "vm-manager",
-      "vm-runtime"
-    ],
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -70,7 +61,15 @@
       "session-manager",
       "shell",
       "svc",
-      "system-startup"
+      "system-startup",
+      "system-tests",
+      "terminal-service",
+      "test-framework",
+      "toolchain",
+      "top",
+      "umount",
+      "vm-manager",
+      "vm-runtime"
     ],
     "phase": "running",
     "snapshot": {
