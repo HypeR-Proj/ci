@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": "lib-tool-args",
     "merged": [
       "HypeR",
       "abi",
