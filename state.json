@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "ps",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -55,7 +55,8 @@
       "memstat",
       "mount",
       "perf",
-      "pi5-images"
+      "pi5-images",
+      "ps"
     ],
     "phase": "running",
     "snapshot": {
