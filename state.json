@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-fs-service",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -36,6 +36,7 @@
       "lib-component-config",
       "lib-cxx",
       "lib-dynamic-loader",
+      "lib-fs-service",
       "manifest"
     ],
     "phase": "running",
