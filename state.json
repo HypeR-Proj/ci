@@ -3,9 +3,10 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-rust-std",
+    "inflight": null,
     "merged": [
-      "bootstrap"
+      "bootstrap",
+      "lib-rust-std"
     ],
     "phase": "running",
     "snapshot": {
