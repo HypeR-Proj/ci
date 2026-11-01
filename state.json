@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "console-raw",
+      "coreutils",
+      "editor",
+      "fit-pack",
+      "free",
+      "fs-backend",
+      "fs-erofs",
+      "fs-fat"
+    ],
     "merged": [
       "HypeR",
       "abi",
