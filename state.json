@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-musl",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -38,6 +38,7 @@
       "lib-dynamic-loader",
       "lib-fs-service",
       "lib-journal-client",
+      "lib-musl",
       "manifest"
     ],
     "phase": "running",
