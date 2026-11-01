@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "lib-system",
-      "lib-terminal",
-      "lib-text-ui",
-      "lib-tool-args",
-      "lib-vm-image",
-      "lib-vm-policy",
-      "lib-vm-support",
-      "memstat"
-    ],
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -54,7 +45,15 @@
       "lib-rust-std",
       "lib-service",
       "lib-service-ipc",
-      "manifest"
+      "lib-system",
+      "lib-terminal",
+      "lib-text-ui",
+      "lib-tool-args",
+      "lib-vm-image",
+      "lib-vm-policy",
+      "lib-vm-support",
+      "manifest",
+      "memstat"
     ],
     "phase": "running",
     "snapshot": {
