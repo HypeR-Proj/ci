@@ -3,10 +3,9 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "docs"
-    ],
+    "inflight": null,
     "merged": [
+      "docs",
       "manifest"
     ],
     "phase": "running",
