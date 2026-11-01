@@ -3,10 +3,12 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "bootstrap-retire",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
+      "bootstrap",
+      "bootstrap-retire",
       "manifest"
     ],
     "phase": "running",
