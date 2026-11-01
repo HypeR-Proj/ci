@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "shell",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -57,7 +57,8 @@
       "perf",
       "pi5-images",
       "ps",
-      "session-manager"
+      "session-manager",
+      "shell"
     ],
     "phase": "running",
     "snapshot": {
