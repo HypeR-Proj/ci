@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-vm-image",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -48,6 +48,7 @@
       "lib-terminal",
       "lib-text-ui",
       "lib-tool-args",
+      "lib-vm-image",
       "manifest"
     ],
     "phase": "running",
