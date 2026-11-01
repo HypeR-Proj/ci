@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-rust-std",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -41,6 +41,7 @@
       "lib-musl",
       "lib-rust",
       "lib-rust-fatfs",
+      "lib-rust-std",
       "manifest"
     ],
     "phase": "running",
