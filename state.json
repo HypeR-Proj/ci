@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "umount",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -64,7 +64,8 @@
       "terminal-service",
       "test-framework",
       "toolchain",
-      "top"
+      "top",
+      "umount"
     ],
     "phase": "running",
     "snapshot": {
