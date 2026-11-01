@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-vm-policy",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -49,6 +49,7 @@
       "lib-text-ui",
       "lib-tool-args",
       "lib-vm-image",
+      "lib-vm-policy",
       "manifest"
     ],
     "phase": "running",
