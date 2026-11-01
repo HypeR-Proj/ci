@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "io-vm",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -23,6 +23,7 @@
       "grep",
       "handle",
       "io-runtime",
+      "io-vm",
       "manifest"
     ],
     "phase": "running",
