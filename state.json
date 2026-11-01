@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "system-tests",
+      "terminal-service",
+      "test-framework",
+      "toolchain",
+      "top",
+      "umount",
+      "vm-manager",
+      "vm-runtime"
+    ],
     "merged": [
       "HypeR",
       "abi",
