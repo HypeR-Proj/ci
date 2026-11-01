@@ -40,7 +40,8 @@ runs:
         python3 - <<'PY'
         import subprocess, tomllib
         from pathlib import Path
-        policy = tomllib.loads(Path('rust-toolchain.toml').read_text())['toolchain']
+        build = Path('project.py').resolve().parent
+        policy = tomllib.loads((build / 'rust-toolchain.toml').read_text())['toolchain']
         command = ['rustup', 'toolchain', 'install', policy['channel'], '--profile', 'minimal']
         for component in policy.get('components', []):
             command.extend(['--component', component])

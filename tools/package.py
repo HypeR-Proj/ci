@@ -19,7 +19,8 @@ def main():
     parser.add_argument('--materials', action='store_true')
     args = parser.parse_args()
     snapshot = json.loads(args.snapshot.read_text())
-    command = [sys.executable, str(args.workspace / 'scripts/fetch-io-vm.py'),
+    command = [sys.executable, str(args.workspace / 'project.py'), 'exec', '--',
+               sys.executable, 'scripts/fetch-io-vm.py',
                '--reference', snapshot['io_packages'][args.platform], '--platform', args.platform]
     if args.materials:
         command.append('--materials')
