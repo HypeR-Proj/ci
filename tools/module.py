@@ -43,11 +43,12 @@ def test_component(output, name, relative):
     component = output / relative
     metadata = json.loads((component / 'component.json').read_text())
     needs_workspace = metadata.get('tests_need_workspace', True)
-    generated = (output / 'scripts/build.py').is_file()
+    build = project.resolve().parent
+    generated = (build / 'scripts/build.py').is_file()
     environment = dict(os.environ)
     if metadata.get('test_requires_rust', True) or (needs_workspace and generated):
-        policy = next((path for path in (output / 'rust-toolchain.toml',
-                                        output / 'mk/workspace/rust-toolchain.toml') if path.is_file()), None)
+        policy = next((path for path in (build / 'rust-toolchain.toml',
+                                        build / 'mk/workspace/rust-toolchain.toml') if path.is_file()), None)
         if policy is None:
             raise ValueError('candidate build tools do not declare a Rust toolchain')
         toolchain = tomllib.loads(policy.read_text())['toolchain']

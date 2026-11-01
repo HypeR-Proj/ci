@@ -105,6 +105,20 @@ class ModuleTests(unittest.TestCase):
         preparation = next(call for call in run.call_args_list if 'prepare' in call.args[0])
         self.assertEqual(preparation.kwargs['env']['RUSTUP_TOOLCHAIN'], 'test-nightly')
 
+    def test_toolchain_is_owned_by_build_below_a_repository_free_root(self):
+        root, _ = self.fixture(False)
+        build = root / 'build'
+        (build / 'scripts').mkdir(parents=True)
+        (build / 'scripts/build.py').write_text('# build entry\n')
+        (build / 'project.py').write_text('# project entry\n')
+        (root / 'project.py').symlink_to('build/project.py')
+        (root / 'rust-toolchain.toml').rename(build / 'rust-toolchain.toml')
+        with patch.object(runner.subprocess, 'check_output', return_value=''), patch.object(runner.subprocess, 'run') as run:
+            run.return_value.stdout = str(root) + '\n'
+            runner.test_component(root, 'owner', 'app/owner')
+        self.assertEqual(run.call_args_list[0].args[0][:3], ['rustup', 'toolchain', 'install'])
+        self.assertEqual(run.call_args_list[0].args[0][3], 'test-nightly')
+
 
 if __name__ == '__main__':
     unittest.main()
