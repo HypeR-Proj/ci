@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-dynamic-loader",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -35,6 +35,7 @@
       "lib-component",
       "lib-component-config",
       "lib-cxx",
+      "lib-dynamic-loader",
       "manifest"
     ],
     "phase": "running",
