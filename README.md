@@ -50,7 +50,8 @@ See [test ownership](https://github.com/HypeR-Proj/system-tests/blob/main/ci/REA
 `tools/configure.py --apply REPOSITORY` restricts default-branch merges to `roolrz`
 and the App. Required approvals are disabled; PRs and tests remain required.
 Install and validate the button listener and coordinator before enabling this restriction.
-The manifest owns source paths. CI uses that exact candidate layout, plus any
+The manifest owns source paths. The workspace root is not a Git checkout;
+`build/` owns the tools and the manifest supplies the two root entry links. CI uses that exact candidate layout, plus any
 management-only repositories declared by manifest metadata. Build preparation
 generates execution files inside OUT; source checkouts remain independent.
 
