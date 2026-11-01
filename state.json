@@ -3,9 +3,10 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "abi",
+    "inflight": null,
     "merged": [
       "HypeR",
+      "abi",
       "manifest"
     ],
     "phase": "running",
