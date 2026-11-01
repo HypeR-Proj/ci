@@ -3,10 +3,10 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "manifest"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "91ad74aa18a478e04c271a0a91f44266d9c42bd5e7e17e99246b59b030cf1eb8",
