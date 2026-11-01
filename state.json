@@ -3,7 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": "lib-component-config",
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -33,6 +33,7 @@
       "lib-bootstrap-handoff",
       "lib-clap",
       "lib-component",
+      "lib-component-config",
       "manifest"
     ],
     "phase": "running",
