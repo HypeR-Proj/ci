@@ -1,0 +1,24 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/b5c991769849d7aa2a555d76a1416c9a27abec1dc514c1a84817a5368b7bac1d.json",
+  "members": [
+    {
+      "closed_at": "2026-11-01T11:48:29Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Reduce make run startup latency",
+      "url": "https://github.com/HypeR-Proj/build/pull/10"
+    },
+    {
+      "closed_at": "2026-11-01T11:48:46Z",
+      "number": 25,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Batch verified topic submissions with durable recovery",
+      "url": "https://github.com/HypeR-Proj/ci/pull/25"
+    }
+  ],
+  "topic": "topic:developer-workflow"
+}
