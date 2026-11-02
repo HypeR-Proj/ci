@@ -60,6 +60,6 @@ jobs:
           name: test-${{ inputs.case-id }}
           path: |
             ${{ env.OUT || format('{0}/system-out', runner.temp) }}/**/*.log
-            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/results/*.json
+            ${{ env.OUT || format('{0}/system-out', runner.temp) }}/results/**
             ${{ env.OUT || format('{0}/system-out', runner.temp) }}/**/stack-watch/report.json
           if-no-files-found: ignore
