@@ -1,0 +1,33 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/f72759d16579cbdda15843553134affd6750131d67ce330032c98bd77dc6ccce.json",
+  "members": [
+    {
+      "closed_at": "2026-11-01T09:09:51Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Make the storage probe respect deferred closed-file retirement",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/7"
+    },
+    {
+      "closed_at": "2026-11-01T09:10:31Z",
+      "number": 23,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Support build tools below the workspace root",
+      "url": "https://github.com/HypeR-Proj/ci/pull/23"
+    },
+    {
+      "closed_at": "2026-11-01T09:10:11Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "Wait for retired traversal leases during recursive removal",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/8"
+    }
+  ],
+  "topic": "topic:build-layout-ci"
+}
