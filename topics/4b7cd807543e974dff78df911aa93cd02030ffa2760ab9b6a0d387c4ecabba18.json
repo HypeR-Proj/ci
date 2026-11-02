@@ -1,0 +1,591 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/d183e67e5bfd1f346d6296263051a0b1ec3bc4cc9355761d7d83259f04129a25.json",
+  "members": [
+    {
+      "closed_at": "2026-11-01T10:01:13Z",
+      "number": 227,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "Document the repository-free workspace and nested build tools",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/227"
+    },
+    {
+      "closed_at": "2026-11-01T10:01:34Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/abi/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T10:02:04Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T10:06:21Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "bootstrap-retire",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/bootstrap-retire/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:06:45Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Support build tools below a repository-free workspace root",
+      "url": "https://github.com/HypeR-Proj/build/pull/9"
+    },
+    {
+      "closed_at": "2026-11-01T10:27:26Z",
+      "number": 24,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Document and discover the build checkout below the workspace root",
+      "url": "https://github.com/HypeR-Proj/ci/pull/24"
+    },
+    {
+      "closed_at": "2026-11-01T10:07:06Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:07:26Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "componentctl",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/componentctl/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:07:47Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "console-raw",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/console-raw/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:08:08Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "coreutils",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/coreutils/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:08:30Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "editor",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/editor/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:08:51Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "fit-pack",
+      "state": "closed",
+      "title": "Build fit-pack from its nested build tools checkout",
+      "url": "https://github.com/HypeR-Proj/fit-pack/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:09:13Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "free",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/free/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:09:35Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T10:09:57Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:10:20Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:10:40Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "grep",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/grep/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:11:03Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "handle",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/handle/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:11:24Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:11:45Z",
+      "number": 25,
+      "pull_request": true,
+      "repository": "io-vm",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/io-vm/pull/25"
+    },
+    {
+      "closed_at": "2026-11-01T10:12:06Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "journalctl",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/journalctl/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:12:26Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/journald/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:12:45Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T10:13:08Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "ldd",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/ldd/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:13:28Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "less",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/less/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:13:50Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-block",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-block/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:14:10Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-bootstrap-handoff",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-bootstrap-handoff/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:14:30Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-clap",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-clap/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T10:14:50Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-component",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-component/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:15:11Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-component-config",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-component-config/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:15:32Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-cxx",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-cxx/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T10:15:54Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-dynamic-loader",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-dynamic-loader/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T10:16:14Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:16:34Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-journal-client",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-journal-client/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:16:55Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-musl",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-musl/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T10:17:17Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T10:17:38Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-rust-fatfs",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-rust-fatfs/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:17:59Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/7"
+    },
+    {
+      "closed_at": "2026-11-01T10:18:19Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:18:41Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-service-ipc",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-service-ipc/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:19:02Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/7"
+    },
+    {
+      "closed_at": "2026-11-01T10:19:24Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-terminal",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-terminal/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:19:45Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-text-ui",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-text-ui/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:20:04Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-tool-args",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-tool-args/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:20:28Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-vm-image",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-vm-image/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:20:50Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-vm-policy",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-vm-policy/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:21:11Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "lib-vm-support",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/lib-vm-support/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:00:50Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "Place build and independent fit-pack checkouts below build",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/7"
+    },
+    {
+      "closed_at": "2026-11-01T10:21:30Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "memstat",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/memstat/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:21:51Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "mount",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/mount/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T10:22:12Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "perf",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/perf/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:22:33Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "pi5-images",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/pi5-images/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:22:54Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "ps",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/ps/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:23:13Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:23:34Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "shell",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/shell/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:23:56Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "system-startup",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/system-startup/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:24:16Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Resolve build helpers and fit-pack through the workspace entry",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/2"
+    },
+    {
+      "closed_at": "2026-11-01T10:24:36Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "terminal-service",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/terminal-service/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:24:58Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "test-framework",
+      "state": "closed",
+      "title": "Resolve build tooling through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/test-framework/pull/2"
+    },
+    {
+      "closed_at": "2026-11-01T10:25:21Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/7"
+    },
+    {
+      "closed_at": "2026-11-01T10:25:42Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "top",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/top/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:26:01Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "umount",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/umount/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:26:20Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "vm-manager",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/vm-manager/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:26:41Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "vm-runtime",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/vm-runtime/pull/4"
+    },
+    {
+      "closed_at": "2026-11-01T10:27:03Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "vmm",
+      "state": "closed",
+      "title": "Discover shared build tools through the workspace project entry",
+      "url": "https://github.com/HypeR-Proj/vmm/pull/4"
+    }
+  ],
+  "topic": "topic:build-workspace"
+}
