@@ -3,7 +3,12 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "build",
+      "fs-f2fs",
+      "lib-cxx",
+      "system-tests"
+    ],
     "merged": [
       "manifest"
     ],
