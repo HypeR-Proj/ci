@@ -1,0 +1,395 @@
+{
+  "actor": "roolrz",
+  "error": null,
+  "force": false,
+  "inflight": null,
+  "merged": [
+    "ci"
+  ],
+  "phase": "completed",
+  "snapshot": {
+    "identity": "b3becacf661717da1490ad19c2a50a0960ad978e57185d883046e2f2f327c85f",
+    "io_packages": {
+      "qemu": "ghcr.io/hyper-proj/io-vm@sha256:fdf7e41709b62ab9e52cf0a067396a0f2a72ad3bd79cf8ee05a09848389656d6"
+    },
+    "projects": {
+      "HypeR": {
+        "base": "06d50be566f312cd28b28a5d3fc299624df8bf01",
+        "integration_only": true,
+        "links": [],
+        "path": ".integration/HypeR"
+      },
+      "abi": {
+        "base": "b16384d8da61d61bb10540c6d04bf1baa7591f46",
+        "links": [],
+        "path": "sdk/abi"
+      },
+      "app": {
+        "base": "cb6fe58226ba8d9ce8d348c93a8ac4d7513c4b48",
+        "links": [],
+        "path": "build/app"
+      },
+      "bootstrap": {
+        "base": "dfc8f99ef28e8fce332b590a8913c26616d89e2e",
+        "links": [],
+        "path": "bootstrap/stage1"
+      },
+      "bootstrap-retire": {
+        "base": "8d22c1004c80c347e376ed4a0fa15c1acf5e2a82",
+        "links": [],
+        "path": "svc/bootstrap-retire"
+      },
+      "build": {
+        "base": "7ab826e63d052bef900781f7a63140d399e5dcdd",
+        "links": [
+          {
+            "dest": "Makefile",
+            "kind": "linkfile",
+            "src": "Makefile"
+          },
+          {
+            "dest": "project.py",
+            "kind": "linkfile",
+            "src": "project.py"
+          },
+          {
+            "dest": ".vscode",
+            "kind": "linkfile",
+            "src": "mk/workspace/.vscode"
+          },
+          {
+            "dest": ".clang-format",
+            "kind": "linkfile",
+            "src": "mk/workspace/.clang-format"
+          }
+        ],
+        "path": "build/system"
+      },
+      "ci": {
+        "base": "9f66a3ec02263234475a262b7cd1ecba0721d936",
+        "head": "39acdc947b1013c60646e34a695b39ea1231ad20",
+        "links": [],
+        "merge_tree": "c5eef00db5da9115322487d8dd7138ee770a35f8",
+        "path": "ci",
+        "pr": 30
+      },
+      "component-manager": {
+        "base": "dd037bf0e825c69325f442195c93a8061b29adb9",
+        "links": [],
+        "path": "svc/component-manager"
+      },
+      "componentctl": {
+        "base": "10347b96eb28956a2e620749d2dc63547ef7259f",
+        "links": [],
+        "path": "app/componentctl"
+      },
+      "console-raw": {
+        "base": "3b4047afb9a593009fc8965607a15516350a6dac",
+        "links": [],
+        "path": "svc/console-raw"
+      },
+      "coreutils": {
+        "base": "eb64406fd654afe4b5c7906fb23e233946ac98ea",
+        "links": [],
+        "path": "app/coreutils"
+      },
+      "docs": {
+        "base": "9704805672ff86071199374ad391228cd0726e67",
+        "links": [],
+        "path": "docs"
+      },
+      "editor": {
+        "base": "ced3cdb875bca8c722fdd9aae50b383de1c0943d",
+        "links": [],
+        "path": "app/editor"
+      },
+      "fit-pack": {
+        "base": "2dcdc93a1d2e92ce54613a10610deb7037343405",
+        "links": [],
+        "path": "build/tools/fit-pack"
+      },
+      "free": {
+        "base": "4f86e8dca7ebe62c8839a5b9d4687e4dcf789bdb",
+        "links": [],
+        "path": "app/free"
+      },
+      "fs-backend": {
+        "base": "f58de70b7627c94314f3bd2db3c4f19968f01804",
+        "links": [],
+        "path": "svc/fs-backend"
+      },
+      "fs-erofs": {
+        "base": "9cbefdf74ed63f418e1820fc0af9e2d2c0bb4f38",
+        "links": [],
+        "path": "svc/fs-erofs"
+      },
+      "fs-f2fs": {
+        "base": "8284b53093dcca9c312b255d0dc7144942d49921",
+        "links": [],
+        "path": "svc/fs-f2fs"
+      },
+      "fs-fat": {
+        "base": "4d71cdbbcad2166c15b0b1738b584ef696fd493e",
+        "links": [],
+        "path": "svc/fs-fat"
+      },
+      "grep": {
+        "base": "5e932a4f41e508fd6fc429d79d5d5e00c509db0d",
+        "links": [],
+        "path": "app/grep"
+      },
+      "handle": {
+        "base": "97af613bab9283b01eb0a320c94fb2a7fdaecd3b",
+        "links": [],
+        "path": "app/handle"
+      },
+      "io-runtime": {
+        "base": "98026acb61e40ff8f56ffa30b308ee247e9fd2a6",
+        "links": [],
+        "path": "svc/io-runtime"
+      },
+      "io-vm": {
+        "base": "17b1ac4321f8784a723bce932451c6289ef2ba3d",
+        "links": [],
+        "path": "io-vm"
+      },
+      "journalctl": {
+        "base": "a6ab688c3291f909c4e9ca4c6c80bee157330dfc",
+        "links": [],
+        "path": "app/journalctl"
+      },
+      "journald": {
+        "base": "b4481d868845dd1e67370aa537d4d7c757e93bea",
+        "links": [],
+        "path": "svc/journal"
+      },
+      "kernel": {
+        "base": "9593e7310c4dacb611fa8524421fc4028f8e99fc",
+        "links": [],
+        "path": "kernel"
+      },
+      "ldd": {
+        "base": "6ee777812ef6e5feb79a36211ed18eb4ec56fa47",
+        "links": [],
+        "path": "app/ldd"
+      },
+      "less": {
+        "base": "d1b0aead146b078799d5564e608bf5c0709e85a3",
+        "links": [],
+        "path": "app/less"
+      },
+      "lib-block": {
+        "base": "e92ed64097f5ba9bf4902bd634431f0a06f02c31",
+        "links": [],
+        "path": "lib/block"
+      },
+      "lib-bootstrap-handoff": {
+        "base": "b8c7a3988bd1ea8428eb871e5909480656d9fd05",
+        "links": [],
+        "path": "lib/bootstrap-handoff"
+      },
+      "lib-clap": {
+        "base": "fcfa4aeb20be4090a1cf405212e71613e477a3d1",
+        "links": [],
+        "path": "lib/clap"
+      },
+      "lib-component": {
+        "base": "c1bf757ef31940616189344975fe5373a95364d2",
+        "links": [],
+        "path": "lib/component"
+      },
+      "lib-component-config": {
+        "base": "73592f5b886aa6df23b8cb0c2ee105c635c1dd51",
+        "links": [],
+        "path": "lib/component-config"
+      },
+      "lib-cxx": {
+        "base": "90f4859a9b6288cd26e118d3546f164f81fafc2e",
+        "links": [],
+        "path": "stdlib/cxx"
+      },
+      "lib-dynamic-loader": {
+        "base": "db5ea876da966c7512bee71b96be51f8e56de19f",
+        "links": [],
+        "path": "lib/dynamic-loader"
+      },
+      "lib-fs-f2fs": {
+        "base": "3c1756b83a03f4519c69cbd0e897761db03f4f14",
+        "links": [],
+        "path": "lib/fs-f2fs"
+      },
+      "lib-fs-service": {
+        "base": "afcf9cd16002966863e746c947b206f6c0238e3f",
+        "links": [],
+        "path": "lib/fs-service"
+      },
+      "lib-journal-client": {
+        "base": "d6f8151a497480e3f75550be52c7b1be1235c232",
+        "links": [],
+        "path": "lib/journal"
+      },
+      "lib-musl": {
+        "base": "ab6200538f6e50a27e8158025554fc7426eedcbe",
+        "links": [],
+        "path": "stdlib/musl"
+      },
+      "lib-rust": {
+        "base": "6fe2822d5ea0f42dda8349479e1d4e4aaddf5358",
+        "links": [],
+        "path": "stdlib/rust"
+      },
+      "lib-rust-fatfs": {
+        "base": "8f25eb442d7588a6bd4c44837343ab38a38bc170",
+        "links": [],
+        "path": "third_party/rust-fatfs"
+      },
+      "lib-rust-std": {
+        "base": "ef93e347ba018e2b1339b5186a31d9cef93cec32",
+        "links": [],
+        "path": "stdlib/rust-std"
+      },
+      "lib-service": {
+        "base": "f3c2263a346ba6128c6e80780382e34b108bb5ac",
+        "links": [],
+        "path": "lib/service"
+      },
+      "lib-service-ipc": {
+        "base": "52af980e5b3bc67605a1d283e307d5b202d127d7",
+        "links": [],
+        "path": "lib/service-ipc"
+      },
+      "lib-system": {
+        "base": "338550e22f8bc8ab8b6e13c03d5bf5b1e80466ce",
+        "links": [],
+        "path": "stdlib/system"
+      },
+      "lib-terminal": {
+        "base": "c08508d9be6afe1ca29fc5bee2f75828eb5ea73b",
+        "links": [],
+        "path": "lib/terminal"
+      },
+      "lib-text-ui": {
+        "base": "dde94441d53f4b84318530b2c870d0ff81a50b69",
+        "links": [],
+        "path": "lib/text-ui"
+      },
+      "lib-tool-args": {
+        "base": "af7d0af8c1e68689cc774de8fa6dd547a5d55606",
+        "links": [],
+        "path": "lib/tool-args"
+      },
+      "lib-vm-image": {
+        "base": "f95c4f02304e4e7b27b57506e91c41e5fe22adfb",
+        "links": [],
+        "path": "lib/vm-image"
+      },
+      "lib-vm-policy": {
+        "base": "a3fb7dd5ec3c29df5607e2d00103acb674fcbd92",
+        "links": [],
+        "path": "lib/vm-policy"
+      },
+      "lib-vm-support": {
+        "base": "f3497ac405a720dae3ae5a4c69b5a7670e9024ea",
+        "links": [],
+        "path": "lib/vm-support"
+      },
+      "manifest": {
+        "base": "e8124097cf6e5f3b9d32b1c67ee7f919510def26",
+        "links": [],
+        "path": "manifest"
+      },
+      "memstat": {
+        "base": "7ac9c66a64ed39e918bcfc50b948993a750dbebf",
+        "links": [],
+        "path": "app/memstat"
+      },
+      "mount": {
+        "base": "6ee6f5a5d2a56f374d276ad86c611e6f6e030bc8",
+        "links": [],
+        "path": "app/mount"
+      },
+      "perf": {
+        "base": "a3bd9926e7fc823a3e458bd9cb7717cd6fd6a089",
+        "links": [],
+        "path": "app/perf"
+      },
+      "pi5-images": {
+        "base": "7deefed8c9a87a0e8a5a1c2145137b3932c80ead",
+        "links": [],
+        "path": "build/pi5-images"
+      },
+      "ps": {
+        "base": "7d8b3dccc2820b941f4e1610ee59af0a4c2d771e",
+        "links": [],
+        "path": "app/ps"
+      },
+      "session-manager": {
+        "base": "781faa844b85272c4c61235c52b658e2a6b31f8e",
+        "links": [],
+        "path": "svc/session-manager"
+      },
+      "shell": {
+        "base": "bc825332a13f4cd55ca8e5105d374501782ab4ec",
+        "links": [],
+        "path": "app/shell"
+      },
+      "svc": {
+        "base": "08d8cbca618e78f1025703a046e4626dff86f2cd",
+        "links": [],
+        "path": "build/svc"
+      },
+      "system-startup": {
+        "base": "9981377c00b9770da8c24b8e98cb38c2515c1427",
+        "links": [],
+        "path": "svc/system-startup"
+      },
+      "system-tests": {
+        "base": "037242fbdd59440964768182452e4c5660268e83",
+        "links": [],
+        "path": "tests"
+      },
+      "terminal-service": {
+        "base": "7df81ab44808f24f1e78213cebb76e6e2beffc7b",
+        "links": [],
+        "path": "svc/terminal-service"
+      },
+      "test-framework": {
+        "base": "7a269f43f4e070493205b843ecc9ae2a8ecd4382",
+        "links": [],
+        "path": "test-framework"
+      },
+      "toolchain": {
+        "base": "33224b6a714c6df910420612fa7f12cc308cc665",
+        "links": [],
+        "path": "sdk/toolchain"
+      },
+      "top": {
+        "base": "9362692adf0d7fb631cfe5ee6f913caf1d0ad7db",
+        "links": [],
+        "path": "app/top"
+      },
+      "umount": {
+        "base": "3f99d0a165599ba54d7c083bbb970d1221bf0946",
+        "links": [],
+        "path": "app/umount"
+      },
+      "vm-manager": {
+        "base": "9f12a6bc12c31ad4e9e3452a71e5e403defee1f4",
+        "links": [],
+        "path": "svc/vm-manager"
+      },
+      "vm-runtime": {
+        "base": "05273aebcc1fd7c219917a9cddfbb22ef3ba55cf",
+        "links": [],
+        "path": "svc/vm-runtime"
+      },
+      "vmm": {
+        "base": "aa8068baffc9c894a58e35f152b71c923491ac98",
+        "links": [],
+        "path": "app/vmm"
+      }
+    },
+    "target": "ci#30",
+    "version": 1
+  }
+}
