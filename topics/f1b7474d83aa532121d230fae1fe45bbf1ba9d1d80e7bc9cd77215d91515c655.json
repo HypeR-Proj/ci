@@ -1,0 +1,33 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/91ad74aa18a478e04c271a0a91f44266d9c42bd5e7e17e99246b59b030cf1eb8.json",
+  "members": [
+    {
+      "closed_at": "2026-11-01T17:37:59Z",
+      "number": 26,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Publish repository documentation through the docs owner",
+      "url": "https://github.com/HypeR-Proj/ci/pull/26"
+    },
+    {
+      "closed_at": "2026-11-01T17:37:39Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "docs",
+      "state": "closed",
+      "title": "Own documentation rendering and publishing outside build",
+      "url": "https://github.com/HypeR-Proj/docs/pull/1"
+    },
+    {
+      "closed_at": "2026-11-01T17:37:19Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "Register the independent documentation tooling repository",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/8"
+    }
+  ],
+  "topic": "topic:component-catalog-docs"
+}
