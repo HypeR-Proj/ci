@@ -3,15 +3,14 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "build",
       "fs-f2fs",
       "lib-fs-f2fs",
+      "manifest",
       "svc",
       "system-tests"
-    ],
-    "merged": [
-      "manifest"
     ],
     "phase": "running",
     "snapshot": {
