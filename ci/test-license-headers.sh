@@ -91,3 +91,23 @@ done
 printf 'SPDX-FileCopyrightText: 2026 Contributor\nSPDX-License-Identifier: Apache-2.0\n' >"$fixture/Test Logo.png.license"
 printf '# SPDX-FileCopyrightText: 2026 Contributor\n# SPDX-License-Identifier: Apache-2.0\nraise SystemExit("workspace inventory must not run")\n' >"$fixture/project.py"
 HYPER_LICENSE_COMPONENT=build check
+
+# F2FS notice exceptions must retain their complete, immutable inventory.
+if [ -d "$root/lib/fs-f2fs" ]; then
+    rm "$fixture/project.py"
+    mkdir -p "$fixture/lib/fs-f2fs/licenses"
+    cp "$root/lib/fs-f2fs/FUCHSIA-LICENSE" "$root/lib/fs-f2fs/FUCHSIA-PATENTS" "$fixture/lib/fs-f2fs/"
+    cp "$root/lib/fs-f2fs/licenses/"* "$fixture/lib/fs-f2fs/licenses/"
+    check
+    printf 'changed\n' >>"$fixture/lib/fs-f2fs/FUCHSIA-LICENSE"
+    if check >/dev/null 2>&1; then
+        echo 'changed F2FS notice accepted' >&2
+        exit 1
+    fi
+    cp "$root/lib/fs-f2fs/FUCHSIA-LICENSE" "$fixture/lib/fs-f2fs/"
+    rm "$fixture/lib/fs-f2fs/licenses/manifest.json"
+    if check >/dev/null 2>&1; then
+        echo 'F2FS without notice inventory accepted' >&2
+        exit 1
+    fi
+fi
