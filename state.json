@@ -3,10 +3,10 @@
     "actor": "roolrz",
     "error": null,
     "force": true,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "fs-f2fs"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "c0d01373bba23d6bd518858355237bf35c5544c06bed221a282a22d14529020d",
