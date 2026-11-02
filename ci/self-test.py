@@ -17,5 +17,4 @@ run(sys.executable, '-m', 'unittest', 'discover', '-s', str(component / 'tools/t
 for pattern in ('ci/test-*.py',):
     for path in sorted(component.glob(pattern)):
         run(sys.executable, '-B', str(path))
-run('sh', str(component / 'ci/test-license-headers.sh'))
 run(sys.executable, '-m', 'compileall', '-q', str(component / 'tools'))

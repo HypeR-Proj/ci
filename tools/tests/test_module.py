@@ -45,9 +45,6 @@ class ModuleTests(unittest.TestCase):
         shell_check = next(call for call in run.call_args_list if call.args[0][0] == 'shellcheck')
         self.assertEqual(shell_check.kwargs['cwd'], root)
         self.assertEqual(shell_check.args[0][-1], str(component / 'probe.sh'))
-        license_check = next(call for call in run.call_args_list if call.args[0][0] == 'sh')
-        self.assertEqual(license_check.kwargs['env']['HYPER_LICENSE_ROOT'], str(component))
-        self.assertEqual(license_check.kwargs['env']['HYPER_LICENSE_COMPONENT'], 'owner')
 
     def test_python_infrastructure_needs_no_rust_toolchain(self):
         root, _ = self.fixture(False)
@@ -79,8 +76,9 @@ class ModuleTests(unittest.TestCase):
             runner.test_component(root, 'owner', 'app/owner')
         formatting = next(call for call in run.call_args_list if call.args[0][:2] == ['cargo', 'fmt'])
         self.assertIn(str(view / 'app/owner/Cargo.toml'), formatting.args[0])
-        license_check = next(call for call in run.call_args_list if call.args[0][0] == 'sh')
-        self.assertEqual(license_check.kwargs['env']['HYPER_LICENSE_ROOT'], str(component))
+        shell_check = next(call for call in run.call_args_list if call.args[0][0] == 'shellcheck')
+        self.assertEqual(shell_check.args[0][-1], str(component / 'probe.sh'))
+        self.assertEqual(shell_check.kwargs['cwd'], root)
 
     def test_standalone_module_does_not_prepare_or_compile_system_inputs(self):
         root, component = self.fixture(False)

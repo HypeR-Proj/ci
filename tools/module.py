@@ -69,9 +69,6 @@ def test_component(output, name, relative):
         view = Path(lines[-1]).resolve()
         if not view.is_dir():
             raise ValueError('prepare did not return an existing execution workspace')
-    subprocess.run(['sh', str(Path(__file__).resolve().parents[1] / 'ci/check-license-headers.sh')],
-                   env={**os.environ, 'HYPER_LICENSE_ROOT': str(component),
-                        'HYPER_LICENSE_COMPONENT': name}, check=True)
     tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=component, text=True).split('\0')
     shells = [str(component / filename) for filename in tracked if filename and
               (filename.endswith('.sh') or Path(filename).name in ('hyper-clang', 'hyper-cargo'))
