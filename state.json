@@ -3,10 +3,9 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "ci"
-    ],
+    "inflight": null,
     "merged": [
+      "ci",
       "system-tests",
       "test-framework"
     ],
