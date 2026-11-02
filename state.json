@@ -3,11 +3,11 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "lib-fs-f2fs",
       "system-tests"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "df77634f6cf4629a89002adb7ede80e3090cf90b229532389534acdf2f8f5fbe",
