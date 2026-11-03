@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "abi",
+      "bootstrap",
+      "console-raw",
+      "fs-backend",
+      "kernel",
+      "lib-rust",
+      "system-tests",
+      "terminal-service"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
