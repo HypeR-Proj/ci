@@ -3,7 +3,10 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "journald",
+      "lib-journal-client"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
