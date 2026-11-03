@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "fs-f2fs",
-      "fs-fat",
-      "grep",
-      "handle",
-      "io-runtime",
-      "io-vm",
-      "journalctl",
-      "journald"
-    ],
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -30,6 +21,14 @@
       "free",
       "fs-backend",
       "fs-erofs",
+      "fs-f2fs",
+      "fs-fat",
+      "grep",
+      "handle",
+      "io-runtime",
+      "io-vm",
+      "journalctl",
+      "journald",
       "manifest"
     ],
     "phase": "running",
