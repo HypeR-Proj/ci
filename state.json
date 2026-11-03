@@ -3,11 +3,10 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "ci"
-    ],
+    "inflight": null,
     "merged": [
       "build",
+      "ci",
       "docs"
     ],
     "phase": "running",
