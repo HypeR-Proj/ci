@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "HypeR",
+      "abi",
+      "app",
+      "bootstrap",
+      "bootstrap-retire",
+      "build",
+      "component-manager",
+      "componentctl"
+    ],
     "merged": [
       "manifest"
     ],
