@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "console-raw",
-      "coreutils",
-      "docs",
-      "editor",
-      "fit-pack",
-      "free",
-      "fs-backend",
-      "fs-erofs"
-    ],
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -22,6 +13,14 @@
       "build",
       "component-manager",
       "componentctl",
+      "console-raw",
+      "coreutils",
+      "docs",
+      "editor",
+      "fit-pack",
+      "free",
+      "fs-backend",
+      "fs-erofs",
       "manifest"
     ],
     "phase": "running",
