@@ -3,11 +3,11 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "coreutils",
       "kernel"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "ef813f123c55391f6db6b8d8d9a9992dc38154381167e8a5c4e5dee97feb4707",
