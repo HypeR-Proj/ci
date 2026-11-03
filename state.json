@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "kernel",
-      "ldd",
-      "less",
-      "lib-block",
-      "lib-bootstrap-handoff",
-      "lib-clap",
-      "lib-component",
-      "lib-component-config"
-    ],
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -38,6 +29,14 @@
       "io-vm",
       "journalctl",
       "journald",
+      "kernel",
+      "ldd",
+      "less",
+      "lib-block",
+      "lib-bootstrap-handoff",
+      "lib-clap",
+      "lib-component",
+      "lib-component-config",
       "manifest"
     ],
     "phase": "running",
