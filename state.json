@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "lib-service",
+      "lib-service-ipc",
+      "lib-system",
+      "lib-terminal",
+      "lib-text-ui",
+      "lib-tool-args",
+      "lib-vm-image",
+      "lib-vm-policy"
+    ],
     "merged": [
       "HypeR",
       "abi",
