@@ -3,7 +3,10 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "component-manager",
+      "system-tests"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
