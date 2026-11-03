@@ -14,4 +14,4 @@ concurrency:
   cancel-in-progress: true
 jobs:
   documentation:
-    uses: HypeR-Proj/ci/.github/workflows/documentation.yml@main
+    uses: ./.github/workflows/documentation.yml
