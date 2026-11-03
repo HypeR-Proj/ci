@@ -3,7 +3,8 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "bootstrap",
       "fs-backend",
       "lib-rust",
@@ -12,7 +13,6 @@
       "system-startup",
       "system-tests"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "c87d93016aa3de59a721fd18411833118f565c9a1cb6d471afb745c137e59f03",
