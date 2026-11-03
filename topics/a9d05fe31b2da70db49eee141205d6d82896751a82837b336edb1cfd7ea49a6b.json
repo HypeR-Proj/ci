@@ -1,0 +1,51 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/2efca3565ad5e7c2d9e843c1cb8a4b5d17d73dc1e979e446bed80c338ff8041a.json",
+  "members": [
+    {
+      "closed_at": "2026-11-02T18:35:18Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Remove the standalone F2FS library from the module catalog",
+      "url": "https://github.com/HypeR-Proj/build/pull/13"
+    },
+    {
+      "closed_at": "2026-11-02T18:35:18Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "fs-f2fs",
+      "state": "closed",
+      "title": "Build the checked-in Fuchsia core inside the F2FS service",
+      "url": "https://github.com/HypeR-Proj/fs-f2fs/pull/3"
+    },
+    {
+      "closed_at": "2026-11-02T18:35:18Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-cxx",
+      "state": "closed",
+      "title": "Remove the obsolete private F2FS build probe",
+      "url": "https://github.com/HypeR-Proj/lib-cxx/pull/7"
+    },
+    {
+      "closed_at": "2026-11-02T18:34:55Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "Keep F2FS implementation in the service checkout",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/11"
+    },
+    {
+      "closed_at": "2026-11-02T18:35:18Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Run F2FS acceptance through the service-owned implementation",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/8"
+    }
+  ],
+  "topic": "topic:f2fs-service"
+}
