@@ -3,14 +3,14 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "bootstrap",
       "fs-fat",
       "lib-fs-service",
       "lib-rust",
       "system-tests"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "f0705f8a75ea3fa94649d0022537d177d5c802d6af4f687d80f76172f6399198",
