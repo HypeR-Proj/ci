@@ -3,12 +3,11 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "abi",
       "fs-erofs",
-      "kernel"
-    ],
-    "merged": [
+      "kernel",
       "manifest"
     ],
     "phase": "running",
