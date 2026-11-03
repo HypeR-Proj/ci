@@ -3,12 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "lib-service-ipc",
-      "system-tests",
-      "terminal-service",
-      "vm-manager"
-    ],
+    "inflight": null,
     "merged": [
       "bootstrap",
       "component-manager",
@@ -17,7 +12,11 @@
       "io-runtime",
       "journald",
       "lib-component",
-      "lib-rust"
+      "lib-rust",
+      "lib-service-ipc",
+      "system-tests",
+      "terminal-service",
+      "vm-manager"
     ],
     "phase": "running",
     "snapshot": {
