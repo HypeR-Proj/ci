@@ -3,9 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "ci"
-    ],
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -13,6 +11,7 @@
       "bootstrap",
       "bootstrap-retire",
       "build",
+      "ci",
       "component-manager",
       "componentctl",
       "console-raw",
