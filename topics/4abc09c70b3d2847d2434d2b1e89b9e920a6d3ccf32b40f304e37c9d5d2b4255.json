@@ -1,0 +1,33 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/27c59d0b8784bf86362c9b4daa97dde865682d974b30e402d5b05f132ec0215b.json",
+  "members": [
+    {
+      "closed_at": "2026-11-02T17:01:11Z",
+      "number": 31,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Retain per-case diagnostics when system tests share a worker",
+      "url": "https://github.com/HypeR-Proj/ci/pull/31"
+    },
+    {
+      "closed_at": "2026-11-02T17:00:48Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Reduce redundant builds and group system cases within the worker budget",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/7"
+    },
+    {
+      "closed_at": "2026-11-02T17:00:48Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "test-framework",
+      "state": "closed",
+      "title": "Reuse workers for compatible system cases without losing individual results",
+      "url": "https://github.com/HypeR-Proj/test-framework/pull/4"
+    }
+  ],
+  "topic": "topic:ci-worker-reuse"
+}

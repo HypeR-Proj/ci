@@ -36,6 +36,7 @@
   "retired": {
     "topic:build-layout-ci": "topics/d85be64d92c68a1d510761430436894986f87eb5afafb660d205754f0bd852cc.json",
     "topic:build-workspace": "topics/4b7cd807543e974dff78df911aa93cd02030ffa2760ab9b6a0d387c4ecabba18.json",
+    "topic:ci-worker-reuse": "topics/4abc09c70b3d2847d2434d2b1e89b9e920a6d3ccf32b40f304e37c9d5d2b4255.json",
     "topic:codeowner-ci-access": "topics/67830cdfe0f9f031e614ec5522812512763e2a6e7b568e5b3b6459d7d3bd40e9.json",
     "topic:component-catalog-docs": "topics/f1b7474d83aa532121d230fae1fe45bbf1ba9d1d80e7bc9cd77215d91515c655.json",
     "topic:component-catalogs": "topics/160e93739c75b276c707c397095d254c5b790991fc4c192f0064750ac98f4d9d.json",
