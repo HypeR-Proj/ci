@@ -3,7 +3,8 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "bootstrap",
       "component-manager",
       "fs-backend",
@@ -12,7 +13,6 @@
       "system-tests",
       "vm-manager"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "767ea8c9b12c6c7d77a2ecf2e907e4586d4d7ad850bb8c82b076bb189cbe1c64",
