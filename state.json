@@ -3,7 +3,12 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "lib-service-ipc",
+      "system-tests",
+      "terminal-service",
+      "vm-manager"
+    ],
     "merged": [
       "bootstrap",
       "component-manager",
