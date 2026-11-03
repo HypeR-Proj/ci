@@ -1,0 +1,609 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/630c60b7474427b727d6a3012290ccd054cd857b1df7f5b81145897949720815.json",
+  "members": [
+    {
+      "closed_at": "2026-11-01T20:27:59Z",
+      "number": 228,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "Document independent module builds and workspace setup",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/228"
+    },
+    {
+      "closed_at": "2026-11-01T20:27:59Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Remove migration provenance from abi component metadata",
+      "url": "https://github.com/HypeR-Proj/abi/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T20:27:59Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "app",
+      "state": "closed",
+      "title": "Declare application groups in an independent component catalog",
+      "url": "https://github.com/HypeR-Proj/app/pull/1"
+    },
+    {
+      "closed_at": "2026-11-01T20:27:59Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Own bootstrap package versions and preserve static workspace builds",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/8"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:02Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "bootstrap-retire",
+      "state": "closed",
+      "title": "Build bootstrap-retire from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/bootstrap-retire/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:02Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Compose modules from recursive repository-owned catalogs",
+      "url": "https://github.com/HypeR-Proj/build/pull/11"
+    },
+    {
+      "closed_at": "2026-11-01T20:31:43Z",
+      "number": 27,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "Keep single-PR merging native and validate repository-owned modules",
+      "url": "https://github.com/HypeR-Proj/ci/pull/27"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:02Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "Build component-manager from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:02Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "componentctl",
+      "state": "closed",
+      "title": "Build componentctl from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/componentctl/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:24Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "console-raw",
+      "state": "closed",
+      "title": "Build console-raw from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/console-raw/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:24Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "coreutils",
+      "state": "closed",
+      "title": "Build coreutils from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/coreutils/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:24Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "editor",
+      "state": "closed",
+      "title": "Build editor from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/editor/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:24Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "fit-pack",
+      "state": "closed",
+      "title": "Use the versioned VM image library in fit-pack",
+      "url": "https://github.com/HypeR-Proj/fit-pack/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:27Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "free",
+      "state": "closed",
+      "title": "Build free from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/free/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:27Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "Build fs-backend from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:27Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "Build fs-erofs from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:27Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "Build fs-fat from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:50Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "grep",
+      "state": "closed",
+      "title": "Build grep from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/grep/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:49Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "handle",
+      "state": "closed",
+      "title": "Build handle from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/handle/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:50Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "Build io-runtime from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:50Z",
+      "number": 26,
+      "pull_request": true,
+      "repository": "io-vm",
+      "state": "closed",
+      "title": "Remove migration provenance from io-vm component metadata",
+      "url": "https://github.com/HypeR-Proj/io-vm/pull/26"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:53Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "journalctl",
+      "state": "closed",
+      "title": "Build journalctl from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/journalctl/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:53Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "Build journald from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/journald/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:53Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Preserve 16 KiB stack reserve and adopt component catalogs",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T20:28:53Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "ldd",
+      "state": "closed",
+      "title": "Build ldd from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/ldd/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:15Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "less",
+      "state": "closed",
+      "title": "Build less from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/less/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:14Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-block",
+      "state": "closed",
+      "title": "Build lib-block from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-block/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:15Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-bootstrap-handoff",
+      "state": "closed",
+      "title": "Build lib-bootstrap-handoff from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-bootstrap-handoff/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:14Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-clap",
+      "state": "closed",
+      "title": "Build lib-clap from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-clap/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:17Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-component",
+      "state": "closed",
+      "title": "Build lib-component from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-component/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:17Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-component-config",
+      "state": "closed",
+      "title": "Build lib-component-config from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-component-config/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:18Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-cxx",
+      "state": "closed",
+      "title": "Remove migration provenance from lib-cxx component metadata",
+      "url": "https://github.com/HypeR-Proj/lib-cxx/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:19Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-dynamic-loader",
+      "state": "closed",
+      "title": "Remove migration provenance from lib-dynamic-loader component metadata",
+      "url": "https://github.com/HypeR-Proj/lib-dynamic-loader/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:40Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "Build lib-fs-service from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:40Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-journal-client",
+      "state": "closed",
+      "title": "Build lib-journal-client from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-journal-client/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:40Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-musl",
+      "state": "closed",
+      "title": "Remove migration provenance from lib-musl component metadata",
+      "url": "https://github.com/HypeR-Proj/lib-musl/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:40Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Remove migration provenance from lib-rust component metadata",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/7"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:43Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-rust-fatfs",
+      "state": "closed",
+      "title": "Remove migration provenance from lib-rust-fatfs component metadata",
+      "url": "https://github.com/HypeR-Proj/lib-rust-fatfs/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:43Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "Build lib-rust-std from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/9"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:43Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "Build lib-service from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:29:44Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-service-ipc",
+      "state": "closed",
+      "title": "Build lib-service-ipc from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-service-ipc/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:06Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "Remove migration provenance from lib-system component metadata",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/8"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:06Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-terminal",
+      "state": "closed",
+      "title": "Build lib-terminal from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-terminal/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:07Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-text-ui",
+      "state": "closed",
+      "title": "Build lib-text-ui from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-text-ui/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:07Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-tool-args",
+      "state": "closed",
+      "title": "Build lib-tool-args from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-tool-args/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:09Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-vm-image",
+      "state": "closed",
+      "title": "Build lib-vm-image from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-vm-image/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:10Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-vm-policy",
+      "state": "closed",
+      "title": "Build lib-vm-policy from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-vm-policy/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:10Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "lib-vm-support",
+      "state": "closed",
+      "title": "Build lib-vm-support from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/lib-vm-support/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:27:36Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "Arrange independent build peers and register component catalogs",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/9"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:11Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "memstat",
+      "state": "closed",
+      "title": "Build memstat from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/memstat/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:33Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "mount",
+      "state": "closed",
+      "title": "Build mount from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/mount/pull/6"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:33Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "perf",
+      "state": "closed",
+      "title": "Build perf from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/perf/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:33Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "pi5-images",
+      "state": "closed",
+      "title": "Resolve build tools through the manifest-owned workspace",
+      "url": "https://github.com/HypeR-Proj/pi5-images/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:33Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "ps",
+      "state": "closed",
+      "title": "Build ps from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/ps/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:36Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "Build session-manager from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:36Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "shell",
+      "state": "closed",
+      "title": "Build shell from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/shell/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:36Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "svc",
+      "state": "closed",
+      "title": "Declare service groups in an independent component catalog",
+      "url": "https://github.com/HypeR-Proj/svc/pull/1"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:37Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "system-startup",
+      "state": "closed",
+      "title": "Build system-startup from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/system-startup/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:58Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Own Native probe builds and preserve storage failure diagnostics",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/3"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:58Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "terminal-service",
+      "state": "closed",
+      "title": "Build terminal-service from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/terminal-service/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:58Z",
+      "number": 3,
+      "pull_request": true,
+      "repository": "test-framework",
+      "state": "closed",
+      "title": "Own the guest reporter Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/test-framework/pull/3"
+    },
+    {
+      "closed_at": "2026-11-01T20:30:58Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "Prepare offline SDK inputs and validate each architecture in its own build view",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/8"
+    },
+    {
+      "closed_at": "2026-11-01T20:31:01Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "top",
+      "state": "closed",
+      "title": "Build top from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/top/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:31:01Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "umount",
+      "state": "closed",
+      "title": "Build umount from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/umount/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:31:02Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "vm-manager",
+      "state": "closed",
+      "title": "Build vm-manager from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/vm-manager/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:31:02Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "vm-runtime",
+      "state": "closed",
+      "title": "Build vm-runtime from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/vm-runtime/pull/5"
+    },
+    {
+      "closed_at": "2026-11-01T20:31:22Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "vmm",
+      "state": "closed",
+      "title": "Build vmm from its own locked Cargo workspace",
+      "url": "https://github.com/HypeR-Proj/vmm/pull/5"
+    }
+  ],
+  "topic": "topic:component-catalogs"
+}

@@ -23,6 +23,7 @@
     "topic:build-workspace": "topics/4b7cd807543e974dff78df911aa93cd02030ffa2760ab9b6a0d387c4ecabba18.json",
     "topic:codeowner-ci-access": "topics/67830cdfe0f9f031e614ec5522812512763e2a6e7b568e5b3b6459d7d3bd40e9.json",
     "topic:component-catalog-docs": "topics/f1b7474d83aa532121d230fae1fe45bbf1ba9d1d80e7bc9cd77215d91515c655.json",
+    "topic:component-catalogs": "topics/160e93739c75b276c707c397095d254c5b790991fc4c192f0064750ac98f4d9d.json",
     "topic:developer-workflow": "topics/4d7ea05ea20e1c2c95f239c62fe83b818baa3ac601e0d822f237e0088f4fd0f0.json",
     "topic:filesystem-foundation": "topics/56fae772a17dc51d4dd02bc1f48fe73353ffe3fbb5f6e021fb08baf5bdfa361c.json",
     "topic:library-repository-names": "topics/54f43f53a387ad893943673f506f11b97075fcf4aefca69aac877c5b451f8916.json",
