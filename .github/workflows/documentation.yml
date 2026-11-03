@@ -13,7 +13,27 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: HypeR-Proj/docs/.github/actions/documentation@main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: HypeR-Proj/ci
+          ref: ${{ github.repository == 'HypeR-Proj/ci' && github.sha || 'main' }}
+          path: .documentation-control
+          persist-credentials: false
+      - name: Select candidate documentation tools
+        id: tools
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.event.repository.name }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+          CANDIDATE_SHA: ${{ github.sha }}
+        run: python3 .documentation-control/tools/documentation.py
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: HypeR-Proj/docs
+          ref: ${{ steps.tools.outputs.revision }}
+          path: .documentation-tools
+          persist-credentials: false
+      - uses: ./.documentation-tools/.github/actions/documentation
         with:
           output: ${{ runner.temp }}/documentation
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
