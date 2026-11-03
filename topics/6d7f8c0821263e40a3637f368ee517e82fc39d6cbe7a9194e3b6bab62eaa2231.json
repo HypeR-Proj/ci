@@ -1,0 +1,15 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/df77634f6cf4629a89002adb7ede80e3090cf90b229532389534acdf2f8f5fbe.json",
+  "members": [
+    {
+      "closed_at": "2026-11-02T14:04:28Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Remove remaining license enforcement from test tooling",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/5"
+    }
+  ],
+  "topic": "topic:remove-license-gates"
+}
