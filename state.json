@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "lib-vm-support",
-      "memstat",
-      "mount",
-      "perf",
-      "pi5-images",
-      "ps",
-      "session-manager",
-      "shell"
-    ],
+    "inflight": null,
     "merged": [
       "HypeR",
       "abi",
@@ -62,7 +53,15 @@
       "lib-tool-args",
       "lib-vm-image",
       "lib-vm-policy",
-      "manifest"
+      "lib-vm-support",
+      "manifest",
+      "memstat",
+      "mount",
+      "perf",
+      "pi5-images",
+      "ps",
+      "session-manager",
+      "shell"
     ],
     "phase": "running",
     "snapshot": {
