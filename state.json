@@ -3,13 +3,13 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "abi",
       "kernel",
       "lib-rust-std",
       "toolchain"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "73e5d017437fb54f6a85dee93c4639fe91c794add86fd442cfa0b3dc6385a2c2",
