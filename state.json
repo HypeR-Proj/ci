@@ -3,7 +3,10 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "HypeR",
+      "docs"
+    ],
     "merged": [
       "manifest"
     ],
