@@ -1,0 +1,51 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/04b77fabd474b6c81153f0506e71565b423248f6fe125718a52c3de321be41cf.json",
+  "members": [
+    {
+      "closed_at": "2026-11-02T03:15:32Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Support F2FS source archives and directory build dependencies",
+      "url": "https://github.com/HypeR-Proj/build/pull/12"
+    },
+    {
+      "closed_at": "2026-11-02T03:15:32Z",
+      "number": 1,
+      "pull_request": true,
+      "repository": "fs-f2fs",
+      "state": "closed",
+      "title": "Add an optional F2FS filesystem worker",
+      "url": "https://github.com/HypeR-Proj/fs-f2fs/pull/1"
+    },
+    {
+      "closed_at": "2026-11-02T03:15:09Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "Register optional F2FS repositories in the rolling workspace",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/10"
+    },
+    {
+      "closed_at": "2026-11-02T03:15:32Z",
+      "number": 2,
+      "pull_request": true,
+      "repository": "svc",
+      "state": "closed",
+      "title": "Register the optional F2FS service catalog entry",
+      "url": "https://github.com/HypeR-Proj/svc/pull/2"
+    },
+    {
+      "closed_at": "2026-11-02T03:15:35Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Add disposable F2FS persistence and writeback acceptance",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/4"
+    }
+  ],
+  "topic": "topic:f2fs-integration"
+}
