@@ -1,0 +1,42 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/43d183820169de20363a35a5d8fbe5a4de1aedd6049737b398eb492b3aa16090.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T03:24:13Z",
+      "number": 229,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "docs: document data-preserving rebuild and explicit disk reset",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/229"
+    },
+    {
+      "closed_at": "2026-11-03T03:24:13Z",
+      "number": 14,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "fix: preserve persistent storage during rebuild",
+      "url": "https://github.com/HypeR-Proj/build/pull/14"
+    },
+    {
+      "closed_at": "2026-11-03T03:23:54Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "docs: distinguish rebuilding from explicit storage reset",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/12"
+    },
+    {
+      "closed_at": "2026-11-03T03:24:13Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "vmm",
+      "state": "closed",
+      "title": "docs: use explicit disk reset in VMM deployment guidance",
+      "url": "https://github.com/HypeR-Proj/vmm/pull/6"
+    }
+  ],
+  "topic": "topic:audit-preserve-storage"
+}
