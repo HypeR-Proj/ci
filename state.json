@@ -3,7 +3,14 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "bootstrap",
+      "build",
+      "fs-backend",
+      "fs-f2fs",
+      "pi5-images",
+      "system-tests"
+    ],
     "merged": [
       "manifest"
     ],
