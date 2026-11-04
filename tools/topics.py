@@ -237,9 +237,17 @@ def clean_labels(store, pulls):
         if datetime.now(timezone.utc) - newest < timedelta(hours=24):
             continue
         archive = 'topics/' + hashlib.sha256(topic.encode()).hexdigest() + '.json'
+        previous = store.read(archive) if topic in store.data['retired'] else {}
+        # A previous attempt may have removed labels from only some repositories.
+        # Their historical PRs no longer appear in label searches; retain the
+        # saved members when checkpointing the remaining cleanup work.
+        archived = {(row['repository'], row['number']): row
+                    for row in previous.get('members', [])}
+        archived.update({(row['repository'], row['number']): row for row in rows})
         store.data['retired'][topic] = archive
-        store.save({archive: {'topic': topic, 'members': rows,
-                             'last_result': store.data['messages'].get(topic)}})
+        store.save({archive: {'topic': topic,
+                             'members': [archived[key] for key in sorted(archived)],
+                             'last_result': store.data['messages'].get(topic, previous.get('last_result'))}})
         # Recheck the whole organization's open membership before any deletion.
         if members(inventory(), topic):
             continue
@@ -250,7 +258,16 @@ def clean_labels(store, pulls):
                 write(f'repos/{ORG}/{repository}/labels/{quote(topic, safe="")}', method='DELETE')
             except subprocess.CalledProcessError as error:
                 if 'HTTP 404' not in (error.stderr or ''):
-                    raise
+                    # The archive is already durable. Stop optional writes after
+                    # a rejection and retry through the next poll's membership
+                    # checks, without failing completed coordination or blindly
+                    # repeating a DELETE whose response may have been lost.
+                    detail = json.dumps({'topic': topic, 'repository': repository,
+                                         'error': str(error),
+                                         'diagnostics': getattr(error, '__notes__', [])})
+                    print('::warning title=Topic label cleanup deferred::' + detail.replace('%', '%25'),
+                          flush=True)
+                    return
         print(f'Archived closed topic {topic}: {archive}', flush=True)
 
 

@@ -154,6 +154,15 @@ issues across the organization are closed, including drafts, and at least 24 hou
 have passed since the last closure. Unused newly created labels are retained.
 Cleanup pauses while system verification or a submission is in progress.
 
+Failed coordinator API writes report the HTTP diagnostic and response body with
+the operation and endpoint. Response text is bounded and quoted in logs; request
+payloads are not included. Writes are not blindly retried because a lost response
+can follow a committed operation; callers retain their state reconciliation.
+After a durable archive, a failed label deletion emits a warning and stops cleanup
+until a later poll, which checks open membership again. Other coordination already
+completed remains successful. Archive failures still stop before deletion, and a
+partial cleanup retains previously archived members across retries.
+
 Before deleting labels, it saves the topic name, member URLs and closure information
 under `topics/` on `topic-state`, indexed by `state.json`. It rechecks open membership
 before deletion. Deleting a GitHub label also removes it from historical PRs; use

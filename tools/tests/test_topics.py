@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
+import contextlib
 from datetime import datetime, timedelta, timezone
 import json
+import io
 from pathlib import Path
 import subprocess
 import sys
@@ -330,6 +332,51 @@ class CleanupAndDispatchTests(unittest.TestCase):
             topics.clean_labels(state, {'kernel': []})
         write.assert_not_called()
 
+    def test_failed_delete_defers_cleanup_without_losing_partial_archive(self):
+        state = store()
+        closed = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+        item = dict(number=2, html_url='https://example.invalid/2', state='closed',
+                    closed_at=closed, title='Done', pull_request={})
+        retained = dict(repository='manifest', number=1, url='https://example.invalid/1',
+                        state='closed', closed_at=closed, title='Earlier member', pull_request=True)
+        state.data['retired']['topic:test'] = 'previous archive'
+        state.read.return_value = {'topic': 'topic:test', 'members': [retained], 'last_result': 'passed'}
+        failure = subprocess.CalledProcessError(1, ['gh'], stderr='gh: HTTP 403')
+        failure.add_note('GitHub API failure: HTTP 403 rate limit')
+        output = io.StringIO()
+        order = []
+        state.save.side_effect = lambda files: order.append('archive')
+        def delete(*args, **kwargs):
+            order.append('delete')
+            raise failure
+        with contextlib.redirect_stdout(output), \
+                patch.object(topics, 'system_runs', return_value=[]), \
+                patch.object(topics, 'pages', side_effect=[[{'name': 'topic:test'}], [item], []]), \
+                patch.object(topics, 'inventory', return_value={'kernel': []}), \
+                patch.object(topics, 'write', side_effect=delete) as write:
+            topics.clean_labels(state, {'kernel': []})
+        self.assertEqual(order, ['archive', 'delete'])
+        write.assert_called_once()
+        self.assertIn('::warning title=Topic label cleanup deferred::', output.getvalue())
+        self.assertIn('HTTP 403 rate limit', output.getvalue())
+        saved = next(iter(state.save.call_args.args[0].values()))
+        self.assertEqual([(r['repository'], r['number']) for r in saved['members']],
+                         [('kernel', 2), ('manifest', 1)])
+        self.assertEqual(saved['last_result'], 'passed')
+
+    def test_archive_failure_still_stops_cleanup_before_any_delete(self):
+        state = store()
+        closed = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+        item = dict(number=1, html_url='https://example.invalid', state='closed',
+                    closed_at=closed, title='Done', pull_request={})
+        state.save.side_effect = subprocess.CalledProcessError(1, ['gh'], stderr='HTTP 403')
+        with patch.object(topics, 'system_runs', return_value=[]), \
+                patch.object(topics, 'pages', side_effect=[[{'name': 'topic:test'}], [item]]), \
+                patch.object(topics, 'write') as write:
+            with self.assertRaises(subprocess.CalledProcessError):
+                topics.clean_labels(state, {'kernel': []})
+        write.assert_not_called()
+
     def test_lost_dispatch_response_is_reconciled_without_duplicate(self):
         state = store()
         request = {'target': 'topic:test'}
@@ -347,6 +394,35 @@ class CleanupAndDispatchTests(unittest.TestCase):
         with patch.object(topics, 'system_runs', return_value=[]), patch.object(topics, 'write') as write:
             self.assertIn('awaiting', topics.dispatch_verification(state, {'target': 'topic:test'}, 'ci-2'))
         write.assert_not_called()
+
+
+class ApiFailureTests(unittest.TestCase):
+    def test_failed_write_retains_response_and_original_exception_without_retry(self):
+        error = subprocess.CalledProcessError(
+            1, ['gh', 'api'], output='{"message":"API rate limit exceeded"}',
+            stderr='gh: API rate limit exceeded (HTTP 403)\n::error::remote text\n')
+        with patch.object(topic_store.subprocess, 'check_output', side_effect=error) as call:
+            with self.assertRaises(subprocess.CalledProcessError) as raised:
+                topic_store.write('repos/example/repo/labels/topic%3Atest', method='DELETE')
+        self.assertIs(raised.exception, error)
+        call.assert_called_once()
+        note = raised.exception.__notes__[0]
+        self.assertNotIn('\n', note)
+        self.assertIn('HTTP 403', note)
+        detail = json.loads(note.removeprefix('GitHub API failure: '))
+        self.assertEqual(detail['response'], error.output)
+        self.assertEqual(detail['stderr'], error.stderr)
+        self.assertEqual(detail['method'], 'DELETE')
+
+    def test_failure_diagnostics_are_bounded_and_do_not_include_request_payload(self):
+        error = subprocess.CalledProcessError(1, ['gh'], output='x' * 10000, stderr=None)
+        with patch.object(topic_store.subprocess, 'check_output', side_effect=error):
+            with self.assertRaises(subprocess.CalledProcessError) as raised:
+                topic_store.write('repos/example/repo/check-runs', {'private': 'request payload'})
+        detail = json.loads(raised.exception.__notes__[0].removeprefix('GitHub API failure: '))
+        self.assertEqual(detail['response'], 'x' * 4096)
+        self.assertEqual(detail['stderr'], '')
+        self.assertNotIn('request payload', raised.exception.__notes__[0])
 
 
 class StateTests(unittest.TestCase):

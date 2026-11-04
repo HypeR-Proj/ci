@@ -21,8 +21,18 @@ def write(path, payload=None, method='POST'):
     arguments = ['gh', 'api', path, '--method', method]
     if payload is not None:
         arguments += ['--input', '-']
-    result = subprocess.check_output(arguments, text=True, stderr=subprocess.PIPE,
-                                     input=json.dumps(payload) if payload is not None else None)
+    try:
+        result = subprocess.check_output(arguments, text=True, stderr=subprocess.PIPE,
+                                         input=json.dumps(payload) if payload is not None else None)
+    except subprocess.CalledProcessError as error:
+        # Preserve the exception type and stderr used by reconciliation callers,
+        # but make the actual API rejection visible in an uncaught traceback.
+        # Quote output so remote text cannot introduce Actions workflow commands.
+        detail = {'method': method, 'path': path,
+                  'stderr': (error.stderr or '')[:4096],
+                  'response': (error.output or '')[:4096]}
+        error.add_note('GitHub API failure: ' + json.dumps(detail, ensure_ascii=True))
+        raise
     return json.loads(result) if result.strip() else None
 
 
