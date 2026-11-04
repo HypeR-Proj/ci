@@ -1,0 +1,33 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/262b992f19f1a09998d3ce62acdf53b095bc4f757b9e49287f75b0f7d8d6bf7e.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T06:00:30Z",
+      "number": 15,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "test: preserve documentation inventory in build-location fixtures",
+      "url": "https://github.com/HypeR-Proj/build/pull/15"
+    },
+    {
+      "closed_at": "2026-11-03T06:00:47Z",
+      "number": 32,
+      "pull_request": true,
+      "repository": "ci",
+      "state": "closed",
+      "title": "fix: select exact documentation candidates and validate workflow changes",
+      "url": "https://github.com/HypeR-Proj/ci/pull/32"
+    },
+    {
+      "closed_at": "2026-11-03T06:00:29Z",
+      "number": 4,
+      "pull_request": true,
+      "repository": "docs",
+      "state": "closed",
+      "title": "fix: validate published pages with candidate documentation tools",
+      "url": "https://github.com/HypeR-Proj/docs/pull/4"
+    }
+  ],
+  "topic": "topic:audit-candidate-validation"
+}
