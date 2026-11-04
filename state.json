@@ -39,6 +39,7 @@
     "topic:audit-abi-contracts": "topics/bb2670c22e8cbf998ab1feeba5dcc9e12e409a63b26e3fba66b2e2d7b3f5e01d.json",
     "topic:audit-bounded-admission": "topics/7c4062ad741b33dd70f7bb37a7281542fe369cb7998336f894f2f5bd2f88a560.json",
     "topic:audit-candidate-validation": "topics/c7e7e031fc70f3bc1314d3ac97d298af43c5714f11fc6ce534d5296c73d52e73.json",
+    "topic:audit-command-snapshots": "topics/7308b2a6ee060b46c13cbc75caf3e89eacf33b844eb1dbed2cbccdb351509f1b.json",
     "topic:audit-journal-contract": "topics/2eb68527844e895d8f45cb5ef66e03b3268534e3b9e1781c408ca4150b40dbdf.json",
     "topic:audit-listener-recovery": "topics/709b69445a6d4a73c010fdac0ea5d6bbf29f899ca1a708f3eddfd684e0b0aafc.json",
     "topic:audit-module-references": "topics/df9d55cee5ca1d05e059752c1d0c6578dea9264b5f8b9f6f73863d63fe57803a.json",

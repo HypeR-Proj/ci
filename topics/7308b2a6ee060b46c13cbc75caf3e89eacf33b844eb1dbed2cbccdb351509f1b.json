@@ -1,0 +1,24 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/26981a62bdd6c4088cffc25b8f6c4f1421ea0ca2c8c7dd2abc115fcf3a13d30b.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T13:39:02Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "fix: pair command outcomes with their lifecycle snapshot",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/7"
+    },
+    {
+      "closed_at": "2026-11-03T13:39:02Z",
+      "number": 14,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "test: assert lifecycle command receipt revisions",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/14"
+    }
+  ],
+  "topic": "topic:audit-command-snapshots"
+}
