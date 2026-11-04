@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "bootstrap",
+      "fs-backend",
+      "fs-erofs",
+      "fs-f2fs",
+      "fs-fat",
+      "kernel",
+      "lib-fs-service",
+      "lib-rust"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
