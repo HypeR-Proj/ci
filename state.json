@@ -37,6 +37,7 @@
   "requests": {},
   "retired": {
     "topic:audit-preserve-storage": "topics/0b8748e563dcbee5c5402d2cb0d8f65c8f947be6ec9871ae456b4129b498f7ff.json",
+    "topic:audit-workspace-entry": "topics/7ac79126d1c73d917b6ba1bd0edaa9aa50259190f397b99b28295f2020f9b78c.json",
     "topic:build-layout-ci": "topics/d85be64d92c68a1d510761430436894986f87eb5afafb660d205754f0bd852cc.json",
     "topic:build-workspace": "topics/4b7cd807543e974dff78df911aa93cd02030ffa2760ab9b6a0d387c4ecabba18.json",
     "topic:ci-worker-reuse": "topics/4abc09c70b3d2847d2434d2b1e89b9e920a6d3ccf32b40f304e37c9d5d2b4255.json",

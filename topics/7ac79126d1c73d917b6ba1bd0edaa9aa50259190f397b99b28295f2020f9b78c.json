@@ -1,0 +1,33 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/63eec0674d4080a26743be64a2e9efd51082101f6fb7c5260955690d337dea49.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T10:21:38Z",
+      "number": 230,
+      "pull_request": true,
+      "repository": "HypeR",
+      "state": "closed",
+      "title": "docs: explain the linked workspace entry and build location",
+      "url": "https://github.com/HypeR-Proj/HypeR/pull/230"
+    },
+    {
+      "closed_at": "2026-11-03T10:21:38Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "docs",
+      "state": "closed",
+      "title": "docs: provide a linked workspace overview",
+      "url": "https://github.com/HypeR-Proj/docs/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T10:21:20Z",
+      "number": 14,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "docs: expose the workspace overview through a manifest link",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/14"
+    }
+  ],
+  "topic": "topic:audit-workspace-entry"
+}
