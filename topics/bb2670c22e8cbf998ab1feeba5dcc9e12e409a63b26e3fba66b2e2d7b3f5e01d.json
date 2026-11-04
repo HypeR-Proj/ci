@@ -1,0 +1,42 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/73e5d017437fb54f6a85dee93c4639fe91c794add86fd442cfa0b3dc6385a2c2.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T15:25:58Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "fix: align Native ABI blocking errors and shared records",
+      "url": "https://github.com/HypeR-Proj/abi/pull/10"
+    },
+    {
+      "closed_at": "2026-11-03T15:25:58Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "fix: align Native ABI blocking errors and shared records",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/11"
+    },
+    {
+      "closed_at": "2026-11-03T15:25:59Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "fix: align Native ABI blocking errors and shared records",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/10"
+    },
+    {
+      "closed_at": "2026-11-03T15:25:58Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "fix: align Native ABI blocking errors and shared records",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/10"
+    }
+  ],
+  "topic": "topic:audit-abi-contracts"
+}
