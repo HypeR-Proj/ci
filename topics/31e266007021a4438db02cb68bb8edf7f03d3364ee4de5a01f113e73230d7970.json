@@ -1,0 +1,24 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/65b5f5ebf52477fbc4379fff40a8dbd826cfa732511103bdc9dd0a8da9cff502.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T13:02:56Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "docs: specify resource counting units and retained ownership",
+      "url": "https://github.com/HypeR-Proj/abi/pull/9"
+    },
+    {
+      "closed_at": "2026-11-03T13:02:56Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "fix: account for resources through their retained lifetime",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/10"
+    }
+  ],
+  "topic": "topic:audit-resource-lifetimes"
+}
