@@ -1,0 +1,114 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/253673e78f33df81b3d7bf27475e1deffdc4e5b3474d683f701174f1bf93c4c4.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T07:45:15Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "fix: repair bootstrap listener recovery classification",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/11"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:15Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "fix: isolate malformed component management traffic",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:14Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "console-raw",
+      "state": "closed",
+      "title": "fix: recover console admission after malformed stream requests",
+      "url": "https://github.com/HypeR-Proj/console-raw/pull/7"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:16Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "fix: recover filesystem admission after oversized peer input",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/8"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:18Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "fix: recover I/O admission after malformed requests",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:18Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "fix: isolate rejected journal clients from listener failures",
+      "url": "https://github.com/HypeR-Proj/journald/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:18Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-component",
+      "state": "closed",
+      "title": "fix: distinguish component admission rejection from local failure",
+      "url": "https://github.com/HypeR-Proj/lib-component/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:20Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "fix: distinguish malformed stream requests from trusted failures",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/10"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:41Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-service-ipc",
+      "state": "closed",
+      "title": "fix: classify request admission without hiding receiver failures",
+      "url": "https://github.com/HypeR-Proj/lib-service-ipc/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:41Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "test: verify malformed clients cannot disable public admission",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/11"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:41Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "terminal-service",
+      "state": "closed",
+      "title": "fix: recover terminal admission after malformed stream requests",
+      "url": "https://github.com/HypeR-Proj/terminal-service/pull/7"
+    },
+    {
+      "closed_at": "2026-11-03T07:45:41Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "vm-manager",
+      "state": "closed",
+      "title": "fix: keep VM admission available after rejected clients",
+      "url": "https://github.com/HypeR-Proj/vm-manager/pull/6"
+    }
+  ],
+  "topic": "topic:audit-listener-recovery"
+}
