@@ -1,0 +1,51 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/f0705f8a75ea3fa94649d0022537d177d5c802d6af4f687d80f76172f6399198.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T03:55:39Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "fix: preserve bootstrap FAT partial write progress",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/9"
+    },
+    {
+      "closed_at": "2026-11-03T03:55:39Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "fix: preserve accepted FAT write progress through late errors",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T03:55:39Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "docs: define filesystem write acceptance and durability",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T03:55:39Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "docs: clarify Native file write progress and sync guarantees",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/8"
+    },
+    {
+      "closed_at": "2026-11-03T03:55:43Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "test: cover partial writes through Native filesystem RPC",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/9"
+    }
+  ],
+  "topic": "topic:audit-write-progress"
+}
