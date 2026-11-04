@@ -1,0 +1,78 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/4b9a85bcb0cb472ef7e2bf922caa02ba2fe20d19cf2a7eea4db53448d577e838.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T07:06:37Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "feat: distinguish matched capability receive rejection",
+      "url": "https://github.com/HypeR-Proj/abi/pull/7"
+    },
+    {
+      "closed_at": "2026-11-03T07:06:37Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "fix: preserve receive origin in bootstrap admission",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/10"
+    },
+    {
+      "closed_at": "2026-11-03T07:06:37Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "console-raw",
+      "state": "closed",
+      "title": "fix: migrate stream admission to typed receive rejection",
+      "url": "https://github.com/HypeR-Proj/console-raw/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T07:06:37Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "fix: classify matched receive rejection during control admission",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/7"
+    },
+    {
+      "closed_at": "2026-11-03T07:06:40Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "fix: preserve capability receive failure origin",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/8"
+    },
+    {
+      "closed_at": "2026-11-03T07:06:40Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "feat: expose typed capability receive rejections",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/9"
+    },
+    {
+      "closed_at": "2026-11-03T07:06:41Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "test: verify receive origin and MOVE ownership through Native SDK",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/10"
+    },
+    {
+      "closed_at": "2026-11-03T07:06:41Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "terminal-service",
+      "state": "closed",
+      "title": "fix: migrate stream admission to typed receive rejection",
+      "url": "https://github.com/HypeR-Proj/terminal-service/pull/6"
+    }
+  ],
+  "topic": "topic:audit-receive-origin"
+}
