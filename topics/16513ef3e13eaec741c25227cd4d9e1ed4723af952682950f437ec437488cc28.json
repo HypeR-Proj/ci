@@ -1,0 +1,69 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/c87d93016aa3de59a721fd18411833118f565c9a1cb6d471afb745c137e59f03.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T11:23:24Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "fix: preserve absolute request deadlines",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/13"
+    },
+    {
+      "closed_at": "2026-11-03T11:23:24Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "fix: preserve absolute request deadlines",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/10"
+    },
+    {
+      "closed_at": "2026-11-03T11:23:24Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "fix: preserve absolute request deadlines",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/11"
+    },
+    {
+      "closed_at": "2026-11-03T11:23:24Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "fix: preserve absolute request deadlines",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T11:23:27Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-service-ipc",
+      "state": "closed",
+      "title": "fix: preserve absolute request deadlines",
+      "url": "https://github.com/HypeR-Proj/lib-service-ipc/pull/7"
+    },
+    {
+      "closed_at": "2026-11-03T11:23:27Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "system-startup",
+      "state": "closed",
+      "title": "fix: preserve absolute request deadlines",
+      "url": "https://github.com/HypeR-Proj/system-startup/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T11:23:27Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "fix: preserve absolute request deadlines",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/13"
+    }
+  ],
+  "topic": "topic:audit-request-deadlines"
+}
