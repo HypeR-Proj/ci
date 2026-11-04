@@ -1,0 +1,24 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/4a617d26f8b74204332df17ce9de562d3561cdbcafd791a4021ab803ef5d5532.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T11:58:09Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "fix: share journal registration validation with clients",
+      "url": "https://github.com/HypeR-Proj/journald/pull/8"
+    },
+    {
+      "closed_at": "2026-11-03T11:58:09Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-journal-client",
+      "state": "closed",
+      "title": "fix: validate journal names and encoded registration size",
+      "url": "https://github.com/HypeR-Proj/lib-journal-client/pull/7"
+    }
+  ],
+  "topic": "topic:audit-journal-contract"
+}
