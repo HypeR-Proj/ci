@@ -1,0 +1,42 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/3e9cf3e49ac862b93f68f8e69e7a2d9802bdb56ad22b28d1acfc7537f1083806.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T08:22:41Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "docs: anchor the ABI Cargo example to a real consumer",
+      "url": "https://github.com/HypeR-Proj/abi/pull/8"
+    },
+    {
+      "closed_at": "2026-11-03T08:22:41Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "docs: point EROFS validation at the formal implementation",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T08:22:41Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "docs: align ABI architecture references with current owners",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/9"
+    },
+    {
+      "closed_at": "2026-11-03T08:22:20Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "docs: link the published module catalog from the manifest",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/13"
+    }
+  ],
+  "topic": "topic:audit-module-references"
+}

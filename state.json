@@ -36,6 +36,7 @@
   },
   "requests": {},
   "retired": {
+    "topic:audit-module-references": "topics/df9d55cee5ca1d05e059752c1d0c6578dea9264b5f8b9f6f73863d63fe57803a.json",
     "topic:audit-preserve-storage": "topics/0b8748e563dcbee5c5402d2cb0d8f65c8f947be6ec9871ae456b4129b498f7ff.json",
     "topic:audit-workspace-entry": "topics/7ac79126d1c73d917b6ba1bd0edaa9aa50259190f397b99b28295f2020f9b78c.json",
     "topic:build-layout-ci": "topics/d85be64d92c68a1d510761430436894986f87eb5afafb660d205754f0bd852cc.json",
