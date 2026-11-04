@@ -1,0 +1,69 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/5c7a4ac3ebd0592f1af27d1319128c1f95a7c7661b08dcff08977d327e011cf5.json",
+  "members": [
+    {
+      "closed_at": "2026-11-03T09:45:18Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "fix: bound bootstrap filesystem admission without formal dependencies",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/12"
+    },
+    {
+      "closed_at": "2026-11-03T09:45:18Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "fix: bound incomplete filesystem mount admissions",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/9"
+    },
+    {
+      "closed_at": "2026-11-03T09:45:19Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "fix: multiplex bounded I/O handshakes and preserve admitted sessions",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/7"
+    },
+    {
+      "closed_at": "2026-11-03T09:45:18Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "fix: bound journal query workers and source registration handoffs",
+      "url": "https://github.com/HypeR-Proj/journald/pull/7"
+    },
+    {
+      "closed_at": "2026-11-03T09:45:22Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "lib-journal-client",
+      "state": "closed",
+      "title": "fix: negotiate the bounded journal query handoff",
+      "url": "https://github.com/HypeR-Proj/lib-journal-client/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T09:45:22Z",
+      "number": 6,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "fix: delegate the durable journal query endpoint",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/6"
+    },
+    {
+      "closed_at": "2026-11-03T09:45:22Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "fix: exercise bounded admissions on real Native transports",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/12"
+    }
+  ],
+  "topic": "topic:audit-bounded-admission"
+}
