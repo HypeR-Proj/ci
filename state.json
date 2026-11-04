@@ -43,6 +43,7 @@
     "topic:audit-explicit-outcomes": "topics/6ac33e351efc5e7c7244cab1f6e954a33d606940ac12b7ebec59994b5838e891.json",
     "topic:audit-journal-contract": "topics/2eb68527844e895d8f45cb5ef66e03b3268534e3b9e1781c408ca4150b40dbdf.json",
     "topic:audit-listener-recovery": "topics/709b69445a6d4a73c010fdac0ea5d6bbf29f899ca1a708f3eddfd684e0b0aafc.json",
+    "topic:audit-module-guides": "topics/01a7052f1c8a95d64467ef6925af5307e83fcfa94da8387b42a470093e3a307b.json",
     "topic:audit-module-references": "topics/df9d55cee5ca1d05e059752c1d0c6578dea9264b5f8b9f6f73863d63fe57803a.json",
     "topic:audit-preserve-storage": "topics/0b8748e563dcbee5c5402d2cb0d8f65c8f947be6ec9871ae456b4129b498f7ff.json",
     "topic:audit-publication-boundaries": "topics/eb79b41950deca0f4a6e34095e014a82f5ca958258d67a1ba8d5b03d7daad665.json",
