@@ -1,0 +1,69 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/5a4a945f2a41008e087903613278adf2b4e3e32e495672baf3b0a8f0e4a85699.json",
+  "members": [
+    {
+      "closed_at": "2026-11-04T03:03:43Z",
+      "number": 17,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Support default F2FS recovery and storage acceptance",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/17"
+    },
+    {
+      "closed_at": "2026-11-04T03:03:43Z",
+      "number": 18,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "feat: pack F2FS persistence and separate Pi firmware",
+      "url": "https://github.com/HypeR-Proj/build/pull/18"
+    },
+    {
+      "closed_at": "2026-11-04T03:03:43Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "fix: reject unsupported F2FS mounts before transferring media",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/13"
+    },
+    {
+      "closed_at": "2026-11-04T03:03:43Z",
+      "number": 5,
+      "pull_request": true,
+      "repository": "fs-f2fs",
+      "state": "closed",
+      "title": "feat: enable F2FS and seed new deployment images",
+      "url": "https://github.com/HypeR-Proj/fs-f2fs/pull/5"
+    },
+    {
+      "closed_at": "2026-11-04T03:03:23Z",
+      "number": 16,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "feat: use F2FS for default persistent data",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/16"
+    },
+    {
+      "closed_at": "2026-11-04T03:03:46Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "pi5-images",
+      "state": "closed",
+      "title": "docs: describe split firmware and F2FS image layout",
+      "url": "https://github.com/HypeR-Proj/pi5-images/pull/7"
+    },
+    {
+      "closed_at": "2026-11-04T03:03:46Z",
+      "number": 17,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "test: exercise production F2FS persistence and checkpoint restart",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/17"
+    }
+  ],
+  "topic": "topic:default-f2fs-persist"
+}
