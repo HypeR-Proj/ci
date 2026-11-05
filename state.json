@@ -3,7 +3,8 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "bootstrap",
       "fs-f2fs",
       "kernel",
@@ -11,7 +12,6 @@
       "lib-rust",
       "system-tests"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "67f81438409a942a9d9634a1de869643d8dedf8de372979539deb61f78aee4eb",
