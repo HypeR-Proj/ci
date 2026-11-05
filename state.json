@@ -3,7 +3,9 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "system-tests"
+    ],
     "merged": [
       "abi",
       "bootstrap",
