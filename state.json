@@ -3,7 +3,15 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "component-manager",
+      "lib-component-config",
+      "lib-service",
+      "lib-terminal",
+      "shell",
+      "system-tests",
+      "terminal-service"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
