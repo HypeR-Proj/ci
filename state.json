@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "abi",
+      "bootstrap",
+      "build",
+      "component-manager",
+      "fs-backend",
+      "fs-erofs",
+      "fs-f2fs",
+      "fs-fat"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
