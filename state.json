@@ -73,6 +73,7 @@
     "topic:modular-workspace": "topics/62092e48bb1360531a0448b134e76123c816c73015444f6360caec999858c94b.json",
     "topic:module-test-ownership": "topics/5d5f21d42f05b1592ae89a40527baee093b492a061ac860ed71c2f828601f7b1.json",
     "topic:native-standard-libraries": "topics/69629245547e0a8993e0e2383300c47dc44e95e587a68fa69e097a3208ab4f32.json",
+    "topic:parent-supervised-termination": "topics/73beca69d06f76f21bfe4458eca79cc0b093cf22ce0a60dcbc9bfacd8bf98543.json",
     "topic:remove-license-gates": "topics/6d7f8c0821263e40a3637f368ee517e82fc39d6cbe7a9194e3b6bab62eaa2231.json",
     "topic:system-runtime": "topics/54584d34685b5b477fcbee9486620b643e92a103923e7726db4ed8af4de5b3d7.json",
     "topic:workspace-migration": "topics/122bd184cb51b19e9482fb39f84faa1a97629f404815392ba790d375e3148383.json",
