@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "journald",
-      "kernel",
-      "lib-component",
-      "lib-dynamic-loader",
-      "lib-fs-service",
-      "lib-rust",
-      "lib-service",
-      "lib-service-ipc"
-    ],
+    "inflight": null,
     "merged": [
       "abi",
       "bootstrap",
@@ -21,7 +12,15 @@
       "fs-backend",
       "fs-erofs",
       "fs-f2fs",
-      "fs-fat"
+      "fs-fat",
+      "journald",
+      "kernel",
+      "lib-component",
+      "lib-dynamic-loader",
+      "lib-fs-service",
+      "lib-rust",
+      "lib-service",
+      "lib-service-ipc"
     ],
     "phase": "running",
     "snapshot": {
