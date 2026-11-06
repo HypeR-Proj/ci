@@ -1,0 +1,87 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/5ad8de9b2443e18b67be2c55159abb6e3e09caf7f22c4c0bdc136ec622fae23e.json",
+  "members": [
+    {
+      "closed_at": "2026-11-05T18:47:03Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Expose explicit filesystem-volume synchronization",
+      "url": "https://github.com/HypeR-Proj/abi/pull/12"
+    },
+    {
+      "closed_at": "2026-11-05T18:47:03Z",
+      "number": 20,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Negotiate filesystem capabilities in bootstrap workers",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/20"
+    },
+    {
+      "closed_at": "2026-11-05T18:47:03Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "Advertise optional EROFS extent reads",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/9"
+    },
+    {
+      "closed_at": "2026-11-05T18:47:03Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "fs-f2fs",
+      "state": "closed",
+      "title": "Document bounded VFS writeback and synchronization scopes",
+      "url": "https://github.com/HypeR-Proj/fs-f2fs/pull/8"
+    },
+    {
+      "closed_at": "2026-11-05T18:47:06Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "Advertise optional FAT extent reads",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/9"
+    },
+    {
+      "closed_at": "2026-11-05T18:47:06Z",
+      "number": 17,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Drain VFS dirty pages proactively in bounded batches",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/17"
+    },
+    {
+      "closed_at": "2026-11-05T18:47:07Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "Advertise optional filesystem operations independently of writeback",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/10"
+    },
+    {
+      "closed_at": "2026-11-05T18:47:07Z",
+      "number": 15,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Negotiate filesystem capabilities and expose volume sync",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/15"
+    },
+    {
+      "closed_at": "2026-11-05T18:47:31Z",
+      "number": 21,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Cover proactive writeback and explicit synchronization scopes",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/21"
+    }
+  ],
+  "topic": "topic:storage-writeback-tuning"
+}
