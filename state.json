@@ -3,7 +3,8 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "abi",
       "bootstrap",
       "build",
@@ -13,7 +14,6 @@
       "fs-f2fs",
       "fs-fat"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "413c38f3499cfaafeb23613a978dddda03b8b2d54f6eba6cb47cec3c078f0a85",
