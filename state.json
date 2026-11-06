@@ -3,7 +3,15 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "lib-system",
+      "perf",
+      "session-manager",
+      "shell",
+      "system-tests",
+      "toolchain",
+      "umount"
+    ],
     "merged": [
       "abi",
       "bootstrap",
