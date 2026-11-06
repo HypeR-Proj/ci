@@ -1,0 +1,60 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/67f81438409a942a9d9634a1de869643d8dedf8de372979539deb61f78aee4eb.json",
+  "members": [
+    {
+      "closed_at": "2026-11-05T12:23:15Z",
+      "number": 19,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Accept file sync requests in bootstrap filesystem workers",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/19"
+    },
+    {
+      "closed_at": "2026-11-05T12:23:15Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "fs-f2fs",
+      "state": "closed",
+      "title": "Use ordered roll-forward records for file synchronization",
+      "url": "https://github.com/HypeR-Proj/fs-f2fs/pull/7"
+    },
+    {
+      "closed_at": "2026-11-05T12:23:15Z",
+      "number": 16,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Scope file synchronization to the target VFS dirty pages",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/16"
+    },
+    {
+      "closed_at": "2026-11-05T12:23:15Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "Dispatch file sync with a synchronous backend fallback",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/9"
+    },
+    {
+      "closed_at": "2026-11-05T12:23:19Z",
+      "number": 14,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Define file-scoped filesystem synchronization requests",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/14"
+    },
+    {
+      "closed_at": "2026-11-05T12:23:19Z",
+      "number": 20,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Cover file-scoped writeback and F2FS roll-forward recovery",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/20"
+    }
+  ],
+  "topic": "topic:f2fs-file-sync"
+}
