@@ -3,15 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "lib-system",
-      "perf",
-      "session-manager",
-      "shell",
-      "system-tests",
-      "toolchain",
-      "umount"
-    ],
+    "inflight": null,
     "merged": [
       "abi",
       "bootstrap",
@@ -28,7 +20,14 @@
       "lib-fs-service",
       "lib-rust",
       "lib-service",
-      "lib-service-ipc"
+      "lib-service-ipc",
+      "lib-system",
+      "perf",
+      "session-manager",
+      "shell",
+      "system-tests",
+      "toolchain",
+      "umount"
     ],
     "phase": "running",
     "snapshot": {
