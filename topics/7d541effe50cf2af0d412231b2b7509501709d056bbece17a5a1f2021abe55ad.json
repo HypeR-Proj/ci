@@ -1,0 +1,213 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/413c38f3499cfaafeb23613a978dddda03b8b2d54f6eba6cb47cec3c078f0a85.json",
+  "members": [
+    {
+      "closed_at": "2026-11-06T20:41:34Z",
+      "number": 15,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Specify optional vDSO and failed-filesystem recovery ABI",
+      "url": "https://github.com/HypeR-Proj/abi/pull/15"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:34Z",
+      "number": 21,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Map optional kernel vDSO in the bootstrap loader",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/21"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:34Z",
+      "number": 20,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Run block queue qualification under the retained volume owner",
+      "url": "https://github.com/HypeR-Proj/build/pull/20"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:34Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "Report critical subsystem failures and classify reply failures",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/11"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:37Z",
+      "number": 15,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "Retain volume authority and recover failed worker generations",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/15"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:37Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "Use the filesystem manager delegated block queue",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/10"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:37Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "fs-f2fs",
+      "state": "closed",
+      "title": "Use retained-owner queues and shared writeback policy validation",
+      "url": "https://github.com/HypeR-Proj/fs-f2fs/pull/9"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:38Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "Use delegated queues for filesystem worker ownership",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/10"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:58Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "Make query reply limits explicit and retain local error diagnostics",
+      "url": "https://github.com/HypeR-Proj/journald/pull/10"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:59Z",
+      "number": 22,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Provide optional vDSO and fenced failed-filesystem recovery",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/22"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:58Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "lib-component",
+      "state": "closed",
+      "title": "Preserve routing errors and report critical subsystem failures",
+      "url": "https://github.com/HypeR-Proj/lib-component/pull/8"
+    },
+    {
+      "closed_at": "2026-11-06T20:41:59Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "lib-dynamic-loader",
+      "state": "closed",
+      "title": "Map optional kernel vDSO for Native programs",
+      "url": "https://github.com/HypeR-Proj/lib-dynamic-loader/pull/8"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:01Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "Validate filesystem policy before publishing worker readiness",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/11"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:02Z",
+      "number": 16,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Use vDSO hints and expose safe filesystem recovery operations",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/16"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:02Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "Define queue-only filesystem worker and failed-detach control contracts",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/9"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:02Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "lib-service-ipc",
+      "state": "closed",
+      "title": "Preserve caller reply budgets and bound response preparation",
+      "url": "https://github.com/HypeR-Proj/lib-service-ipc/pull/10"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:22Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "Resolve optional vDSO clocks and IPC trace activity",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/10"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:22Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "perf",
+      "state": "closed",
+      "title": "Fix buffered trace writer documentation lint",
+      "url": "https://github.com/HypeR-Proj/perf/pull/8"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:22Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "Preserve typed component connection failures during shell launch",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/8"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:22Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "shell",
+      "state": "closed",
+      "title": "Group pipeline supervisor control state",
+      "url": "https://github.com/HypeR-Proj/shell/pull/9"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:25Z",
+      "number": 23,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Exercise service contracts, vDSO and failed-worker recovery",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/23"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:25Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "toolchain",
+      "state": "closed",
+      "title": "Cover optional vDSO mapping in loader startup tests",
+      "url": "https://github.com/HypeR-Proj/toolchain/pull/12"
+    },
+    {
+      "closed_at": "2026-11-06T20:42:25Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "umount",
+      "state": "closed",
+      "title": "Expose explicit recovery of failed filesystem mounts",
+      "url": "https://github.com/HypeR-Proj/umount/pull/7"
+    }
+  ],
+  "topic": "topic:service-contracts"
+}
