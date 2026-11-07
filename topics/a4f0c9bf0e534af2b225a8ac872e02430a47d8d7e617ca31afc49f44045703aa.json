@@ -1,0 +1,51 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/c5d9262da60046c17f769ba38a2f6c4f563d96a5c35a1dc32783d0b7e3a032c6.json",
+  "members": [
+    {
+      "closed_at": "2026-11-06T12:48:01Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Describe trace capacity using the runtime-advertised limit",
+      "url": "https://github.com/HypeR-Proj/abi/pull/13"
+    },
+    {
+      "closed_at": "2026-11-06T12:48:01Z",
+      "number": 19,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Restore Rust Analyzer indexing when opening the source workspace root",
+      "url": "https://github.com/HypeR-Proj/build/pull/19"
+    },
+    {
+      "closed_at": "2026-11-06T12:48:01Z",
+      "number": 19,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Allow larger on-demand trace snapshots",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/19"
+    },
+    {
+      "closed_at": "2026-11-06T12:48:01Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "perf",
+      "state": "closed",
+      "title": "Complete workloads before exporting buffered traces",
+      "url": "https://github.com/HypeR-Proj/perf/pull/7"
+    },
+    {
+      "closed_at": "2026-11-06T12:48:04Z",
+      "number": 22,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Verify complete trace exports and add Pi 5 capture workflow",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/22"
+    }
+  ],
+  "topic": "topic:perf-trace-export"
+}
