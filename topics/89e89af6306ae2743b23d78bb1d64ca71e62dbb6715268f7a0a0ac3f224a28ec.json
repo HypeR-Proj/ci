@@ -1,0 +1,24 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/089e974a8e40624c1dba6f68b389ab01add73ec09d6dd1531224be7895014ac3.json",
+  "members": [
+    {
+      "closed_at": "2026-11-06T14:26:39Z",
+      "number": 14,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Define conservative ByteChannel writable readiness",
+      "url": "https://github.com/HypeR-Proj/abi/pull/14"
+    },
+    {
+      "closed_at": "2026-11-06T14:26:39Z",
+      "number": 20,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Fix ByteChannel writable capacity and cover FIFO rejection progress",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/20"
+    }
+  ],
+  "topic": "topic:channel-progress"
+}
