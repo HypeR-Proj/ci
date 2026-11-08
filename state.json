@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "fs-f2fs",
+      "fs-fat",
+      "io-runtime",
+      "journald",
+      "kernel",
+      "lib-bootstrap-handoff",
+      "lib-component",
+      "lib-component-config"
+    ],
     "merged": [
       "abi",
       "bootstrap",
