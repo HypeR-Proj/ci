@@ -3,11 +3,11 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "lib-rust",
       "system-tests"
     ],
-    "merged": [],
     "phase": "running",
     "snapshot": {
       "identity": "fff3cc664db85142f24592fd30e18460a7a1d23f32c073c5fe60a1a56a231ec8",
