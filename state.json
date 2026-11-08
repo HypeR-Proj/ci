@@ -3,7 +3,9 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "io-vm"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
