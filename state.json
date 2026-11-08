@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "session-manager",
-      "shell",
-      "system-startup",
-      "system-tests",
-      "umount",
-      "vm-manager",
-      "vm-runtime",
-      "vmm"
-    ],
+    "inflight": null,
     "merged": [
       "abi",
       "bootstrap",
@@ -37,7 +28,15 @@
       "lib-vm-policy",
       "lib-vm-support",
       "mount",
-      "perf"
+      "perf",
+      "session-manager",
+      "shell",
+      "system-startup",
+      "system-tests",
+      "umount",
+      "vm-manager",
+      "vm-runtime",
+      "vmm"
     ],
     "phase": "running",
     "snapshot": {
