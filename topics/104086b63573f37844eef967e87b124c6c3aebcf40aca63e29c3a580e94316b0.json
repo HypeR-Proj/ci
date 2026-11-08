@@ -1,0 +1,78 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/a30058c8278a0cec65e6965a02729e7ba50c16b008091955f0886ea73eaf59bf.json",
+  "members": [
+    {
+      "closed_at": "2026-11-07T09:55:49Z",
+      "number": 16,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Size Native block grants for concurrent maximum-size transfers",
+      "url": "https://github.com/HypeR-Proj/abi/pull/16"
+    },
+    {
+      "closed_at": "2026-11-07T09:55:49Z",
+      "number": 23,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Separate discovery buffers from Native block transport grants",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/23"
+    },
+    {
+      "closed_at": "2026-11-07T09:55:49Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "Preserve unchanged console waits during device servicing",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/10"
+    },
+    {
+      "closed_at": "2026-11-07T09:55:49Z",
+      "number": 28,
+      "pull_request": true,
+      "repository": "io-vm",
+      "state": "closed",
+      "title": "Document per-client shared-memory geometry",
+      "url": "https://github.com/HypeR-Proj/io-vm/pull/28"
+    },
+    {
+      "closed_at": "2026-11-07T09:55:52Z",
+      "number": 24,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Refill filesystem writeback slots before draining the window",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/24"
+    },
+    {
+      "closed_at": "2026-11-07T09:55:52Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-block",
+      "state": "closed",
+      "title": "Describe concurrent Native block transport capacity",
+      "url": "https://github.com/HypeR-Proj/lib-block/pull/7"
+    },
+    {
+      "closed_at": "2026-11-07T09:55:52Z",
+      "number": 18,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Document concurrent Native block payload capacity",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/18"
+    },
+    {
+      "closed_at": "2026-11-07T09:55:52Z",
+      "number": 25,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Verify rolling writeback admission and failed receipt ownership",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/25"
+    }
+  ],
+  "topic": "topic:storage-pipeline-utilization"
+}
