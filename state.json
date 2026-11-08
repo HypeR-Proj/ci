@@ -3,7 +3,12 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "abi",
+      "kernel",
+      "lib-rust",
+      "lib-system"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
