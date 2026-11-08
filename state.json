@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "lib-fs-service",
+      "lib-rust",
+      "lib-service",
+      "lib-system",
+      "lib-vm-policy",
+      "lib-vm-support",
+      "mount",
+      "perf"
+    ],
     "merged": [
       "abi",
       "bootstrap",
