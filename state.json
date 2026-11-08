@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "session-manager",
+      "shell",
+      "system-startup",
+      "system-tests",
+      "umount",
+      "vm-manager",
+      "vm-runtime",
+      "vmm"
+    ],
     "merged": [
       "abi",
       "bootstrap",
