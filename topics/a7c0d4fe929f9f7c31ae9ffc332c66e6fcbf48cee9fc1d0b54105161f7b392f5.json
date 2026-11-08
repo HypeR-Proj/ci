@@ -1,0 +1,69 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/4368249f0987ec08cd136433d293bc727b0f74e8510bc280aaa1f34e5bc98306.json",
+  "members": [
+    {
+      "closed_at": "2026-11-07T06:54:27Z",
+      "number": 22,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Keep bootstrap filesystem dispatch synchronous with new writeback operations",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/22"
+    },
+    {
+      "closed_at": "2026-11-07T06:54:28Z",
+      "number": 16,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "Budget the independent F2FS completion thread",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/16"
+    },
+    {
+      "closed_at": "2026-11-07T06:54:27Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "fs-f2fs",
+      "state": "closed",
+      "title": "Separate F2FS ordered submission from device completion",
+      "url": "https://github.com/HypeR-Proj/fs-f2fs/pull/10"
+    },
+    {
+      "closed_at": "2026-11-07T06:54:27Z",
+      "number": 23,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Separate cached filesystem writes from bounded backend completion",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/23"
+    },
+    {
+      "closed_at": "2026-11-07T06:54:31Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "Serve bounded asynchronous filesystem writeback receipts",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/12"
+    },
+    {
+      "closed_at": "2026-11-07T06:54:30Z",
+      "number": 17,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Define bounded filesystem writeback acceptance and completion",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/17"
+    },
+    {
+      "closed_at": "2026-11-07T06:54:31Z",
+      "number": 24,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Cover asynchronous writeback progress and failure ownership",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/24"
+    }
+  ],
+  "topic": "topic:fs-writeback-pipeline"
+}
