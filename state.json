@@ -3,7 +3,16 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": null,
+    "inflight": [
+      "abi",
+      "bootstrap",
+      "bootstrap-retire",
+      "component-manager",
+      "componentctl",
+      "console-raw",
+      "fs-backend",
+      "fs-erofs"
+    ],
     "merged": [],
     "phase": "running",
     "snapshot": {
