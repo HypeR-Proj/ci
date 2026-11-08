@@ -3,16 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "lib-fs-service",
-      "lib-rust",
-      "lib-service",
-      "lib-system",
-      "lib-vm-policy",
-      "lib-vm-support",
-      "mount",
-      "perf"
-    ],
+    "inflight": null,
     "merged": [
       "abi",
       "bootstrap",
@@ -29,7 +20,15 @@
       "kernel",
       "lib-bootstrap-handoff",
       "lib-component",
-      "lib-component-config"
+      "lib-component-config",
+      "lib-fs-service",
+      "lib-rust",
+      "lib-service",
+      "lib-system",
+      "lib-vm-policy",
+      "lib-vm-support",
+      "mount",
+      "perf"
     ],
     "phase": "running",
     "snapshot": {
