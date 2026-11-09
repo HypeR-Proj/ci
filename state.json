@@ -3,7 +3,8 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
+    "inflight": null,
+    "merged": [
       "abi",
       "bootstrap",
       "build",
@@ -11,9 +12,7 @@
       "io-vm",
       "kernel",
       "lib-musl",
-      "lib-rust-std"
-    ],
-    "merged": [
+      "lib-rust-std",
       "manifest"
     ],
     "phase": "running",
