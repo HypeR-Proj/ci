@@ -3,15 +3,7 @@
     "actor": "roolrz",
     "error": null,
     "force": false,
-    "inflight": [
-      "lib-service",
-      "lib-system",
-      "lib-vm-image",
-      "session-manager",
-      "shell",
-      "system-startup",
-      "system-tests"
-    ],
+    "inflight": null,
     "merged": [
       "abi",
       "bootstrap",
@@ -21,7 +13,14 @@
       "kernel",
       "lib-musl",
       "lib-rust-std",
-      "manifest"
+      "lib-service",
+      "lib-system",
+      "lib-vm-image",
+      "manifest",
+      "session-manager",
+      "shell",
+      "system-startup",
+      "system-tests"
     ],
     "phase": "running",
     "snapshot": {
