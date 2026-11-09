@@ -1,0 +1,42 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/b10acce498c7289378d0e738f464042095d1a91f76b8476e84038a4aa69a0e35.json",
+  "members": [
+    {
+      "closed_at": "2026-11-08T19:31:50Z",
+      "number": 17,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Define bounded WaitSet batch event retrieval",
+      "url": "https://github.com/HypeR-Proj/abi/pull/17"
+    },
+    {
+      "closed_at": "2026-11-08T19:31:50Z",
+      "number": 25,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Consume WaitSet notifications in bounded batches",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/25"
+    },
+    {
+      "closed_at": "2026-11-08T19:31:50Z",
+      "number": 19,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Expose safe WaitSet batch notification retrieval",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/19"
+    },
+    {
+      "closed_at": "2026-11-08T19:31:50Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "Batch detached-thread reaper notifications",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/11"
+    }
+  ],
+  "topic": "topic:abi-wait-batch"
+}
