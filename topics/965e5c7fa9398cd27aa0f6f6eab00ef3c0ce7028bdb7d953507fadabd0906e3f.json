@@ -1,0 +1,150 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/903b977cf0893bd6fcf1fbb0ecb67f5e0faa24c8e3e0a3d58b3daa86167b3473.json",
+  "members": [
+    {
+      "closed_at": "2026-11-09T00:31:25Z",
+      "number": 20,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Clarify IRQ-free physical-device bundle semantics",
+      "url": "https://github.com/HypeR-Proj/abi/pull/20"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:25Z",
+      "number": 25,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Hand off RNG200 ownership and the I/O owner transaction state",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/25"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:25Z",
+      "number": 21,
+      "pull_request": true,
+      "repository": "build",
+      "state": "closed",
+      "title": "Compose declared random providers and verify Native consumers",
+      "url": "https://github.com/HypeR-Proj/build/pull/21"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:25Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "Serve initialized random bytes without blocking storage progress",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/12"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:28Z",
+      "number": 30,
+      "pull_request": true,
+      "repository": "io-vm",
+      "state": "closed",
+      "title": "Keep routine random draws off the serial logging path",
+      "url": "https://github.com/HypeR-Proj/io-vm/pull/30"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:28Z",
+      "number": 28,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Permit IRQ-free userspace MMIO resource bundles",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/28"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:28Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "lib-musl",
+      "state": "closed",
+      "title": "Connect getrandom and getentropy to the Native random service",
+      "url": "https://github.com/HypeR-Proj/lib-musl/pull/9"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:28Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "lib-rust-std",
+      "state": "closed",
+      "title": "Use the userspace random service for secure Rust fills",
+      "url": "https://github.com/HypeR-Proj/lib-rust-std/pull/12"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:48Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "Define a bounded initialized-random service protocol",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/11"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:48Z",
+      "number": 14,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "Provide capability-based initialized random bytes",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/14"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:48Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-vm-image",
+      "state": "closed",
+      "title": "Describe explicitly assigned RNG200 resources to Linux",
+      "url": "https://github.com/HypeR-Proj/lib-vm-image/pull/7"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:04Z",
+      "number": 17,
+      "pull_request": true,
+      "repository": "manifest",
+      "state": "closed",
+      "title": "Assign the Pi5 RNG200 to the trusted I/O appliance",
+      "url": "https://github.com/HypeR-Proj/manifest/pull/17"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:48Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "Pass explicit random client authority to interactive shells",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/10"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:51Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "shell",
+      "state": "closed",
+      "title": "Inherit random client authority in commands and nested shells",
+      "url": "https://github.com/HypeR-Proj/shell/pull/11"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:51Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "system-startup",
+      "state": "closed",
+      "title": "Delegate random service authority from explicit provider declarations",
+      "url": "https://github.com/HypeR-Proj/system-startup/pull/9"
+    },
+    {
+      "closed_at": "2026-11-09T00:31:52Z",
+      "number": 29,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Exercise initialized random requests and client isolation",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/29"
+    }
+  ],
+  "topic": "topic:abi-secure-random"
+}
