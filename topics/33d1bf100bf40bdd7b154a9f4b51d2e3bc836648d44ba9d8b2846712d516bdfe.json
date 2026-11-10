@@ -1,0 +1,24 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/fff3cc664db85142f24592fd30e18460a7a1d23f32c073c5fe60a1a56a231ec8.json",
+  "members": [
+    {
+      "closed_at": "2026-11-08T20:07:11Z",
+      "number": 20,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Add bounded shared message queues with explicit lifecycle",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/20"
+    },
+    {
+      "closed_at": "2026-11-08T20:07:11Z",
+      "number": 26,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Test shared queues across Native processes",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/26"
+    }
+  ],
+  "topic": "topic:abi-shared-queue"
+}
