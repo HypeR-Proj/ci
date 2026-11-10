@@ -55,6 +55,7 @@
   "retired": {
     "topic:abi-executable-publish": "topics/a3c50bf09e99a2339d7982ab9036b70b63566ceab2456beab21303ba089f8a25.json",
     "topic:abi-secure-random": "topics/965e5c7fa9398cd27aa0f6f6eab00ef3c0ce7028bdb7d953507fadabd0906e3f.json",
+    "topic:abi-vmo-atomic-wait": "topics/ff6aba2d50bcdca8467ec5e5f6e4af0c632133c66590656fc2c9d3621994bd1a.json",
     "topic:abi-wait-batch": "topics/47abf6b1564cd5069bac1b92c8f729c44e6d4d21c57c287158956a5e7f349a56.json",
     "topic:audit-abi-contracts": "topics/bb2670c22e8cbf998ab1feeba5dcc9e12e409a63b26e3fba66b2e2d7b3f5e01d.json",
     "topic:audit-bounded-admission": "topics/7c4062ad741b33dd70f7bb37a7281542fe369cb7998336f894f2f5bd2f88a560.json",

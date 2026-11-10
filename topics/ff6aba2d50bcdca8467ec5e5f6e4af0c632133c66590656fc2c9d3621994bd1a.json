@@ -1,0 +1,51 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/143b919b98c93c994ae2c3873a8f51c029fadf8d2d566aa9ad6205d04eb90c63.json",
+  "members": [
+    {
+      "closed_at": "2026-11-08T20:55:37Z",
+      "number": 18,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Define VMO shared atomic wait and wake operations",
+      "url": "https://github.com/HypeR-Proj/abi/pull/18"
+    },
+    {
+      "closed_at": "2026-11-08T20:55:37Z",
+      "number": 26,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Add capability-based shared atomic waits on VMO words",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/26"
+    },
+    {
+      "closed_at": "2026-11-08T20:55:38Z",
+      "number": 21,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Add typed VMO atomic waits and shared u32 mappings",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/21"
+    },
+    {
+      "closed_at": "2026-11-08T20:55:37Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "Expose VMO shared atomic wait and wake in the C substrate",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/12"
+    },
+    {
+      "closed_at": "2026-11-08T20:55:40Z",
+      "number": 27,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Exercise VMO atomic waits across Native processes",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/27"
+    }
+  ],
+  "topic": "topic:abi-vmo-atomic-wait"
+}
