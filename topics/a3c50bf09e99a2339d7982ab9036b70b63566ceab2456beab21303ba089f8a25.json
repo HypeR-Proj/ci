@@ -1,0 +1,294 @@
+{
+  "last_result": "Whole topic submitted successfully. Archive: submissions/b4bdda5682725bef5ff776d108cf5ac20241712817a19319b8fba2e533245672.json",
+  "members": [
+    {
+      "closed_at": "2026-11-08T22:30:09Z",
+      "number": 19,
+      "pull_request": true,
+      "repository": "abi",
+      "state": "closed",
+      "title": "Define authorized executable VMO publication",
+      "url": "https://github.com/HypeR-Proj/abi/pull/19"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:09Z",
+      "number": 24,
+      "pull_request": true,
+      "repository": "bootstrap",
+      "state": "closed",
+      "title": "Retain explicit executable authority through bootstrap handoff",
+      "url": "https://github.com/HypeR-Proj/bootstrap/pull/24"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:10Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "bootstrap-retire",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/bootstrap-retire/pull/7"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:09Z",
+      "number": 12,
+      "pull_request": true,
+      "repository": "component-manager",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/component-manager/pull/12"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:12Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "componentctl",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/componentctl/pull/7"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:12Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "console-raw",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/console-raw/pull/9"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:13Z",
+      "number": 17,
+      "pull_request": true,
+      "repository": "fs-backend",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/fs-backend/pull/17"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:13Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "fs-erofs",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/fs-erofs/pull/11"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:33Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "fs-f2fs",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/fs-f2fs/pull/11"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:33Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "fs-fat",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/fs-fat/pull/11"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:33Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "io-runtime",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/io-runtime/pull/11"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:33Z",
+      "number": 11,
+      "pull_request": true,
+      "repository": "journald",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/journald/pull/11"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:36Z",
+      "number": 27,
+      "pull_request": true,
+      "repository": "kernel",
+      "state": "closed",
+      "title": "Publish immutable executable memory through explicit authority",
+      "url": "https://github.com/HypeR-Proj/kernel/pull/27"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:37Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-bootstrap-handoff",
+      "state": "closed",
+      "title": "Accept executable authority in typed handoff decoding",
+      "url": "https://github.com/HypeR-Proj/lib-bootstrap-handoff/pull/7"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:36Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "lib-component",
+      "state": "closed",
+      "title": "Describe executable authority as a routed object",
+      "url": "https://github.com/HypeR-Proj/lib-component/pull/9"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:37Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "lib-component-config",
+      "state": "closed",
+      "title": "Validate explicit executable authority startup grants",
+      "url": "https://github.com/HypeR-Proj/lib-component-config/pull/8"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:58Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "lib-fs-service",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/lib-fs-service/pull/13"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:58Z",
+      "number": 22,
+      "pull_request": true,
+      "repository": "lib-rust",
+      "state": "closed",
+      "title": "Add typed immutable executable publication and mapping",
+      "url": "https://github.com/HypeR-Proj/lib-rust/pull/22"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:58Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "lib-service",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/lib-service/pull/10"
+    },
+    {
+      "closed_at": "2026-11-08T22:30:59Z",
+      "number": 13,
+      "pull_request": true,
+      "repository": "lib-system",
+      "state": "closed",
+      "title": "Expose executable publication in the C substrate",
+      "url": "https://github.com/HypeR-Proj/lib-system/pull/13"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:01Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-vm-policy",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/lib-vm-policy/pull/7"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:01Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "lib-vm-support",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/lib-vm-support/pull/7"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:02Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "mount",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/mount/pull/8"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:02Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "perf",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/perf/pull/9"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:22Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "session-manager",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/session-manager/pull/9"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:22Z",
+      "number": 10,
+      "pull_request": true,
+      "repository": "shell",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/shell/pull/10"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:22Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "system-startup",
+      "state": "closed",
+      "title": "Route explicitly granted executable and construction authority",
+      "url": "https://github.com/HypeR-Proj/system-startup/pull/8"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:22Z",
+      "number": 28,
+      "pull_request": true,
+      "repository": "system-tests",
+      "state": "closed",
+      "title": "Verify executable authority and cross-CPU publication",
+      "url": "https://github.com/HypeR-Proj/system-tests/pull/28"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:25Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "umount",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/umount/pull/8"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:25Z",
+      "number": 9,
+      "pull_request": true,
+      "repository": "vm-manager",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/vm-manager/pull/9"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:26Z",
+      "number": 7,
+      "pull_request": true,
+      "repository": "vm-runtime",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/vm-runtime/pull/7"
+    },
+    {
+      "closed_at": "2026-11-08T22:31:26Z",
+      "number": 8,
+      "pull_request": true,
+      "repository": "vmm",
+      "state": "closed",
+      "title": "Synchronize the component configuration ABI dependency lock",
+      "url": "https://github.com/HypeR-Proj/vmm/pull/8"
+    }
+  ],
+  "topic": "topic:abi-executable-publish"
+}
